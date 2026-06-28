@@ -19,12 +19,15 @@
 ::   prepare_config_*.bat
 ::   the launcher's own filename
 ::
-:: Every child receives the original arguments plus:
+:: Every implementation receives the original arguments plus:
 ::   PREPARE_LAUNCHER_ACTIVE=1
 ::   PREPARE_PROJECT_ROOT
 ::   PREPARE_IMPLEMENTATION_DIR
 ::   PREPARE_SUFFIX
 ::   app.prepare.suffix
+::
+:: Prepare implementations are called in the current cmd.exe so
+:: environment changes such as PATH additions return to the caller.
 ::
 :: Color control:
 ::   PREPARE_LAUNCHER_COLOR=auto|always|never
@@ -163,13 +166,13 @@ set "app.prepare_launcher.dir=%app.prepare_launcher.root%"
 set "_plp_rc=0" & goto :ResolvePaths
 :: ============================================================
 :: :RunCandidate
-:: Skips non-prepare files or runs one implementation in an
-:: isolated cmd.exe.
+:: Skips non-prepare files or calls one implementation in the
+:: current cmd.exe so prepared environment values can propagate.
 ::
 :: Usage: call :RunCandidate [forwarded arguments]
 ::
 :: Returns: 0
-:: Requires: :ShouldIgnore, cmd.exe
+:: Requires: :ShouldIgnore
 :: ============================================================
 :RunCandidate
 for /f "tokens=1 delims==" %%v in ('set plr_ 2^>nul') do set "%%v="
@@ -197,7 +200,7 @@ set "app.prepare.suffix=%app.prepare_launcher.suffix%"
 echo.
 echo %app.prepare_launcher.color.info%[RUN ] %app.prepare_launcher.candidate%  suffix=%app.prepare_launcher.suffix%%app.prepare_launcher.color.reset%
 echo.
-"%ComSpec%" /d /c call "%app.prepare_launcher.file%" %*
+call "%app.prepare_launcher.file%" %*
 set "plr_child_rc=%errorlevel%"
 set "PREPARE_LAUNCHER_ACTIVE="
 set "PREPARE_PROJECT_ROOT="

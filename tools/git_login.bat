@@ -1,4 +1,17 @@
 @echo off
+:: Recover from a previously interrupted invocation in this cmd.exe.
+set "_gla_rc="
+set "_glb_rc="
+set "_glc_rc="
+set "_gle_rc="
+set "_glf_rc="
+set "_gli_rc="
+set "_glm_rc="
+set "_glp_rc="
+set "_glr_rc="
+set "_glw_rc="
+set "_glx_rc="
+set "APP_GH_DEVICE_URL="
 :: ============================================================
 :: git_login.bat
 :: Authenticates GitHub CLI, verifies repository permissions,
@@ -45,7 +58,12 @@ set "app.git_login.existing.origin="
 set "app.git_login.git.name="
 set "app.git_login.git.email="
 set "app.git_login.input="
-set "app.git_login.confirm="
+set "app.git_login.prepare.log="
+set "app.git_login.prepare.rc=0"
+set "app.git_login.browser.choice="
+set "app.git_login.browser.preopened="
+set "app.git_login.browser.noop="
+set "app.git_login.browser.url=https://github.com/login/device"
 set "app.git_login.original.origin.exists="
 set "app.git_login.original.origin.url="
 set "app.git_login.original.upstream.exists="
@@ -62,6 +80,7 @@ if defined CFG_BRANCH set "app.git_login.branch=%CFG_BRANCH%"
 call :Main %*
 set "app.git_login.rc=%errorlevel%"
 :end
+call :CleanupTemp
 call :PauseIfNeeded
 exit /b %app.git_login.rc%
 :: ============================================================
@@ -103,8 +122,18 @@ echo ERROR: prepare.bat was not found in the project root:
 echo   %CD%
 set "_glm_rc=1" & goto :Main
 :_Main_prepare
-call "%CD%\prepare.bat" repository
-if errorlevel 1 (echo ERROR: Dependency preparation failed. & set "_glm_rc=1" & goto :Main)
+set "app.git_login.prepare.log=%TEMP%\git-login-prepare-%RANDOM%-%RANDOM%.log"
+call "%CD%\prepare.bat" repository >"%app.git_login.prepare.log%" 2>&1
+set "app.git_login.prepare.rc=%errorlevel%"
+if "%app.git_login.prepare.rc%"=="0" goto :_Main_prepare_ready
+echo ERROR: Dependency preparation failed.
+echo.
+if exist "%app.git_login.prepare.log%" type "%app.git_login.prepare.log%"
+call :CleanupTemp
+set "_glm_rc=1" & goto :Main
+:_Main_prepare_ready
+if exist "%app.git_login.prepare.log%" del /q "%app.git_login.prepare.log%" >nul 2>nul
+set "app.git_login.prepare.log="
 where git.exe >nul 2>nul
 if errorlevel 1 (echo ERROR: Git is unavailable after preparation. & set "_glm_rc=1" & goto :Main)
 where gh.exe >nul 2>nul
@@ -144,11 +173,8 @@ if errorlevel 1 (echo ERROR: Invalid branch name: & echo   %app.git_login.branch
 call :ResolveIdentity
 if errorlevel 1 (set "_glm_rc=%errorlevel%" & goto :Main)
 call :ShowPlan
-set /p "app.git_login.confirm=Type LOGIN to continue: "
-if "%app.git_login.confirm%"=="LOGIN" goto :_Main_ensure_fork
+echo Continuing with GitHub setup...
 echo.
-echo Cancelled. Nothing was changed.
-set "_glm_rc=0" & goto :Main
 :_Main_ensure_fork
 if not defined app.git_login.use.fork goto :_Main_initialize
 call :EnsureFork
@@ -262,7 +288,7 @@ set "_glm_rc=%errorlevel%" & goto :Main
 ::
 :: Returns: 0 when authenticated
 ::          1 on login, account, or credential-setup failure
-:: Requires: gh
+:: Requires: gh, :ChooseLoginBrowser, :RunDeviceLogin
 :: ============================================================
 :Authenticate
 for /f "tokens=1 delims==" %%v in ('set gla_ 2^>nul') do set "%%v="
@@ -271,9 +297,21 @@ echo Checking GitHub login...
 gh auth status --hostname github.com >nul 2>nul
 if not errorlevel 1 goto :_Authenticate_ready
 echo GitHub login is required.
-echo A browser window will open for secure login.
-gh auth login --hostname github.com --git-protocol https --web
-if errorlevel 1 (echo ERROR: GitHub login failed or was cancelled. & set "_gla_rc=1" & goto :Authenticate)
+echo.
+set "APP_GH_DEVICE_URL=%app.git_login.browser.url%"
+call :ChooseLoginBrowser
+set "APP_GH_DEVICE_URL="
+if errorlevel 1 (echo ERROR: Browser selection failed. & set "_gla_rc=1" & goto :Authenticate)
+set "gla_clipboard="
+gh auth login --help 2>nul | findstr /L /C:"--clipboard" >nul
+if errorlevel 1 goto :_Authenticate_login
+set "gla_clipboard=--clipboard"
+echo GitHub CLI will copy the one-time device code to the clipboard.
+echo.
+:_Authenticate_login
+call :RunDeviceLogin %gla_clipboard%
+set "gla_login_rc=%errorlevel%"
+if not "%gla_login_rc%"=="0" (echo ERROR: GitHub login failed or was cancelled. & set "_gla_rc=%gla_login_rc%" & goto :Authenticate)
 :_Authenticate_ready
 for /f "delims=" %%A in ('gh api user --jq ".login" 2^>nul') do set "app.git_login.login=%%A"
 if not defined app.git_login.login (echo ERROR: Could not determine the logged-in GitHub account. & set "_gla_rc=1" & goto :Authenticate)
@@ -283,6 +321,234 @@ echo Logged in as:
 echo   %app.git_login.login%
 echo.
 set "_gla_rc=0" & goto :Authenticate
+:: ============================================================
+:: :ChooseLoginBrowser
+:: Chooses how the GitHub device-login page is opened before gh
+:: displays the one-time code. gh still owns code generation,
+:: browser confirmation, authorization polling, and completion.
+::
+:: Usage: call :ChooseLoginBrowser
+::
+:: Returns: 0
+:: Requires: :OpenPrivateBrowser, start
+:: ============================================================
+:ChooseLoginBrowser
+for /f "tokens=1 delims==" %%v in ('set glb_ 2^>nul') do set "%%v="
+if defined _glb_rc (set "_glb_rc=" & exit /b %_glb_rc%)
+echo Open the GitHub device-login page:
+echo.
+echo   1. Let GitHub CLI open the default browser after showing the code
+echo   2. Open the default browser now
+echo   3. Open the default browser in private mode now
+echo   4. I will open the page myself
+echo.
+set "app.git_login.browser.choice="
+set "app.git_login.browser.preopened="
+set /p "app.git_login.browser.choice=Choice [1]: "
+if not defined app.git_login.browser.choice set "app.git_login.browser.choice=1"
+if "%app.git_login.browser.choice%"=="1" goto :_ChooseLoginBrowser_cli
+if "%app.git_login.browser.choice%"=="2" goto :_ChooseLoginBrowser_default
+if "%app.git_login.browser.choice%"=="3" goto :_ChooseLoginBrowser_private
+if "%app.git_login.browser.choice%"=="4" goto :_ChooseLoginBrowser_manual
+echo.
+echo Invalid choice. Enter 1, 2, 3, or 4.
+echo.
+goto :ChooseLoginBrowser
+:_ChooseLoginBrowser_cli
+echo.
+echo GitHub CLI will show the code, then offer to open the default browser.
+echo.
+set "_glb_rc=0" & goto :ChooseLoginBrowser
+:_ChooseLoginBrowser_default
+start "" "%app.git_login.browser.url%"
+set "app.git_login.browser.preopened=1"
+echo.
+echo The device-login page was sent to the default browser.
+echo GitHub CLI will poll without opening another tab.
+echo.
+set "_glb_rc=0" & goto :ChooseLoginBrowser
+:_ChooseLoginBrowser_private
+call :OpenPrivateBrowser
+if not errorlevel 1 goto :_ChooseLoginBrowser_private_ready
+echo.
+echo Could not open a supported browser in private mode automatically.
+echo Open this page in a private browser window:
+echo   %app.git_login.browser.url%
+echo.
+set "app.git_login.browser.preopened=1"
+echo GitHub CLI will poll without opening another tab.
+echo.
+set "_glb_rc=0" & goto :ChooseLoginBrowser
+:_ChooseLoginBrowser_private_ready
+set "app.git_login.browser.preopened=1"
+echo.
+echo The device-login page was opened in a private browser window.
+echo GitHub CLI will poll without opening another tab.
+echo.
+set "_glb_rc=0" & goto :ChooseLoginBrowser
+:_ChooseLoginBrowser_manual
+set "app.git_login.browser.preopened=1"
+echo.
+echo Open this page:
+echo   %app.git_login.browser.url%
+echo.
+echo GitHub CLI will poll without opening another tab.
+echo.
+set "_glb_rc=0" & goto :ChooseLoginBrowser
+:: ============================================================
+:: :RunDeviceLogin
+:: Runs gh's normal web-device flow. When the page was already
+:: opened by the wrapper or user, automatically supplies the Enter
+:: requested by gh and gives gh a temporary no-op browser command.
+:: gh still generates the code, copies it when supported, polls
+:: GitHub, and determines authentication completion.
+::
+:: Usage: call :RunDeviceLogin [gh auth login options]
+::
+:: Returns: gh auth login exit code
+:: Requires: gh
+:: ============================================================
+:RunDeviceLogin
+for /f "tokens=1 delims==" %%v in ('set glr_ 2^>nul') do set "%%v="
+if defined _glr_rc (set "_glr_rc=" & exit /b %_glr_rc%)
+if not defined app.git_login.browser.preopened goto :_RunDeviceLogin_normal
+set "glr_browser_was_defined="
+if defined GH_BROWSER set "glr_browser_was_defined=1"
+set "glr_browser_saved=%GH_BROWSER%"
+set "app.git_login.browser.noop=%TEMP%\gh-browser-noop-%RANDOM%-%RANDOM%.cmd"
+>"%app.git_login.browser.noop%" echo @exit /b 0
+if not exist "%app.git_login.browser.noop%" (echo ERROR: Could not create temporary no-op browser command. & set "_glr_rc=1" & goto :RunDeviceLogin)
+set "GH_BROWSER=%app.git_login.browser.noop%"
+echo.| gh auth login --hostname github.com --git-protocol https --web %*
+set "glr_login_rc=%errorlevel%"
+if defined glr_browser_was_defined goto :_RunDeviceLogin_restore
+set "GH_BROWSER="
+goto :_RunDeviceLogin_cleanup
+:_RunDeviceLogin_restore
+set "GH_BROWSER=%glr_browser_saved%"
+:_RunDeviceLogin_cleanup
+if exist "%app.git_login.browser.noop%" del /q "%app.git_login.browser.noop%" >nul 2>nul
+set "app.git_login.browser.noop="
+set "_glr_rc=%glr_login_rc%" & goto :RunDeviceLogin
+:_RunDeviceLogin_normal
+gh auth login --hostname github.com --git-protocol https --web %*
+set "_glr_rc=%errorlevel%" & goto :RunDeviceLogin
+:: ============================================================
+:: :OpenPrivateBrowser
+:: Opens the GitHub device page in a private window. It prefers
+:: the configured default browser when its ProgId identifies Edge,
+:: Chrome, Brave, or Firefox, then falls back to any installed one.
+::
+:: Usage: call :OpenPrivateBrowser
+::
+:: Returns: 0 when launched, 1 when no supported browser is found
+:: Requires: reg.exe, start
+:: ============================================================
+:OpenPrivateBrowser
+set "glp_prog="
+set "glp_family="
+set "glp_exe="
+set "glp_arg="
+for /f "tokens=3" %%A in ('reg query "HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice" /v ProgId 2^>nul ^| findstr /I /C:"ProgId"') do set "glp_prog=%%A"
+if not defined glp_prog goto :_OpenPrivateBrowser_any
+echo(%glp_prog%| findstr /I /C:"MSEdge" >nul
+if not errorlevel 1 set "glp_family=edge"
+if defined glp_family goto :_OpenPrivateBrowser_family
+echo(%glp_prog%| findstr /I /C:"Chrome" >nul
+if not errorlevel 1 set "glp_family=chrome"
+if defined glp_family goto :_OpenPrivateBrowser_family
+echo(%glp_prog%| findstr /I /C:"Brave" >nul
+if not errorlevel 1 set "glp_family=brave"
+if defined glp_family goto :_OpenPrivateBrowser_family
+echo(%glp_prog%| findstr /I /C:"Firefox" >nul
+if not errorlevel 1 set "glp_family=firefox"
+:_OpenPrivateBrowser_family
+if /I "%glp_family%"=="edge" call :FindPrivateEdge
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+if /I "%glp_family%"=="chrome" call :FindPrivateChrome
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+if /I "%glp_family%"=="brave" call :FindPrivateBrave
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+if /I "%glp_family%"=="firefox" call :FindPrivateFirefox
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+:_OpenPrivateBrowser_any
+call :FindPrivateEdge
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+call :FindPrivateChrome
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+call :FindPrivateBrave
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+call :FindPrivateFirefox
+if defined glp_exe goto :_OpenPrivateBrowser_launch
+exit /b 1
+:_OpenPrivateBrowser_launch
+start "" "%glp_exe%" %glp_arg% "%app.git_login.browser.url%"
+if errorlevel 1 exit /b 1
+exit /b 0
+:: ============================================================
+:: :FindPrivateEdge
+:: Selects an installed Microsoft Edge executable.
+::
+:: Usage: call :FindPrivateEdge
+::
+:: Output: glp_exe, glp_arg
+:: Returns: 0
+:: Requires: none
+:: ============================================================
+:FindPrivateEdge
+if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "glp_exe=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
+if not defined glp_exe if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "glp_exe=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
+if not defined glp_exe if exist "%LocalAppData%\Microsoft\Edge\Application\msedge.exe" set "glp_exe=%LocalAppData%\Microsoft\Edge\Application\msedge.exe"
+if defined glp_exe set "glp_arg=--inprivate"
+exit /b 0
+:: ============================================================
+:: :FindPrivateChrome
+:: Selects an installed Google Chrome executable.
+::
+:: Usage: call :FindPrivateChrome
+::
+:: Output: glp_exe, glp_arg
+:: Returns: 0
+:: Requires: none
+:: ============================================================
+:FindPrivateChrome
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "glp_exe=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
+if not defined glp_exe if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "glp_exe=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+if not defined glp_exe if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "glp_exe=%LocalAppData%\Google\Chrome\Application\chrome.exe"
+if defined glp_exe set "glp_arg=--incognito"
+exit /b 0
+:: ============================================================
+:: :FindPrivateBrave
+:: Selects an installed Brave executable.
+::
+:: Usage: call :FindPrivateBrave
+::
+:: Output: glp_exe, glp_arg
+:: Returns: 0
+:: Requires: none
+:: ============================================================
+:FindPrivateBrave
+if exist "%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe" set "glp_exe=%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe"
+if not defined glp_exe if exist "%ProgramFiles(x86)%\BraveSoftware\Brave-Browser\Application\brave.exe" set "glp_exe=%ProgramFiles(x86)%\BraveSoftware\Brave-Browser\Application\brave.exe"
+if not defined glp_exe if exist "%LocalAppData%\BraveSoftware\Brave-Browser\Application\brave.exe" set "glp_exe=%LocalAppData%\BraveSoftware\Brave-Browser\Application\brave.exe"
+if defined glp_exe set "glp_arg=--incognito"
+exit /b 0
+:: ============================================================
+:: :FindPrivateFirefox
+:: Selects an installed Mozilla Firefox executable.
+::
+:: Usage: call :FindPrivateFirefox
+::
+:: Output: glp_exe, glp_arg
+:: Returns: 0
+:: Requires: none
+:: ============================================================
+:FindPrivateFirefox
+if exist "%ProgramFiles%\Mozilla Firefox\firefox.exe" set "glp_exe=%ProgramFiles%\Mozilla Firefox\firefox.exe"
+if not defined glp_exe if exist "%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe" set "glp_exe=%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe"
+if not defined glp_exe if exist "%LocalAppData%\Mozilla Firefox\firefox.exe" set "glp_exe=%LocalAppData%\Mozilla Firefox\firefox.exe"
+if defined glp_exe set "glp_arg=-private-window"
+exit /b 0
 :: ============================================================
 :: :ResolveRepository
 :: Resolves the configured repository, canonical HTTPS URL, owner,
@@ -670,6 +936,24 @@ echo Direct push is used when permitted; otherwise a personal fork
 echo can be created or reused. Existing commits are then pushed.
 echo.
 exit /b 0
+:: ============================================================
+:: :CleanupTemp
+:: Removes temporary preparation logs.
+::
+:: Usage: call :CleanupTemp
+::
+:: Returns: 0
+:: Requires: none
+:: ============================================================
+:CleanupTemp
+for /f "tokens=1 delims==" %%v in ('set glc_ 2^>nul') do set "%%v="
+if defined _glc_rc (set "_glc_rc=" & exit /b %_glc_rc%)
+if defined app.git_login.prepare.log del /q "%app.git_login.prepare.log%" >nul 2>nul
+if defined app.git_login.browser.noop del /q "%app.git_login.browser.noop%" >nul 2>nul
+set "app.git_login.prepare.log="
+set "app.git_login.browser.noop="
+set "APP_GH_DEVICE_URL="
+set "_glc_rc=0" & goto :CleanupTemp
 :: ============================================================
 :: :PauseIfNeeded
 :: Pauses only when the outermost launcher is the cmd.exe /c target.

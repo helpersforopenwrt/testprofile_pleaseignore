@@ -9,7 +9,7 @@
 ::   call tools\git_logout.bat help
 ::
 :: Returns: 0 on successful logout, already-logged-out cleanup,
-::            cancellation, or help
+::            or help
 ::          1 on dependency or GitHub CLI logout failure
 ::          2 on invalid arguments
 :: Requires: _common.bat, prepare.bat, git, gh, :Main,
@@ -20,8 +20,9 @@
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 set "app.git_logout.login="
-set "app.git_logout.confirm="
 set "app.git_logout.temp="
+set "app.git_logout.prepare.log="
+set "app.git_logout.prepare.rc=0"
 set "app.git_logout.reject.rc=0"
 set "app.git_logout.gh.rc=0"
 set "app.git_logout.help="
@@ -39,13 +40,13 @@ call :PauseIfNeeded
 exit /b %app.git_logout.rc%
 :: ============================================================
 :: :Main
-:: Prepares Git and GitHub CLI, confirms logout when authenticated,
-:: erases cached HTTPS credentials, logs out, and verifies the result.
+:: Quietly prepares Git and GitHub CLI, erases cached HTTPS
+:: credentials, logs out immediately, and verifies the result.
 ::
 :: Usage: call :Main [help]
 ::
 :: Returns: 0 on successful logout, already-logged-out cleanup,
-::            cancellation, or help
+::            or help
 ::          1 on dependency or GitHub CLI logout failure
 ::          2 on invalid arguments
 :: Requires: :RejectCredential, :ParseArgs, :ShowHelp,
@@ -74,8 +75,18 @@ echo ERROR: prepare.bat was not found in the project root:
 echo   %CD%
 set "_glom_rc=1" & goto :Main
 :_Main_prepare
-call "%CD%\prepare.bat" repository
-if errorlevel 1 (echo ERROR: Dependency preparation failed. & set "_glom_rc=1" & goto :Main)
+set "app.git_logout.prepare.log=%TEMP%\git-logout-prepare-%RANDOM%-%RANDOM%.log"
+call "%CD%\prepare.bat" repository >"%app.git_logout.prepare.log%" 2>&1
+set "app.git_logout.prepare.rc=%errorlevel%"
+if "%app.git_logout.prepare.rc%"=="0" goto :_Main_prepare_ready
+echo ERROR: Dependency preparation failed.
+echo.
+if exist "%app.git_logout.prepare.log%" type "%app.git_logout.prepare.log%"
+call :CleanupTemp
+set "_glom_rc=1" & goto :Main
+:_Main_prepare_ready
+if exist "%app.git_logout.prepare.log%" del /q "%app.git_logout.prepare.log%" >nul 2>nul
+set "app.git_logout.prepare.log="
 where git.exe >nul 2>nul
 if errorlevel 1 (echo ERROR: Git is unavailable after preparation. & set "_glom_rc=1" & goto :Main)
 where gh.exe >nul 2>nul
@@ -86,21 +97,8 @@ for /f "delims=" %%A in ('gh api user --jq ".login" 2^>nul') do set "app.git_log
 echo GitHub CLI is currently logged in.
 if defined app.git_logout.login (echo Account: & echo   %app.git_logout.login%)
 echo.
-echo This will:
-echo   log GitHub CLI out of github.com
-echo   erase cached HTTPS Git credentials for github.com
+echo Logging out of github.com and erasing cached HTTPS credentials...
 echo.
-echo It will keep:
-echo   local repositories and files
-echo   origin and other Git remotes
-echo   local and global Git author settings
-echo   the github.com browser session
-echo.
-set /p "app.git_logout.confirm=Type LOGOUT to continue: "
-if "%app.git_logout.confirm%"=="LOGOUT" goto :_Main_reject
-echo.
-echo Cancelled. Nothing was changed.
-set "_glom_rc=0" & goto :Main
 :_Main_reject
 call :RejectCredential
 if not errorlevel 1 goto :_Main_logout
@@ -195,7 +193,9 @@ set "_glor_rc=1" & goto :RejectCredential
 :: ============================================================
 :CleanupTemp
 if defined app.git_logout.temp del /q "%app.git_logout.temp%" >nul 2>nul
+if defined app.git_logout.prepare.log del /q "%app.git_logout.prepare.log%" >nul 2>nul
 set "app.git_logout.temp="
+set "app.git_logout.prepare.log="
 exit /b 0
 :: ============================================================
 :: :ParseArgs
@@ -235,9 +235,10 @@ echo.
 echo Usage:
 echo   git_logout.bat
 echo.
-echo The helper logs GitHub CLI out of github.com and rejects cached
-echo HTTPS credentials. Repositories, remotes, branches, Git author
-echo settings, and browser login are preserved.
+echo The helper immediately logs GitHub CLI out of github.com and
+echo rejects cached HTTPS credentials. It does not ask for confirmation.
+echo Repositories, remotes, branches, Git author settings, and browser
+echo login are preserved.
 echo.
 exit /b 0
 :: ============================================================
