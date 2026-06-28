@@ -7,6 +7,11 @@
 :: Usage:
 ::   call tools\git_commit_and_push_now.bat
 ::   call tools\git_commit_and_push_now.bat message "Refactor helpers"
+::   call tools\git_commit_and_push_now.bat message "Refactor helpers" fulldiff yes
+::
+:: Arguments:
+::   message   Commit message.
+::   fulldiff  yes or no. Default: no.
 ::
 :: Workflow:
 ::   - show short status
@@ -14,7 +19,8 @@
 ::   - show unstaged and staged summaries
 ::   - require PUBLISH confirmation
 ::   - stage all changes
-::   - show staged stat, name-status, whitespace check, and full diff
+::   - show staged stat, name-status, and whitespace check
+::   - show the full staged patch only when fulldiff yes is requested
 ::   - require COMMIT confirmation
 ::   - commit and push
 ::   - show final short branch status
@@ -30,6 +36,7 @@
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 set "app.git_commit_push.message="
+set "app.git_commit_push.fulldiff=no"
 set "app.git_commit_push.dirty="
 set "app.git_commit_push.staged="
 set "app.git_commit_push.branch="
@@ -51,7 +58,7 @@ exit /b %app.git_commit_push.rc%
 :: Performs the complete guarded review, stage, commit, and push
 :: workflow, or pushes pending commits when no files changed.
 ::
-:: Usage: call :Main [message TEXT]
+:: Usage: call :Main [message TEXT] [fulldiff yes|no]
 ::
 :: Returns: 0 on success, cancellation, push-only success, or help
 ::          1 on Git, repository, validation, staging, commit, or push failure
@@ -65,6 +72,8 @@ call :ParseArgs %*
 set "_gcam_rc=%errorlevel%"
 if not "%_gcam_rc%"=="0" goto :Main
 if defined app.git_commit_push.help goto :_Main_help
+call :NormalizeYesNo app.git_commit_push.fulldiff
+if errorlevel 1 (echo ERROR: fulldiff must be yes or no. & set "_gcam_rc=2" & goto :Main)
 echo.
 echo ============================================================
 echo  Review, commit, and push
@@ -119,22 +128,22 @@ echo  Before staging
 echo ============================================================
 echo.
 echo Unstaged diff summary:
-git diff --stat
+git --no-pager diff --stat
 set "_gcam_diff_rc=%errorlevel%"
 if not "%_gcam_diff_rc%"=="0" (echo ERROR: Unstaged diff summary failed. & set "_gcam_rc=1" & goto :Main)
 echo.
 echo Unstaged file status:
-git diff --name-status
+git --no-pager diff --name-status
 set "_gcam_diff_rc=%errorlevel%"
 if not "%_gcam_diff_rc%"=="0" (echo ERROR: Unstaged name-status failed. & set "_gcam_rc=1" & goto :Main)
 echo.
 echo Already-staged diff summary:
-git diff --cached --stat
+git --no-pager diff --cached --stat
 set "_gcam_diff_rc=%errorlevel%"
 if not "%_gcam_diff_rc%"=="0" (echo ERROR: Staged diff summary failed. & set "_gcam_rc=1" & goto :Main)
 echo.
 echo Already-staged file status:
-git diff --cached --name-status
+git --no-pager diff --cached --name-status
 set "_gcam_diff_rc=%errorlevel%"
 if not "%_gcam_diff_rc%"=="0" (echo ERROR: Staged name-status failed. & set "_gcam_rc=1" & goto :Main)
 echo.
@@ -177,20 +186,26 @@ echo  Final staged review
 echo ============================================================
 echo.
 echo Staged diff summary:
-git diff --cached --stat
+git --no-pager diff --cached --stat
 set "_gcam_diff_rc=%errorlevel%"
 if not "%_gcam_diff_rc%"=="0" (echo ERROR: Final staged diff summary failed. & set "_gcam_rc=1" & goto :Main)
 echo.
 echo Staged file status:
-git diff --cached --name-status
+git --no-pager diff --cached --name-status
 set "_gcam_diff_rc=%errorlevel%"
 if not "%_gcam_diff_rc%"=="0" (echo ERROR: Final staged name-status failed. & set "_gcam_rc=1" & goto :Main)
 echo.
+if /I "%app.git_commit_push.fulldiff%"=="yes" goto :_Main_full_diff
+echo Full staged diff was skipped.
+echo Use fulldiff yes when the complete patch is specifically needed.
+goto :_Main_after_full_diff
+:_Main_full_diff
 echo Full staged diff:
 echo.
-git diff --cached
+git --no-pager diff --cached
 set "_gcam_diff_rc=%errorlevel%"
 if not "%_gcam_diff_rc%"=="0" (echo ERROR: Full staged diff failed. & set "_gcam_rc=1" & goto :Main)
+:_Main_after_full_diff
 echo.
 call :GetCommitMessage
 set "_gcam_message_rc=%errorlevel%"
@@ -298,9 +313,9 @@ echo Push complete.
 set "_gcap_rc=0" & goto :PushCurrent
 :: ============================================================
 :: :ParseArgs
-:: Parses an optional commit message and help option.
+:: Parses an optional commit message, full-diff option, and help.
 ::
-:: Usage: call :ParseArgs [message TEXT]
+:: Usage: call :ParseArgs [message TEXT] [fulldiff yes|no]
 ::
 :: Returns: 0 on success
 ::          2 on invalid arguments
@@ -309,6 +324,7 @@ set "_gcap_rc=0" & goto :PushCurrent
 :ParseArgs
 if "%~1"=="" exit /b 0
 if /I "%~1"=="message" goto :_ParseArgs_message
+if /I "%~1"=="fulldiff" goto :_ParseArgs_fulldiff
 if /I "%~1"=="help" goto :_ParseArgs_help
 if /I "%~1"=="/help" goto :_ParseArgs_help
 if /I "%~1"=="--help" goto :_ParseArgs_help
@@ -322,10 +338,43 @@ set "app.git_commit_push.message=%~2"
 shift
 shift
 goto :ParseArgs
+:_ParseArgs_fulldiff
+if "%~2"=="" (echo ERROR: fulldiff requires yes or no. & exit /b 2)
+set "app.git_commit_push.fulldiff=%~2"
+shift
+shift
+goto :ParseArgs
 :_ParseArgs_help
 set "app.git_commit_push.help=1"
 shift
 goto :ParseArgs
+:: ============================================================
+:: :NormalizeYesNo
+:: Normalizes a named variable to yes or no.
+::
+:: Usage: call :NormalizeYesNo variableName
+::
+:: Returns: 0 when valid
+::          1 when invalid
+:: Requires: none
+:: ============================================================
+:NormalizeYesNo
+for /f "tokens=1 delims==" %%v in ('set gcpy_ 2^>nul') do set "%%v="
+if defined _gcpy_rc (set "_gcpy_rc=" & exit /b %_gcpy_rc%)
+set "gcpy_name=%~1"
+call set "gcpy_value=%%%gcpy_name%%%"
+if /I "%gcpy_value%"=="y" set "%gcpy_name%=yes"
+if /I "%gcpy_value%"=="yes" set "%gcpy_name%=yes"
+if /I "%gcpy_value%"=="true" set "%gcpy_name%=yes"
+if /I "%gcpy_value%"=="1" set "%gcpy_name%=yes"
+if /I "%gcpy_value%"=="n" set "%gcpy_name%=no"
+if /I "%gcpy_value%"=="no" set "%gcpy_name%=no"
+if /I "%gcpy_value%"=="false" set "%gcpy_name%=no"
+if /I "%gcpy_value%"=="0" set "%gcpy_name%=no"
+call set "gcpy_value=%%%gcpy_name%%%"
+if /I "%gcpy_value%"=="yes" (set "_gcpy_rc=0" & goto :NormalizeYesNo)
+if /I "%gcpy_value%"=="no" (set "_gcpy_rc=0" & goto :NormalizeYesNo)
+set "_gcpy_rc=1" & goto :NormalizeYesNo
 :: ============================================================
 :: :ShowHelp
 :: Displays the complete guarded publish workflow.
@@ -342,10 +391,14 @@ echo.
 echo Usage:
 echo   git_commit_and_push_now.bat
 echo   git_commit_and_push_now.bat message "Refactor helpers"
+echo   git_commit_and_push_now.bat message "Refactor helpers" fulldiff yes
 echo.
 echo The helper reviews changes, stages everything, validates the
-echo final staged diff, commits after confirmation, pushes, and
+echo final staged result, commits after confirmation, pushes, and
 echo displays final branch status.
+echo.
+echo The complete patch is skipped by default to avoid paging or
+echo flooding the console. fulldiff yes prints it without a pager.
 echo.
 exit /b 0
 :: ============================================================
