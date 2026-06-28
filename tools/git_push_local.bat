@@ -1,11 +1,55 @@
 @echo off
-setlocal EnableExtensions
+:: ============================================================
+:: git_push_local.bat
+:: Pushes existing commits from the current named branch. When no
+:: upstream exists, origin is used and upstream tracking is created.
+::
+:: Usage:
+::   call tools\git_push_local.bat
+::   call tools\git_push_local.bat help
+::
+:: Returns: 0 on successful push or help
+::          1 on preparation, repository, branch, remote, or push failure
+::          2 on invalid arguments
+:: Requires: _common.bat, prepare.bat, git, :Main, :ParseArgs,
+::           :ShowHelp, :PauseIfNeeded, :IsConsole
+:: ============================================================
+:setup
+if not defined app.launch.path set "app.launch.path=%~f0"
+if not defined app.launch.name set "app.launch.name=%~nx0"
+set "app.git_push_local.branch="
+set "app.git_push_local.upstream="
+set "app.git_push_local.help="
+set "app.git_push_local.rc=0"
 call "%~dp0_common.bat" init
-if errorlevel 1 (
-    pause
-    exit /b 1
-)
-
+if not errorlevel 1 goto :run
+set "app.git_push_local.rc=%errorlevel%"
+goto :end
+:run
+call :Main %*
+set "app.git_push_local.rc=%errorlevel%"
+:end
+call :PauseIfNeeded
+exit /b %app.git_push_local.rc%
+:: ============================================================
+:: :Main
+:: Validates Git, HEAD, origin, and the current named branch, then
+:: pushes through existing tracking or creates origin tracking.
+::
+:: Usage: call :Main [help]
+::
+:: Returns: 0 on successful push or help
+::          1 on preparation, repository, branch, remote, or push failure
+::          2 on invalid arguments
+:: Requires: :ParseArgs, :ShowHelp, prepare.bat, git
+:: ============================================================
+:Main
+for /f "tokens=1 delims==" %%v in ('set gplm_ 2^>nul') do set "%%v="
+if defined _gplm_rc (set "_gplm_rc=" & exit /b %_gplm_rc%)
+call :ParseArgs %*
+set "_gplm_rc=%errorlevel%"
+if not "%_gplm_rc%"=="0" goto :Main
+if defined app.git_push_local.help goto :_Main_help
 echo.
 echo ============================================================
 echo  Push local commits to GitHub
@@ -17,56 +61,129 @@ echo.
 echo Folder:
 echo   %CD%
 echo.
-
-where git >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: git was not found in PATH.
-    pause
-    exit /b 1
-)
-if not exist ".git" (
-    echo ERROR: This folder is not a Git repository.
-    pause
-    exit /b 1
-)
+call "%CD%\prepare.bat" git
+if errorlevel 1 (echo ERROR: Git preparation failed. & set "_gplm_rc=1" & goto :Main)
+where git.exe >nul 2>nul
+if errorlevel 1 (echo ERROR: Git was not found in PATH. & set "_gplm_rc=1" & goto :Main)
+git rev-parse --is-inside-work-tree >nul 2>nul
+if errorlevel 1 (echo ERROR: This folder is not inside a Git working tree. & set "_gplm_rc=1" & goto :Main)
 git rev-parse --verify HEAD >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: No commits exist yet.
-    pause
-    exit /b 1
-)
+if errorlevel 1 (echo ERROR: No commits exist yet. & set "_gplm_rc=1" & goto :Main)
 git remote get-url origin >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: No origin remote is configured.
-    echo Run tools\git_login.bat
-    pause
-    exit /b 1
-)
-
-set "CURRENT_BRANCH="
-for /f "delims=" %%A in ('git branch --show-current 2^>nul') do set "CURRENT_BRANCH=%%A"
-if not defined CURRENT_BRANCH set "CURRENT_BRANCH=%CFG_BRANCH%"
-
-git status -sb
+if errorlevel 1 goto :_Main_no_origin
+set "app.git_push_local.branch="
+for /f "delims=" %%A in ('git branch --show-current 2^>nul') do set "app.git_push_local.branch=%%A"
+if not defined app.git_push_local.branch (echo ERROR: A named branch is not checked out. & set "_gplm_rc=1" & goto :Main)
+git status --short --branch
+if errorlevel 1 (echo ERROR: Git status failed. & set "_gplm_rc=1" & goto :Main)
 echo.
-
-git rev-parse --abbrev-ref --symbolic-full-name @{u} >nul 2>nul
-if errorlevel 1 (
-    echo No upstream is configured. Creating it now...
-    git push -u origin "%CURRENT_BRANCH%"
-) else (
-    git push
-)
-
-if errorlevel 1 (
-    echo.
-    echo ERROR: Push failed.
-    echo Run just_status.bat for more information.
-    pause
-    exit /b 1
-)
-
+set "app.git_push_local.upstream="
+for /f "delims=" %%A in ('git rev-parse --abbrev-ref --symbolic-full-name @{u} 2^>nul') do set "app.git_push_local.upstream=%%A"
+if defined app.git_push_local.upstream goto :_Main_push_tracking
+echo No upstream is configured. Creating origin tracking for:
+echo   %app.git_push_local.branch%
+git push -u origin "%app.git_push_local.branch%"
+set "_gplm_rc=%errorlevel%"
+goto :_Main_result
+:_Main_push_tracking
+echo Pushing to configured upstream:
+echo   %app.git_push_local.upstream%
+git push
+set "_gplm_rc=%errorlevel%"
+:_Main_result
+if "%_gplm_rc%"=="0" goto :_Main_success
+echo.
+echo ERROR: Push failed.
+echo Run just_status.bat for more information.
+set "_gplm_rc=1" & goto :Main
+:_Main_success
 echo.
 echo Push complete.
-pause
+set "_gplm_rc=0" & goto :Main
+:_Main_no_origin
+echo ERROR: No origin remote is configured.
+echo Run:
+echo   tools\git_login.bat
+set "_gplm_rc=1" & goto :Main
+:_Main_help
+call :ShowHelp
+set "_gplm_rc=%errorlevel%" & goto :Main
+:: ============================================================
+:: :ParseArgs
+:: Accepts only the optional help argument.
+::
+:: Usage: call :ParseArgs [help]
+::
+:: Returns: 0 on success
+::          2 on invalid arguments
+:: Requires: none
+:: ============================================================
+:ParseArgs
+if "%~1"=="" exit /b 0
+if /I "%~1"=="help" goto :_ParseArgs_help
+if /I "%~1"=="/help" goto :_ParseArgs_help
+if /I "%~1"=="--help" goto :_ParseArgs_help
+if /I "%~1"=="/?" goto :_ParseArgs_help
+echo ERROR: Unrecognized argument: %~1
+exit /b 2
+:_ParseArgs_help
+set "app.git_push_local.help=1"
+shift
+goto :ParseArgs
+:: ============================================================
+:: :ShowHelp
+:: Displays push and upstream-tracking behavior.
+::
+:: Usage: call :ShowHelp
+::
+:: Returns: 0
+:: Requires: none
+:: ============================================================
+:ShowHelp
+echo.
+echo git_push_local.bat
+echo.
+echo Usage:
+echo   git_push_local.bat
+echo.
+echo Existing upstream tracking is honored. Without tracking, the
+echo current named branch is pushed to origin with -u.
+echo Uncommitted files are not included in the push.
+echo.
 exit /b 0
+:: ============================================================
+:: :PauseIfNeeded
+:: Pauses only when the outermost launcher is the cmd.exe /c target.
+::
+:: Usage: call :PauseIfNeeded
+::
+:: Returns: 0
+:: Requires: :IsConsole
+:: ============================================================
+:PauseIfNeeded
+for /f "tokens=1 delims==" %%v in ('set pif_ 2^>nul') do set "%%v="
+if defined _pif_rc (set "_pif_rc=" & exit /b %_pif_rc%)
+call :IsConsole
+if not errorlevel 1 (set "_pif_rc=0" & goto :PauseIfNeeded)
+echo.
+pause
+set "_pif_rc=0" & goto :PauseIfNeeded
+:: ============================================================
+:: :IsConsole
+:: Detects whether the outermost launcher is running in an existing
+:: interactive console.
+::
+:: Usage: call :IsConsole
+::
+:: Returns: 0 when running in an existing console
+::          1 when the outermost launcher is the cmd.exe /c target
+:: Requires: find.exe
+:: ============================================================
+:IsConsole
+setlocal EnableDelayedExpansion
+set "ic_cmdline=!CMDCMDLINE!"
+echo(!ic_cmdline!| "%SystemRoot%\System32\find.exe" /I " /c " >nul
+if errorlevel 1 (endlocal & exit /b 0)
+echo(!ic_cmdline!| "%SystemRoot%\System32\find.exe" /I "!app.launch.name!" >nul
+if errorlevel 1 (endlocal & exit /b 0)
+endlocal & exit /b 1
