@@ -22,11 +22,7 @@
 :: Prompt choices:
 ::   F  fix now
 ::   S  skip this time
-::   I  ignore only this file locally in future
-::
-:: Routine changed-file scans print only mismatches, actions, and errors.
-:: Clean files and previously ignored files remain counted in the summary
-:: without producing one output block per file.
+::   I  ignore locally in future
 ::
 :: "Ignore locally" does not change the committed .gitattributes file.
 :: It writes a path-specific rule to .git/info/attributes:
@@ -69,7 +65,6 @@ set "app.git_eol.ignored=0"
 set "app.git_eol.reset=0"
 set "app.git_eol.errors=0"
 set "app.git_eol.changed="
-set "app.git_eol.quiet_clean=0"
 set "app.git_eol.marker=git-normalize-line-endings-managed"
 if defined GIT_PROJECT_ROOT set "app.git_eol.root=%GIT_PROJECT_ROOT%"
 if not defined app.git_eol.root for %%A in ("%~dp0..") do set "app.git_eol.root=%%~fA"
@@ -120,7 +115,6 @@ if "%~1"=="" goto :changed
 call :ProcessExplicitArguments %*
 goto :summary
 :changed
-set "app.git_eol.quiet_clean=1"
 call :ProcessChangedFiles
 set "pcf_rc=%errorlevel%"
 if not "%pcf_rc%"=="0" if "%app.git_eol.rc%"=="0" set "app.git_eol.rc=%pcf_rc%"
@@ -274,12 +268,6 @@ set /a app.git_eol.skipped+=1 >nul
 exit /b 0
 :_ProcessOne_file
 if /I "%app.git_eol.mode%"=="reset" goto :_ProcessOne_reset
-if /I "%app.git_eol.mode%"=="fix" goto :_ProcessOne_classify
-if /I "%app.git_eol.mode%"=="ignore" goto :_ProcessOne_classify
-call :HasLocalOverride "%po_path%"
-set "po_local_override_rc=%errorlevel%"
-if "%po_local_override_rc%"=="0" goto :_ProcessOne_ignored_existing
-:_ProcessOne_classify
 call :ClassifyFile "%po_path%"
 set "po_state=%errorlevel%"
 if "%po_state%"=="20" goto :_ProcessOne_binary
@@ -289,22 +277,20 @@ if "%po_state%"=="23" goto :_ProcessOne_lf
 if "%po_state%"=="24" goto :_ProcessOne_mixed
 goto :_ProcessOne_error
 :_ProcessOne_binary
-set /a app.git_eol.skipped+=1 >nul
-if "%app.git_eol.quiet_clean%"=="1" exit /b 0
 echo File:
 echo   %po_path%
 echo Result:
 echo   BINARY OR UNSUPPORTED
 echo.
+set /a app.git_eol.skipped+=1 >nul
 exit /b 0
 :_ProcessOne_no_newlines
-set /a app.git_eol.clean+=1 >nul
-if "%app.git_eol.quiet_clean%"=="1" exit /b 0
 echo File:
 echo   %po_path%
 echo Result:
 echo   NO LINE ENDINGS
 echo.
+set /a app.git_eol.clean+=1 >nul
 exit /b 0
 :_ProcessOne_crlf
 set "po_current=crlf"
@@ -335,22 +321,12 @@ if "%po_choice%"=="2" goto :_ProcessOne_skip
 if "%po_choice%"=="3" goto :_ProcessOne_ignore
 goto :_ProcessOne_skip
 :_ProcessOne_clean
-set /a app.git_eol.clean+=1 >nul
-if "%app.git_eol.quiet_clean%"=="1" exit /b 0
 echo File:
 echo   %po_path%
 echo Result:
 echo   ALREADY %app.git_eol.target%
 echo.
-exit /b 0
-:_ProcessOne_ignored_existing
-set /a app.git_eol.ignored+=1 >nul
-if "%app.git_eol.quiet_clean%"=="1" exit /b 0
-echo File:
-echo   %po_path%
-echo Result:
-echo   IGNORED LOCALLY
-echo.
+set /a app.git_eol.clean+=1 >nul
 exit /b 0
 :_ProcessOne_report_only
 echo Result:
@@ -458,21 +434,6 @@ set "nf_rc=%errorlevel%"
 set "GIT_EOL_FILE="
 set "GIT_EOL_TARGET="
 if "%nf_rc%"=="0" exit /b 0
-exit /b 1
-:: ============================================================
-:: :HasLocalOverride
-:: Checks whether this helper's path-specific local attribute is set.
-::
-:: Usage: call :HasLocalOverride "path"
-::
-:: Returns: 0 when a managed local override exists
-::          1 when no managed local override exists
-:: Requires: Git, findstr.exe
-:: ============================================================
-:HasLocalOverride
-git.exe check-attr %app.git_eol.marker% -- "%~1" 2>nul | "%SystemRoot%\System32\findstr.exe" /V /E /C:": unspecified" >nul
-set "hlo_rc=%errorlevel%"
-if "%hlo_rc%"=="0" exit /b 0
 exit /b 1
 :: ============================================================
 :: :AddLocalOverride
