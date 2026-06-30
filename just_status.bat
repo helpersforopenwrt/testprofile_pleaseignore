@@ -1,28 +1,19 @@
 @echo off
 :: ============================================================
-:: Generic root helper dispatcher
-:: Dispatches to the matching helper under tools and preserves
-:: the helper's exit code.
+:: just_status.bat
+:: Root launcher for the read-only Git status summary.
 ::
-:: Usage: call THIS_FILE [arguments]
+:: Usage:
+::   just_status.bat
+::   just_status.bat help
 ::
-:: Returns: matching tools helper exit code
-:: Requires: tools\THIS_FILE
+:: Returns: git_status_summary.bat result
+:: Requires: tools\git_status_summary.bat
 :: ============================================================
-:setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
-set "app.roothelper.target=%~dp0tools\%~nx0"
-set "app.roothelper.rc=0"
-if exist "%app.roothelper.target%" goto :run
-echo.
-echo ERROR: Matching helper not found:
-echo   "%app.roothelper.target%"
-echo.
-set "app.roothelper.rc=1"
-goto :end
-:run
-call "%app.roothelper.target%" %*
-set "app.roothelper.rc=%errorlevel%"
-:end
-exit /b %app.roothelper.rc%
+set "GIT_PROJECT_ROOT=%~dp0"
+call "%~dp0tools\git_status_summary.bat" %*
+set "just_status_rc=%errorlevel%"
+set "GIT_PROJECT_ROOT="
+exit /b %just_status_rc%

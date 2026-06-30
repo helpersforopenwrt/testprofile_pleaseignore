@@ -1,21 +1,22 @@
 # Local Git bundle backups, when configured inside the project.
-backups/
+/backups/
 
 # Common generated folders from example build systems.
-build/
-temp/
-oldbuilds/
+# Leading slashes limit these rules to the repository root.
+/build/
+/temp/
+/oldbuilds/
 
 # Windows clutter.
 Thumbs.db
 Desktop.ini
 
 # Locally downloaded development tools.
-tools/git/
-tools/gh/
-tools/downloads/
-tools/logs/
+/tools/git/
+/tools/gh/
+/tools/downloads/
+/tools/logs/
 
 # Local preparation output.
-prepare.log
-env.bat
+/prepare.log
+/env.bat

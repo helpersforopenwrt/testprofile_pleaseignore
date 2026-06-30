@@ -1,23 +1,23 @@
 @echo off
 :: ============================================================
 :: just_status.bat
-:: Launches git_status_check.bat.
+:: Friendly tools-level launcher for git_status_summary.bat.
 ::
-:: Usage: call tools\just_status.bat [arguments]
+:: This file is intended to live in:
+::   tools\just_status.bat
 ::
-:: Returns: git_status_check.bat exit code
-:: Requires: _common.bat, _call_helper.bat
+:: A generic root stub named just_status.bat may call this file.
+::
+:: Usage:
+::   call tools\just_status.bat
+::   call tools\just_status.bat help
+::
+:: Returns: git_status_summary.bat result
+:: Requires: tools\git_status_summary.bat
 :: ============================================================
-:setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
-set "app.just_status.rc=0"
-call "%~dp0_common.bat" init
-if not errorlevel 1 goto :main
-set "app.just_status.rc=%errorlevel%"
-goto :end
-:main
-call "%~dp0_call_helper.bat" "git_status_check.bat" %*
-set "app.just_status.rc=%errorlevel%"
-:end
-exit /b %app.just_status.rc%
+if not defined GIT_PROJECT_ROOT for %%A in ("%~dp0..") do set "GIT_PROJECT_ROOT=%%~fA"
+call "%~dp0git_status_summary.bat" %*
+set "just_status_rc=%errorlevel%"
+exit /b %just_status_rc%
