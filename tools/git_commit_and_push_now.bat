@@ -30,7 +30,8 @@
 ::          1 on Git, repository, validation, staging, commit, or push failure
 ::          2 on invalid arguments
 :: Requires: _common.bat, git, :Main, :ParseArgs, :GetCommitMessage,
-::           :PushCurrent, :ShowHelp, :PauseIfNeeded, :IsConsole
+::           :PushCurrent, :EnsureGitHubPushReady, :ShowHelp,
+::           :PauseIfNeeded, :IsConsole
 :: ============================================================
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
@@ -40,6 +41,7 @@ set "app.git_commit_push.fulldiff=no"
 set "app.git_commit_push.dirty="
 set "app.git_commit_push.staged="
 set "app.git_commit_push.branch="
+set "app.git_commit_push.pushed.by.login="
 set "app.git_commit_push.confirm="
 set "app.git_commit_push.help="
 set "app.git_commit_push.rc=0"
@@ -272,29 +274,36 @@ set "app.git_commit_push.message=Manual save %APP_DISPLAY_NAME% %DATE% %TIME%"
 set "_gcag_rc=0" & goto :GetCommitMessage
 :: ============================================================
 :: :PushCurrent
-:: Pushes the current named branch. It uses the configured upstream
-:: or creates origin tracking when no upstream exists.
+:: Pushes the current named branch. For a GitHub origin, it first
+:: verifies GitHub CLI authentication. When logged out, just_login
+:: owns authentication, repository setup, and the pending push.
 ::
 :: Usage: call :PushCurrent
 ::
 :: Returns: 0 on success
-::          1 when branch, origin, or push validation fails
-:: Requires: git
+::          1 when authentication, branch, origin, or push fails
+:: Requires: git, :EnsureGitHubPushReady
 :: ============================================================
 :PushCurrent
 for /f "tokens=1 delims==" %%v in ('set gcap_ 2^>nul') do set "%%v="
 if defined _gcap_rc (set "_gcap_rc=" & exit /b %_gcap_rc%)
 set "app.git_commit_push.branch="
+set "app.git_commit_push.pushed.by.login="
 for /f "delims=" %%A in ('git branch --show-current 2^>nul') do set "app.git_commit_push.branch=%%A"
-if defined app.git_commit_push.branch goto :_PushCurrent_tracking
+if defined app.git_commit_push.branch goto :_PushCurrent_auth
 echo ERROR: A named branch is not checked out.
 set "_gcap_rc=1" & goto :PushCurrent
+:_PushCurrent_auth
+call :EnsureGitHubPushReady
+set "gcap_auth_rc=%errorlevel%"
+if not "%gcap_auth_rc%"=="0" (set "_gcap_rc=%gcap_auth_rc%" & goto :PushCurrent)
+if defined app.git_commit_push.pushed.by.login goto :_PushCurrent_success
 :_PushCurrent_tracking
 git rev-parse --abbrev-ref --symbolic-full-name @{u} >nul 2>nul
 if errorlevel 1 goto :_PushCurrent_new_tracking
 git push
-set "_gcap_push_rc=%errorlevel%"
-if "%_gcap_push_rc%"=="0" goto :_PushCurrent_success
+set "gcap_push_rc=%errorlevel%"
+if "%gcap_push_rc%"=="0" goto :_PushCurrent_success
 echo ERROR: Push failed.
 set "_gcap_rc=1" & goto :PushCurrent
 :_PushCurrent_new_tracking
@@ -304,13 +313,57 @@ echo ERROR: No upstream branch or origin remote is configured.
 set "_gcap_rc=1" & goto :PushCurrent
 :_PushCurrent_push_origin
 git push -u origin "%app.git_commit_push.branch%"
-set "_gcap_push_rc=%errorlevel%"
-if "%_gcap_push_rc%"=="0" goto :_PushCurrent_success
+set "gcap_push_rc=%errorlevel%"
+if "%gcap_push_rc%"=="0" goto :_PushCurrent_success
 echo ERROR: Push failed.
 set "_gcap_rc=1" & goto :PushCurrent
 :_PushCurrent_success
 echo Push complete.
 set "_gcap_rc=0" & goto :PushCurrent
+:: ============================================================
+:: :EnsureGitHubPushReady
+:: Detects a github.com origin and verifies GitHub CLI credentials.
+:: Successful preparation is silent. When authentication is absent
+:: or unusable, just_login.bat performs login, setup, and the push.
+::
+:: Usage: call :EnsureGitHubPushReady
+::
+:: Output:
+::   app.git_commit_push.pushed.by.login=1 when just_login pushed
+::
+:: Returns: 0 when direct push is ready or just_login succeeded
+::          just_login exit code when login or setup fails
+:: Requires: prepare.bat when present, gh for GitHub, just_login.bat
+:: ============================================================
+:EnsureGitHubPushReady
+for /f "tokens=1 delims==" %%v in ('set gcauth_ 2^>nul') do set "%%v="
+if defined _gcauth_rc (set "_gcauth_rc=" & exit /b %_gcauth_rc%)
+set "app.git_commit_push.pushed.by.login="
+set "gcauth_origin="
+for /f "delims=" %%A in ('git remote get-url origin 2^>nul') do set "gcauth_origin=%%A"
+if not defined gcauth_origin (set "_gcauth_rc=0" & goto :EnsureGitHubPushReady)
+echo(%gcauth_origin%| findstr /I /C:"github.com" >nul
+if errorlevel 1 (set "_gcauth_rc=0" & goto :EnsureGitHubPushReady)
+if exist "%CD%\prepare.bat" call "%CD%\prepare.bat" repository >nul 2>&1
+where gh.exe >nul 2>nul
+if errorlevel 1 goto :_EnsureGitHubPushReady_login
+gh auth status --hostname github.com >nul 2>nul
+if errorlevel 1 goto :_EnsureGitHubPushReady_login
+gh auth setup-git --hostname github.com >nul 2>nul
+if errorlevel 1 goto :_EnsureGitHubPushReady_login
+set "_gcauth_rc=0" & goto :EnsureGitHubPushReady
+:_EnsureGitHubPushReady_login
+echo GitHub authentication is required before pushing.
+echo Starting just_login.bat...
+echo.
+call "%~dp0just_login.bat"
+set "gcauth_login_rc=%errorlevel%"
+if "%gcauth_login_rc%"=="0" goto :_EnsureGitHubPushReady_done
+echo ERROR: GitHub login or repository setup failed.
+set "_gcauth_rc=%gcauth_login_rc%" & goto :EnsureGitHubPushReady
+:_EnsureGitHubPushReady_done
+set "app.git_commit_push.pushed.by.login=1"
+set "_gcauth_rc=0" & goto :EnsureGitHubPushReady
 :: ============================================================
 :: :ParseArgs
 :: Parses an optional commit message, full-diff option, and help.
