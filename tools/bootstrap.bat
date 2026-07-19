@@ -26,7 +26,7 @@ set "app.start.dir=%CD%"
 :: ============================================================
 cd /d "%~dp0"
 set "app.rc=0"
-set "app.version=bootstrap-integrated-28"
+set "app.version=bootstrap-integrated-29"
 set "app.root=%CD%"
 set "app.start.writable="
 set "app.repo.parent="
@@ -149,6 +149,178 @@ goto :end
 if exist "%app.folder%\.git\" call :WarnIfRepositoryInTemp
 if defined app.final.cd cd /d "%app.final.cd%" >nul 2>&1
 exit /b %app.rc%
+:: ============================================================
+:: Function: RunCheck
+:: Usage: call :RunCheck
+:: Purpose: performs essential context checks without cloning, installing, moving, or building.
+:: Returns:
+::   0 check passed
+::   3 essential context missing
+:: ============================================================
+:RunCheck
+call :Green CHECK: essential bootstrap context
+call :Cyan Version: %app.version%
+call :Cyan Provider: %app.provider% [%app.provider.display%]
+call :Cyan Repo: %app.repo.url%
+call :Cyan Branch: %app.repo.branch%
+call :Cyan Folder: %app.folder%
+call :Cyan Tools URL: %app.raw.tools.url%
+call :Cyan GetGit URL: %app.getgit.url%
+if not defined app.repo.url (call :Red FAIL: repo URL missing. & exit /b 3)
+if not defined app.repo.name (call :Red FAIL: repo name missing. & exit /b 3)
+if not defined app.getgit.url (call :Red FAIL: GetGit URL missing. & exit /b 3)
+call :Green OK: essential check passed.
+exit /b 0
+:: ============================================================
+:: Function: RunDoctor
+:: Usage: call :RunDoctor
+:: Purpose: performs comprehensive diagnostics without cloning, installing, moving, or building.
+:: Returns:
+::   0 diagnostics completed
+::   nonzero essential check failure
+:: ============================================================
+:RunDoctor
+call :RunCheck
+set "rd_rc=%errorlevel%"
+if not "%rd_rc%"=="0" exit /b %rd_rc%
+call :Cyan Provider adapter: %app.provider.adapter%
+call :Cyan Provider login: %app.provider.can.login%
+call :Cyan Provider fork: %app.provider.can.fork%
+call :Cyan Provider write check: %app.provider.can.checkwrite%
+call :Cyan Provider raw tools: %app.provider.can.rawtools%
+call :Cyan Provider helper: %app.provider.helper%
+call :Cyan Login command: %app.provider.login.command%
+call :Cyan Fork command: %app.provider.fork.command%
+call :FindGitExe
+if defined app.git (call :Green OK: Git found: %app.git%) else (call :Yellow MISS: git.exe not found; bootstrap would install it.)
+call :FindGitHubCliExe
+if defined app.gh (call :Green OK: GitHub CLI found: %app.gh%) else (if /I "%app.provider%"=="github" call :Yellow MISS: gh.exe not found; login path would install it.)
+if exist "%app.folder%\.git\" goto :RunDoctorCheckoutExists
+call :Yellow INFO: checkout folder does not exist yet.
+goto :RunDoctorAfterCheckout
+:RunDoctorCheckoutExists
+call :Green OK: existing checkout found.
+if defined app.git (call :VerifyExistingRepoOrigin) else (call :Yellow WARN: origin check skipped because git.exe is not available.)
+:RunDoctorAfterCheckout
+if exist "%app.folder%\build_config.bat" (call :Green OK: build_config.bat found.) else (call :Yellow INFO: build_config.bat not found yet.)
+if exist "%app.folder%\prepare.bat" (call :Green OK: prepare.bat found.) else (call :Yellow INFO: prepare.bat not found yet.)
+if exist "%app.folder%\build.bat" (call :Green OK: build.bat found.) else (call :Yellow INFO: build.bat not found yet.)
+if exist "%app.folder%\install.bat" (call :Green OK: install.bat found.) else (call :Yellow INFO: install.bat not found yet.)
+call :Cyan Move mode: %app.move.mode%
+call :Cyan Login mode: %app.login.mode%
+call :Cyan Fork mode: %app.fork.mode%
+call :Cyan Dry run: %app.dryrun%
+call :Cyan No move: %app.no.move%
+call :Cyan No build: %app.no.build%
+call :Cyan Install: %app.do.install%
+call :Green OK: doctor completed.
+set "rd_rc="
+exit /b 0
+:: ============================================================
+:: Function: RunDryRun
+:: Usage: call :RunDryRun
+:: Purpose: prints planned actions without cloning, installing, moving, or building.
+:: Returns:
+::   0 always
+:: ============================================================
+:RunDryRun
+call :Green DRYRUN: planned bootstrap actions
+call :FindGitExe
+call :Cyan Provider: %app.provider% [%app.provider.display%]
+call :Cyan Repo: %app.repo.url%
+call :Cyan Branch: %app.repo.branch%
+call :Cyan Folder: %app.folder%
+if defined app.git (call :Cyan Would use Git: %app.git%) else (call :Cyan Would find or install Git using: %app.getgit.url%)
+if exist "%app.folder%\.git\" (call :Cyan Would update existing checkout.) else (call :Cyan Would clone repo.)
+if /I "%app.mode%"=="auto" (call :Cyan Would run auto workflow.) else (call :Cyan Would run default workflow.)
+if /I "%app.mode%"=="auto" if /I "%app.move.mode%"=="documents" call :Cyan Would move project to Documents.
+if /I "%app.move.mode%"=="no" call :Cyan Would not move project folder.
+if /I "%app.provider.can.login%"=="1" (call :Cyan Provider login is supported and optional.) else (call :Cyan Provider login/fork is not supported and would be skipped.)
+if defined app.no.build (call :Cyan Would skip prepare.bat and build.bat.) else (call :Cyan Would run prepare.bat and build.bat in auto mode.)
+if defined app.do.install call :Cyan Would run install.bat after build.
+call :Green OK: dryrun complete; no changes made.
+exit /b 0
+:: ============================================================
+:: Function: RunAutoWorkflow
+:: Usage: call :RunAutoWorkflow
+:: Purpose: runs the fully automatic workflow.
+:: Returns:
+::   0 success
+::   nonzero failure
+:: ============================================================
+:RunAutoWorkflow
+set "app.auto=1"
+set "app.mode=auto"
+echo AUTO: Git, clone/update, optional provider login, optional fork, optional move, prepare, build/install.
+if defined app.log >>"%app.log%" echo AUTO: Git, clone/update, optional provider login, optional fork, optional move, prepare, build/install.
+call :EnsureGit
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+call :CloneOrUpdateRepo
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+call :PrepareRepositoryDependencies
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+call :PromptAutoProviderLogin
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+if /I "%app.login.mode%"=="login" goto :RunAutoWorkflowLogin
+if /I "%app.login.mode%"=="yes" goto :RunAutoWorkflowLogin
+call :Yellow SKIP: provider login and fork steps skipped.
+if defined app.log >>"%app.log%" echo SKIP: provider login and fork steps skipped.
+goto :RunAutoWorkflowAfterLogin
+:RunAutoWorkflowLogin
+set "app.fork.mode=yes"
+call :ProviderLoginAndFork
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+:RunAutoWorkflowAfterLogin
+call :MaybeMoveProject
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+if defined app.no.build goto :RunAutoWorkflowSkipBuild
+call :RunPrepareStep
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+call :RunBuildStep
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+goto :RunAutoWorkflowMaybeInstall
+:RunAutoWorkflowSkipBuild
+call :Yellow SKIP: prepare/build disabled by nobuild.
+:RunAutoWorkflowMaybeInstall
+if not defined app.do.install goto :RunAutoWorkflowComplete
+call :RunInstallStep
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+:RunAutoWorkflowComplete
+set "raw_rc="
+if not defined app.final.cd set "app.final.cd=%app.folder%"
+call :Green OK: Auto bootstrap complete.
+call :Green DIR: %app.folder%
+exit /b 0
+:RunBootstrapWorkflow
+call :EnsureGit
+set "rbw_rc=%errorlevel%"
+if not "%rbw_rc%"=="0" exit /b %rbw_rc%
+call :CloneOrUpdateRepo
+set "rbw_rc=%errorlevel%"
+if not "%rbw_rc%"=="0" exit /b %rbw_rc%
+call :PrepareRepositoryDependencies
+set "rbw_rc=%errorlevel%"
+if not "%rbw_rc%"=="0" exit /b %rbw_rc%
+call :MaybeLoginAndFork
+set "rbw_rc=%errorlevel%"
+if not "%rbw_rc%"=="0" exit /b %rbw_rc%
+call :MaybeMoveProject
+set "rbw_rc=%errorlevel%"
+if not "%rbw_rc%"=="0" exit /b %rbw_rc%
+set "rbw_rc="
+if not defined app.final.cd set "app.final.cd=%app.folder%"
+call :Green OK: Bootstrap complete.
+call :Green DIR: %app.folder%
+exit /b 0
 :: ============================================================
 :: Function: InitializeBootstrap
 :: Usage: call :InitializeBootstrap
@@ -580,177 +752,6 @@ call :Yellow Move this repository to a permanent folder before relying on it.
 set "wit_folder="
 set "wit_temp="
 set "wit_inside="
-exit /b 0
-:: Function: RunCheck
-:: Usage: call :RunCheck
-:: Purpose: performs essential context checks without cloning, installing, moving, or building.
-:: Returns:
-::   0 check passed
-::   3 essential context missing
-:: ============================================================
-:RunCheck
-call :Green CHECK: essential bootstrap context
-call :Cyan Version: %app.version%
-call :Cyan Provider: %app.provider% [%app.provider.display%]
-call :Cyan Repo: %app.repo.url%
-call :Cyan Branch: %app.repo.branch%
-call :Cyan Folder: %app.folder%
-call :Cyan Tools URL: %app.raw.tools.url%
-call :Cyan GetGit URL: %app.getgit.url%
-if not defined app.repo.url (call :Red FAIL: repo URL missing. & exit /b 3)
-if not defined app.repo.name (call :Red FAIL: repo name missing. & exit /b 3)
-if not defined app.getgit.url (call :Red FAIL: GetGit URL missing. & exit /b 3)
-call :Green OK: essential check passed.
-exit /b 0
-:: ============================================================
-:: Function: RunDoctor
-:: Usage: call :RunDoctor
-:: Purpose: performs comprehensive diagnostics without cloning, installing, moving, or building.
-:: Returns:
-::   0 diagnostics completed
-::   nonzero essential check failure
-:: ============================================================
-:RunDoctor
-call :RunCheck
-set "rd_rc=%errorlevel%"
-if not "%rd_rc%"=="0" exit /b %rd_rc%
-call :Cyan Provider adapter: %app.provider.adapter%
-call :Cyan Provider login: %app.provider.can.login%
-call :Cyan Provider fork: %app.provider.can.fork%
-call :Cyan Provider write check: %app.provider.can.checkwrite%
-call :Cyan Provider raw tools: %app.provider.can.rawtools%
-call :Cyan Provider helper: %app.provider.helper%
-call :Cyan Login command: %app.provider.login.command%
-call :Cyan Fork command: %app.provider.fork.command%
-call :FindGitExe
-if defined app.git (call :Green OK: Git found: %app.git%) else (call :Yellow MISS: git.exe not found; bootstrap would install it.)
-call :FindGitHubCliExe
-if defined app.gh (call :Green OK: GitHub CLI found: %app.gh%) else (if /I "%app.provider%"=="github" call :Yellow MISS: gh.exe not found; login path would install it.)
-if exist "%app.folder%\.git\" goto :RunDoctorCheckoutExists
-call :Yellow INFO: checkout folder does not exist yet.
-goto :RunDoctorAfterCheckout
-:RunDoctorCheckoutExists
-call :Green OK: existing checkout found.
-if defined app.git (call :VerifyExistingRepoOrigin) else (call :Yellow WARN: origin check skipped because git.exe is not available.)
-:RunDoctorAfterCheckout
-if exist "%app.folder%\build_config.bat" (call :Green OK: build_config.bat found.) else (call :Yellow INFO: build_config.bat not found yet.)
-if exist "%app.folder%\prepare.bat" (call :Green OK: prepare.bat found.) else (call :Yellow INFO: prepare.bat not found yet.)
-if exist "%app.folder%\build.bat" (call :Green OK: build.bat found.) else (call :Yellow INFO: build.bat not found yet.)
-if exist "%app.folder%\install.bat" (call :Green OK: install.bat found.) else (call :Yellow INFO: install.bat not found yet.)
-call :Cyan Move mode: %app.move.mode%
-call :Cyan Login mode: %app.login.mode%
-call :Cyan Fork mode: %app.fork.mode%
-call :Cyan Dry run: %app.dryrun%
-call :Cyan No move: %app.no.move%
-call :Cyan No build: %app.no.build%
-call :Cyan Install: %app.do.install%
-call :Green OK: doctor completed.
-set "rd_rc="
-exit /b 0
-:: ============================================================
-:: Function: RunDryRun
-:: Usage: call :RunDryRun
-:: Purpose: prints planned actions without cloning, installing, moving, or building.
-:: Returns:
-::   0 always
-:: ============================================================
-:RunDryRun
-call :Green DRYRUN: planned bootstrap actions
-call :FindGitExe
-call :Cyan Provider: %app.provider% [%app.provider.display%]
-call :Cyan Repo: %app.repo.url%
-call :Cyan Branch: %app.repo.branch%
-call :Cyan Folder: %app.folder%
-if defined app.git (call :Cyan Would use Git: %app.git%) else (call :Cyan Would find or install Git using: %app.getgit.url%)
-if exist "%app.folder%\.git\" (call :Cyan Would update existing checkout.) else (call :Cyan Would clone repo.)
-if /I "%app.mode%"=="auto" (call :Cyan Would run auto workflow.) else (call :Cyan Would run default workflow.)
-if /I "%app.mode%"=="auto" if /I "%app.move.mode%"=="documents" call :Cyan Would move project to Documents.
-if /I "%app.move.mode%"=="no" call :Cyan Would not move project folder.
-if /I "%app.provider.can.login%"=="1" (call :Cyan Provider login is supported and optional.) else (call :Cyan Provider login/fork is not supported and would be skipped.)
-if defined app.no.build (call :Cyan Would skip prepare.bat and build.bat.) else (call :Cyan Would run prepare.bat and build.bat in auto mode.)
-if defined app.do.install call :Cyan Would run install.bat after build.
-call :Green OK: dryrun complete; no changes made.
-exit /b 0
-:: ============================================================
-:: Function: RunAutoWorkflow
-:: Usage: call :RunAutoWorkflow
-:: Purpose: runs the fully automatic workflow.
-:: Returns:
-::   0 success
-::   nonzero failure
-:: ============================================================
-:RunAutoWorkflow
-set "app.auto=1"
-set "app.mode=auto"
-echo AUTO: Git, clone/update, optional provider login, optional fork, optional move, prepare, build/install.
-if defined app.log >>"%app.log%" echo AUTO: Git, clone/update, optional provider login, optional fork, optional move, prepare, build/install.
-call :EnsureGit
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-call :CloneOrUpdateRepo
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-call :PrepareRepositoryDependencies
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-call :PromptAutoProviderLogin
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-if /I "%app.login.mode%"=="login" goto :RunAutoWorkflowLogin
-if /I "%app.login.mode%"=="yes" goto :RunAutoWorkflowLogin
-call :Yellow SKIP: provider login and fork steps skipped.
-if defined app.log >>"%app.log%" echo SKIP: provider login and fork steps skipped.
-goto :RunAutoWorkflowAfterLogin
-:RunAutoWorkflowLogin
-set "app.fork.mode=yes"
-call :ProviderLoginAndFork
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-:RunAutoWorkflowAfterLogin
-call :MaybeMoveProject
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-if defined app.no.build goto :RunAutoWorkflowSkipBuild
-call :RunPrepareStep
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-call :RunBuildStep
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-goto :RunAutoWorkflowMaybeInstall
-:RunAutoWorkflowSkipBuild
-call :Yellow SKIP: prepare/build disabled by nobuild.
-:RunAutoWorkflowMaybeInstall
-if not defined app.do.install goto :RunAutoWorkflowComplete
-call :RunInstallStep
-set "raw_rc=%errorlevel%"
-if not "%raw_rc%"=="0" exit /b %raw_rc%
-:RunAutoWorkflowComplete
-set "raw_rc="
-if not defined app.final.cd set "app.final.cd=%app.folder%"
-call :Green OK: Auto bootstrap complete.
-call :Green DIR: %app.folder%
-exit /b 0
-:RunBootstrapWorkflow
-call :EnsureGit
-set "rbw_rc=%errorlevel%"
-if not "%rbw_rc%"=="0" exit /b %rbw_rc%
-call :CloneOrUpdateRepo
-set "rbw_rc=%errorlevel%"
-if not "%rbw_rc%"=="0" exit /b %rbw_rc%
-call :PrepareRepositoryDependencies
-set "rbw_rc=%errorlevel%"
-if not "%rbw_rc%"=="0" exit /b %rbw_rc%
-call :MaybeLoginAndFork
-set "rbw_rc=%errorlevel%"
-if not "%rbw_rc%"=="0" exit /b %rbw_rc%
-call :MaybeMoveProject
-set "rbw_rc=%errorlevel%"
-if not "%rbw_rc%"=="0" exit /b %rbw_rc%
-set "rbw_rc="
-if not defined app.final.cd set "app.final.cd=%app.folder%"
-call :Green OK: Bootstrap complete.
-call :Green DIR: %app.folder%
 exit /b 0
 :: ============================================================
 :: Function: EnsureGit
