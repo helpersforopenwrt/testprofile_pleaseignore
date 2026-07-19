@@ -1,4 +1,5 @@
 @echo off
+set "app.start.dir=%CD%"
 :setup
 :: ============================================================
 :: bootstrap.bat
@@ -12,7 +13,7 @@
 ::   - no empty lines inside functions
 ::
 :: Typical loader:
-::   cd /d %TEMP% & set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" & call curl.exe -sSfLO "%bootstrap%" && bootstrap auto
+::   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" & call curl.exe -sSfL "%bootstrap%" -o "%TEMP%\bootstrap.bat" && call "%TEMP%\bootstrap.bat" auto
 ::
 :: Purpose:
 ::   - infer repo URL from the bootstrap URL
@@ -25,8 +26,11 @@
 :: ============================================================
 cd /d "%~dp0"
 set "app.rc=0"
-set "app.version=bootstrap-integrated-27"
+set "app.version=bootstrap-integrated-28"
 set "app.root=%CD%"
+set "app.start.writable="
+set "app.repo.parent="
+set "app.folder.in.temp="
 set "app.timestamp="
 set "app.log.dir=%app.root%\bootstrap_logs"
 set "app.log="
@@ -78,7 +82,7 @@ set "app.no.build="
 set "app.do.install="
 set "app.login.mode=ask"
 set "app.fork.mode=ask"
-set "app.move.mode=ask"
+set "app.move.mode=no"
 set "app.choice="
 set "app.esc="
 set "app.color.reset=0m"
@@ -142,6 +146,7 @@ call :ShowMenu
 set "app.rc=%errorlevel%"
 goto :end
 :end
+if exist "%app.folder%\.git\" call :WarnIfRepositoryInTemp
 if defined app.final.cd cd /d "%app.final.cd%" >nul 2>&1
 exit /b %app.rc%
 :: ============================================================
@@ -198,7 +203,7 @@ exit /b 1
 if "%~1"=="" exit /b 0
 echo %~1| findstr /B /I "http:// https://" >nul 2>nul
 if not errorlevel 1 (set "app.repo.url=%~1" & shift & goto :ParseArgs)
-if /I "%~1"=="auto" (set "app.auto=1" & set "app.mode=auto" & if not defined app.no.move set "app.move.mode=documents" & shift & goto :ParseArgs)
+if /I "%~1"=="auto" (set "app.auto=1" & set "app.mode=auto" & shift & goto :ParseArgs)
 if /I "%~1"=="menu" (set "app.mode=menu" & shift & goto :ParseArgs)
 if /I "%~1"=="check" (set "app.check=1" & set "app.mode=check" & shift & goto :ParseArgs)
 if /I "%~1"=="doctor" (set "app.doctor=1" & set "app.mode=doctor" & shift & goto :ParseArgs)
@@ -329,7 +334,7 @@ echo   gitea      clone/update, raw helper URL inference, no login/fork yet
 echo   git        clone/update only; use toolsurl/getgit if needed
 echo.
 call :Yellow Loader:
-echo   cd /d %%TEMP%% ^& set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" ^& call curl.exe -sSfLO "%%bootstrap%%" ^&^& bootstrap auto
+echo   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" ^& call curl.exe -sSfL "%%bootstrap%%" -o "%%TEMP%%\bootstrap.bat" ^&^& call "%%TEMP%%\bootstrap.bat" auto
 echo.
 call :Yellow Current:
 echo   bootstrap: %app.bootstrap.url%
@@ -470,18 +475,112 @@ exit /b 0
 :: ============================================================
 :: Function: ResolveRepoFolder
 :: Usage: call :ResolveRepoFolder
-:: Purpose: resolves the project folder path.
+:: Purpose: resolves the project folder. An explicit dir argument
+::          wins; otherwise the writable caller directory is used,
+::          with TEMP as the fallback.
 :: Returns:
 ::   0 success
-::   3 repo name missing
+::   3 repo name or writable fallback missing
+:: Requires:
+::   :SelectDefaultRepoParent
 :: ============================================================
 :ResolveRepoFolder
 if not defined app.repo.name (call :Red FAIL: could not determine repo name. & exit /b 3)
-if not defined app.folder set "app.folder=%app.root%\%app.repo.name%"
+if defined app.folder goto :ResolveRepoFolderNormalize
+call :SelectDefaultRepoParent
+set "rrf_rc=%errorlevel%"
+if not "%rrf_rc%"=="0" (set "rrf_rc=" & exit /b 3)
+set "app.folder=%app.repo.parent%\%app.repo.name%"
+set "rrf_rc="
+:ResolveRepoFolderNormalize
 for %%A in ("%app.folder%") do set "app.folder=%%~fA"
 call :Green OK: Folder: %app.folder%
 exit /b 0
 :: ============================================================
+:: Function: SelectDefaultRepoParent
+:: Usage: call :SelectDefaultRepoParent
+:: Purpose: chooses the caller's current directory when writable;
+::          otherwise chooses TEMP.
+:: Output:
+::   app.repo.parent
+::   app.start.writable
+:: Returns:
+::   0 writable parent selected
+::   3 neither caller directory nor TEMP is writable
+:: Requires:
+::   :IsDirectoryWritable
+:: ============================================================
+:SelectDefaultRepoParent
+set "app.repo.parent="
+set "app.start.writable="
+call :IsDirectoryWritable "%app.start.dir%"
+set "sdrp_rc=%errorlevel%"
+if not "%sdrp_rc%"=="0" goto :SelectDefaultRepoParentTemp
+for %%A in ("%app.start.dir%") do set "app.repo.parent=%%~fA"
+set "app.start.writable=1"
+set "sdrp_rc="
+exit /b 0
+:SelectDefaultRepoParentTemp
+call :IsDirectoryWritable "%TEMP%"
+set "sdrp_rc=%errorlevel%"
+if not "%sdrp_rc%"=="0" goto :SelectDefaultRepoParentFailed
+for %%A in ("%TEMP%") do set "app.repo.parent=%%~fA"
+call :Yellow WARN: Current folder is not writable; using TEMP for the repository.
+call :Yellow CURRENT: %app.start.dir%
+call :Yellow TEMP: %app.repo.parent%
+set "sdrp_rc="
+exit /b 0
+:SelectDefaultRepoParentFailed
+call :Red FAIL: neither the current folder nor TEMP is writable.
+set "sdrp_rc="
+exit /b 3
+:: ============================================================
+:: Function: IsDirectoryWritable
+:: Usage: call :IsDirectoryWritable "directory"
+:: Purpose: tests write access by creating and deleting a unique
+::          temporary probe file in the requested directory.
+:: Returns:
+::   0 writable
+::   1 missing or not writable
+:: ============================================================
+:IsDirectoryWritable
+set "idw_dir=%~1"
+set "idw_file="
+if not defined idw_dir exit /b 1
+if not exist "%idw_dir%\" exit /b 1
+set "idw_file=%idw_dir%\.bootstrap-write-test-%RANDOM%-%RANDOM%.tmp"
+>"%idw_file%" echo bootstrap-write-test 2>nul
+if not exist "%idw_file%" (set "idw_dir=" & set "idw_file=" & exit /b 1)
+del /q "%idw_file%" >nul 2>&1
+set "idw_dir="
+set "idw_file="
+exit /b 0
+:: ============================================================
+:: Function: WarnIfRepositoryInTemp
+:: Usage: call :WarnIfRepositoryInTemp
+:: Purpose: warns only when the actual checkout remains inside TEMP.
+:: Returns:
+::   0 always
+:: Requires:
+::   PowerShell
+:: ============================================================
+:WarnIfRepositoryInTemp
+set "wit_folder=%app.folder%"
+set "wit_temp=%TEMP%"
+set "wit_inside="
+if not defined wit_folder exit /b 0
+if not exist "%wit_folder%\.git\" exit /b 0
+for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=[IO.Path]::GetFullPath($env:wit_folder).TrimEnd(''\''); $t=[IO.Path]::GetFullPath($env:wit_temp).TrimEnd(''\''); if($f.Equals($t,[StringComparison]::OrdinalIgnoreCase) -or $f.StartsWith($t+''\'',[StringComparison]::OrdinalIgnoreCase)){''1''}" 2^>nul') do set "wit_inside=%%A"
+if not "%wit_inside%"=="1" goto :WarnIfRepositoryInTempDone
+echo.
+call :Yellow WARNING: The repository is currently inside the Windows temporary folder:
+call :Yellow   %app.folder%
+call :Yellow Move this repository to a permanent folder before relying on it.
+:WarnIfRepositoryInTempDone
+set "wit_folder="
+set "wit_temp="
+set "wit_inside="
+exit /b 0
 :: Function: RunCheck
 :: Usage: call :RunCheck
 :: Purpose: performs essential context checks without cloning, installing, moving, or building.
@@ -583,7 +682,6 @@ exit /b 0
 :RunAutoWorkflow
 set "app.auto=1"
 set "app.mode=auto"
-if not defined app.folder.explicit if /I not "%app.move.mode%"=="no" set "app.move.mode=documents"
 echo AUTO: Git, clone/update, optional provider login, optional fork, optional move, prepare, build/install.
 if defined app.log >>"%app.log%" echo AUTO: Git, clone/update, optional provider login, optional fork, optional move, prepare, build/install.
 call :EnsureGit
@@ -1504,7 +1602,7 @@ echo ^|  5  Run build.bat                                         ^|
 echo ^|  6  Run install.bat                                       ^|
 echo ^|  7  Move project folder                                   ^|
 echo ^|  8  Run full bootstrap                                    ^|
-echo ^|  A  Auto: clone, optional login, Documents, build       ^|
+echo ^|  A  Auto: current folder, optional login, build         ^|
 echo ^|  0  Exit                                                  ^|
 echo +------------------------------------------------------------+
 exit /b 0
@@ -1520,7 +1618,7 @@ echo %app.esc%[%app.color.cyan%^|  5  Run build.bat                             
 echo %app.esc%[%app.color.cyan%^|  6  Run install.bat                                       ^|%app.esc%[%app.color.reset%
 echo %app.esc%[%app.color.cyan%^|  7  Move project folder                                   ^|%app.esc%[%app.color.reset%
 echo %app.esc%[%app.color.cyan%^|  8  Run full bootstrap                                    ^|%app.esc%[%app.color.reset%
-echo %app.esc%[%app.color.cyan%^|  A  Auto: clone, optional login, Documents, build       ^|%app.esc%[%app.color.reset%
+echo %app.esc%[%app.color.cyan%^|  A  Auto: current folder, optional login, build         ^|%app.esc%[%app.color.reset%
 echo %app.esc%[%app.color.cyan%^|  0  Exit                                                  ^|%app.esc%[%app.color.reset%
 echo %app.esc%[%app.color.cyan%+------------------------------------------------------------+%app.esc%[%app.color.reset%
 exit /b 0

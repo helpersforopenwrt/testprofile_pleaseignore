@@ -588,8 +588,12 @@ echo   tools\git_create_repository.bat
 set "_glr_rc=1" & goto :ResolveRepository
 :: ============================================================
 :: :ResolveIdentity
-:: Resolves Git author name and email from local settings, project
-:: settings, global settings, and interactive input.
+:: Resolves Git author name and email from repository-local values,
+:: explicit project values, global Git values, and the authenticated
+:: GitHub account. Missing GitHub email falls back to a noreply address.
+::
+:: Pressing Enter at either prompt accepts the displayed default.
+:: The selected values are later written only to this repository.
 ::
 :: Usage: call :ResolveIdentity
 ::
@@ -599,7 +603,7 @@ set "_glr_rc=1" & goto :ResolveRepository
 ::
 :: Returns: 0 when both values are present
 ::          1 when either remains missing
-:: Requires: git
+:: Requires: git, authenticated gh for GitHub-derived defaults
 :: ============================================================
 :ResolveIdentity
 for /f "tokens=1 delims==" %%v in ('set gli_ 2^>nul') do set "%%v="
@@ -610,11 +614,21 @@ for /f "delims=" %%A in ('git config --local --get user.email 2^>nul') do set "a
 :_ResolveIdentity_project
 if defined app.git_name set "app.git_login.git.name=%app.git_name%"
 if defined app.git_email set "app.git_login.git.email=%app.git_email%"
-if defined app.git_login.git.name goto :_ResolveIdentity_email
+if defined app.git_login.git.name goto :_ResolveIdentity_global_email
 for /f "delims=" %%A in ('git config --global --get user.name 2^>nul') do set "app.git_login.git.name=%%A"
-:_ResolveIdentity_email
-if defined app.git_login.git.email goto :_ResolveIdentity_prompt
+:_ResolveIdentity_global_email
+if defined app.git_login.git.email goto :_ResolveIdentity_github_name
 for /f "delims=" %%A in ('git config --global --get user.email 2^>nul') do set "app.git_login.git.email=%%A"
+:_ResolveIdentity_github_name
+if defined app.git_login.git.name goto :_ResolveIdentity_github_email
+if defined app.git_login.login set "app.git_login.git.name=%app.git_login.login%"
+:_ResolveIdentity_github_email
+if defined app.git_login.git.email goto :_ResolveIdentity_prompt
+for /f "delims=" %%A in ('gh api user --jq ".email // empty" 2^>nul') do if not defined app.git_login.git.email set "app.git_login.git.email=%%A"
+if defined app.git_login.git.email goto :_ResolveIdentity_prompt
+for /f "delims=" %%A in ('gh api user --jq ".id" 2^>nul') do if not defined gli_github_id set "gli_github_id=%%A"
+if defined gli_github_id if defined app.git_login.login set "app.git_login.git.email=%gli_github_id%+%app.git_login.login%@users.noreply.github.com"
+if not defined app.git_login.git.email if defined app.git_login.login set "app.git_login.git.email=%app.git_login.login%@users.noreply.github.com"
 :_ResolveIdentity_prompt
 echo Git author identity:
 set "app.git_login.input="
