@@ -1,118 +1,118 @@
 @echo off
 :setup
-set "app.start.dir=%CD%"
-if not defined app.launch.path set "app.launch.path=%~f0"
-if not defined app.launch.name set "app.launch.name=%~nx0"
-for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
-cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39"
-set "app.rc=0"
-set "app.timestamp="
-set "app.log.dir=%TEMP%\bootstrap_logs"
-set "app.log="
-set "app.bootstrap.url=%bootstrap%"
-set "app.repo.url="
-set "app.repo.original.url="
-set "app.repo.owner="
-set "app.repo.name="
-set "app.repo.branch=main"
-set "app.repo.parent="
-set "app.repo.ready="
-set "app.repo.tools.prepared="
-set "app.repo.sync.remote=origin"
-set "app.provider="
-set "app.provider.requested="
-set "app.provider.display=Generic Git"
-set "app.provider.can.login=0"
-set "app.provider.can.fork=0"
-set "app.raw.tools.url="
-set "app.getgit.url="
-set "app.getgh.url="
-set "app.folder="
-set "app.folder.origin="
-set "app.folder.origin.normalized="
-set "app.folder.upstream="
-set "app.folder.upstream.normalized="
-set "app.repo.url.normalized="
-set "app.final.folder="
-set "app.final.cd=%app.start.dir%"
-set "app.tools=%app.script.dir%\tools"
-if exist "%app.script.dir%\GetGit.bat" set "app.tools=%app.script.dir%"
-set "app.git="
-set "app.gh="
-set "app.github.user="
-set "app.git_name="
-set "app.git_email="
-set "app.mode=default"
-set "app.dryrun="
-set "app.unattended="
-set "app.project.prepare=yes"
-set "app.project.build=yes"
-set "app.project.install=no"
-set "app.update.mode=yes"
-set "app.conflict.mode=quarantine"
-set "app.login.mode=ask"
-set "app.login.method=ask"
-set "app.fork.mode=ask"
-set "app.identity.mode=ask"
-set "app.push.mode=yes"
-set "app.move.mode=no"
-set "app.move.parent="
-set "app.explicit.repo="
-set "app.explicit.branch="
-set "app.explicit.provider="
-set "app.explicit.toolsurl="
-set "app.explicit.login="
-set "app.explicit.fork="
-set "app.explicit.identity="
-set "app.explicit.push="
-set "app.explicit.move="
-set "app.explicit.prepare="
-set "app.explicit.build="
-set "app.explicit.install="
-set "app.explicit.update="
-set "app.explicit.conflict="
-set "app.esc="
-set "app.color.reset=0m"
-set "app.color.red=31m"
-set "app.color.green=32m"
-set "app.color.yellow=33m"
-set "app.color.cyan=36m"
+set "bootstrap.state.start.dir=%CD%"
+if not defined bootstrap.state.launch.path set "bootstrap.state.launch.path=%~f0"
+if not defined bootstrap.state.launch.name set "bootstrap.state.launch.name=%~nx0"
+for %%A in ("%~dp0.") do set "bootstrap.state.script.dir=%%~fA"
+cd /d "%bootstrap.state.script.dir%" >nul 2>&1
+set "bootstrap.state.version=bootstrap-integrated-40"
+set "bootstrap.state.rc=0"
+set "bootstrap.state.timestamp="
+set "bootstrap.state.log.dir=%TEMP%\bootstrap_logs"
+set "bootstrap.state.log="
+set "bootstrap.state.bootstrap.url=%bootstrap%"
+set "bootstrap.state.repo.url="
+set "bootstrap.state.repo.original.url="
+set "bootstrap.state.repo.owner="
+set "bootstrap.state.repo.name="
+set "bootstrap.state.repo.branch=main"
+set "bootstrap.state.repo.parent="
+set "bootstrap.state.repo.ready="
+set "bootstrap.state.repo.tools.prepared="
+set "bootstrap.state.repo.sync.remote=origin"
+set "bootstrap.state.provider="
+set "bootstrap.state.provider.requested="
+set "bootstrap.state.provider.display=Generic Git"
+set "bootstrap.state.provider.can.login=0"
+set "bootstrap.state.provider.can.fork=0"
+set "bootstrap.state.raw.tools.url="
+set "bootstrap.state.getgit.url="
+set "bootstrap.state.getgh.url="
+set "bootstrap.state.folder="
+set "bootstrap.state.folder.origin="
+set "bootstrap.state.folder.origin.normalized="
+set "bootstrap.state.folder.upstream="
+set "bootstrap.state.folder.upstream.normalized="
+set "bootstrap.state.repo.url.normalized="
+set "bootstrap.state.final.folder="
+set "bootstrap.state.final.cd=%bootstrap.state.start.dir%"
+set "bootstrap.state.tools=%bootstrap.state.script.dir%\tools"
+if exist "%bootstrap.state.script.dir%\GetGit.bat" set "bootstrap.state.tools=%bootstrap.state.script.dir%"
+set "bootstrap.state.git="
+set "bootstrap.state.gh="
+set "bootstrap.state.github.user="
+set "bootstrap.state.git_name="
+set "bootstrap.state.git_email="
+set "bootstrap.state.mode=default"
+set "bootstrap.state.dryrun="
+set "bootstrap.state.unattended="
+set "bootstrap.state.project.prepare=yes"
+set "bootstrap.state.project.build=yes"
+set "bootstrap.state.project.install=no"
+set "bootstrap.state.update.mode=yes"
+set "bootstrap.state.conflict.mode=quarantine"
+set "bootstrap.state.login.mode=ask"
+set "bootstrap.state.login.method=ask"
+set "bootstrap.state.fork.mode=ask"
+set "bootstrap.state.identity.mode=ask"
+set "bootstrap.state.push.mode=yes"
+set "bootstrap.state.move.mode=no"
+set "bootstrap.state.move.parent="
+set "bootstrap.state.explicit.repo="
+set "bootstrap.state.explicit.branch="
+set "bootstrap.state.explicit.provider="
+set "bootstrap.state.explicit.toolsurl="
+set "bootstrap.state.explicit.login="
+set "bootstrap.state.explicit.fork="
+set "bootstrap.state.explicit.identity="
+set "bootstrap.state.explicit.push="
+set "bootstrap.state.explicit.move="
+set "bootstrap.state.explicit.prepare="
+set "bootstrap.state.explicit.build="
+set "bootstrap.state.explicit.install="
+set "bootstrap.state.explicit.update="
+set "bootstrap.state.explicit.conflict="
+set "bootstrap.state.esc="
+set "bootstrap.state.color.reset=0m"
+set "bootstrap.state.color.red=31m"
+set "bootstrap.state.color.green=32m"
+set "bootstrap.state.color.yellow=33m"
+set "bootstrap.state.color.cyan=36m"
 goto :main
 
 :main
 call :ParseArguments %*
-set "app.rc=%errorlevel%"
-if not "%app.rc%"=="0" goto :end
+set "bootstrap.state.rc=%errorlevel%"
+if not "%bootstrap.state.rc%"=="0" goto :end
 call :ApplyAutomationDefaults
-set "app.rc=%errorlevel%"
-if not "%app.rc%"=="0" goto :end
-if /I "%app.mode%"=="help" call :ShowHelp
-if /I "%app.mode%"=="help" set "app.rc=%errorlevel%"
-if /I "%app.mode%"=="help" goto :end
-if /I "%app.mode%"=="version" call :ShowVersion
-if /I "%app.mode%"=="version" set "app.rc=%errorlevel%"
-if /I "%app.mode%"=="version" goto :end
+set "bootstrap.state.rc=%errorlevel%"
+if not "%bootstrap.state.rc%"=="0" goto :end
+if /I "%bootstrap.state.mode%"=="help" call :ShowHelp
+if /I "%bootstrap.state.mode%"=="help" set "bootstrap.state.rc=%errorlevel%"
+if /I "%bootstrap.state.mode%"=="help" goto :end
+if /I "%bootstrap.state.mode%"=="version" call :ShowVersion
+if /I "%bootstrap.state.mode%"=="version" set "bootstrap.state.rc=%errorlevel%"
+if /I "%bootstrap.state.mode%"=="version" goto :end
 call :InitializeRuntime
-set "app.rc=%errorlevel%"
-if not "%app.rc%"=="0" goto :end
+set "bootstrap.state.rc=%errorlevel%"
+if not "%bootstrap.state.rc%"=="0" goto :end
 call :ResolveBootstrapContext
-set "app.rc=%errorlevel%"
-if not "%app.rc%"=="0" goto :end
+set "bootstrap.state.rc=%errorlevel%"
+if not "%bootstrap.state.rc%"=="0" goto :end
 call :ResolveRepositoryFolder
-set "app.rc=%errorlevel%"
-if not "%app.rc%"=="0" goto :end
+set "bootstrap.state.rc=%errorlevel%"
+if not "%bootstrap.state.rc%"=="0" goto :end
 call :ConfigureProvider
-set "app.rc=%errorlevel%"
-if not "%app.rc%"=="0" goto :end
+set "bootstrap.state.rc=%errorlevel%"
+if not "%bootstrap.state.rc%"=="0" goto :end
 call :DispatchMode
-set "app.rc=%errorlevel%"
+set "bootstrap.state.rc=%errorlevel%"
 goto :end
 
 :end
 call :WarnIfTemporaryRepository
-if defined app.final.cd cd /d "%app.final.cd%" >nul 2>&1
-call :SetExitCode "%app.rc%"
+if defined bootstrap.state.final.cd cd /d "%bootstrap.state.final.cd%" >nul 2>&1
+call :SetExitCode "%bootstrap.state.rc%"
 goto :eof
 
 :: ============================================================
@@ -124,7 +124,7 @@ goto :eof
 :: Purpose
 ::   Run exactly one selected top-level mode and return its result.
 :: Inputs
-::   app.mode and app.dryrun
+::   bootstrap.state.mode and bootstrap.state.dryrun
 :: Return codes
 ::   0 Selected mode completed
 ::   nonzero Selected mode failed
@@ -132,24 +132,36 @@ goto :eof
 ::   RunCheck RunDoctor RunDryRun RunAutoWorkflow RunBootstrapWorkflow RunMenu
 :: ============================================================
 :DispatchMode
-set "dm_rc=0"
-if defined app.dryrun call :RunDryRun
-if defined app.dryrun set "dm_rc=%errorlevel%"
-if defined app.dryrun exit /b %dm_rc%
-if /I "%app.mode%"=="check" call :RunCheck
-if /I "%app.mode%"=="check" set "dm_rc=%errorlevel%"
-if /I "%app.mode%"=="check" exit /b %dm_rc%
-if /I "%app.mode%"=="doctor" call :RunDoctor
-if /I "%app.mode%"=="doctor" set "dm_rc=%errorlevel%"
-if /I "%app.mode%"=="doctor" exit /b %dm_rc%
-if /I "%app.mode%"=="auto" call :RunAutoWorkflow
-if /I "%app.mode%"=="auto" set "dm_rc=%errorlevel%"
-if /I "%app.mode%"=="auto" exit /b %dm_rc%
-if /I "%app.mode%"=="menu" call :RunMenu
-if /I "%app.mode%"=="menu" set "dm_rc=%errorlevel%"
-if /I "%app.mode%"=="menu" exit /b %dm_rc%
+set "dm_mode=%bootstrap.state.mode%"
+if defined bootstrap.state.dryrun goto :DispatchModeDryRun
+if /I "%dm_mode%"=="check" goto :DispatchModeCheck
+if /I "%dm_mode%"=="doctor" goto :DispatchModeDoctor
+if /I "%dm_mode%"=="auto" goto :DispatchModeAuto
+if /I "%dm_mode%"=="menu" goto :DispatchModeMenu
 call :RunBootstrapWorkflow
 set "dm_rc=%errorlevel%"
+goto :DispatchModeDone
+:DispatchModeDryRun
+call :RunDryRun
+set "dm_rc=%errorlevel%"
+goto :DispatchModeDone
+:DispatchModeCheck
+call :RunCheck
+set "dm_rc=%errorlevel%"
+goto :DispatchModeDone
+:DispatchModeDoctor
+call :RunDoctor
+set "dm_rc=%errorlevel%"
+goto :DispatchModeDone
+:DispatchModeAuto
+call :RunAutoWorkflow
+set "dm_rc=%errorlevel%"
+goto :DispatchModeDone
+:DispatchModeMenu
+call :RunMenu
+set "dm_rc=%errorlevel%"
+:DispatchModeDone
+set "dm_mode="
 exit /b %dm_rc%
 
 :: ============================================================
@@ -157,7 +169,7 @@ exit /b %dm_rc%
 :: Purpose
 ::   Run repository setup and then run the project lifecycle.
 :: Outputs
-::   app.final.cd
+::   bootstrap.state.final.cd
 :: Return codes
 ::   0 Auto workflow completed
 ::   nonzero A workflow step failed
@@ -165,7 +177,7 @@ exit /b %dm_rc%
 ::   RunRepositoryWorkflow RunProjectLifecycle PrintInfo PrintSuccess
 :: ============================================================
 :RunAutoWorkflow
-call :PrintInfo "MODE: auto [%app.version%]"
+call :PrintInfo "MODE: auto [%bootstrap.state.version%]"
 call :PrintInfo "AUTO: Git, clone or update, repository tools, optional login and fork, optional move, prepare, build, and optional install."
 call :RunRepositoryWorkflow
 set "raw_rc=%errorlevel%"
@@ -173,9 +185,9 @@ if not "%raw_rc%"=="0" exit /b %raw_rc%
 call :RunProjectLifecycle
 set "raw_rc=%errorlevel%"
 if not "%raw_rc%"=="0" exit /b %raw_rc%
-if not defined app.final.cd set "app.final.cd=%app.folder%"
+if not defined bootstrap.state.final.cd set "bootstrap.state.final.cd=%bootstrap.state.folder%"
 call :PrintSuccess "OK: Auto bootstrap complete."
-call :PrintSuccess "DIR: %app.folder%"
+call :PrintSuccess "DIR: %bootstrap.state.folder%"
 set "raw_rc="
 exit /b 0
 
@@ -184,7 +196,7 @@ exit /b 0
 :: Purpose
 ::   Run repository setup without automatically preparing or building the project.
 :: Outputs
-::   app.final.cd
+::   bootstrap.state.final.cd
 :: Return codes
 ::   0 Bootstrap workflow completed
 ::   nonzero A workflow step failed
@@ -192,13 +204,13 @@ exit /b 0
 ::   RunRepositoryWorkflow PrintInfo PrintSuccess
 :: ============================================================
 :RunBootstrapWorkflow
-call :PrintInfo "MODE: default [%app.version%]"
+call :PrintInfo "MODE: default [%bootstrap.state.version%]"
 call :RunRepositoryWorkflow
 set "rbw_rc=%errorlevel%"
 if not "%rbw_rc%"=="0" exit /b %rbw_rc%
-if not defined app.final.cd set "app.final.cd=%app.folder%"
+if not defined bootstrap.state.final.cd set "bootstrap.state.final.cd=%bootstrap.state.folder%"
 call :PrintSuccess "OK: Bootstrap complete."
-call :PrintSuccess "DIR: %app.folder%"
+call :PrintSuccess "DIR: %bootstrap.state.folder%"
 set "rbw_rc="
 exit /b 0
 
@@ -208,7 +220,7 @@ exit /b 0
 ::   Run the shared repository workflow used by default and auto modes.
 ::   The sequence is repository readiness, optional provider login and fork, then optional move.
 :: Outputs
-::   app.repo.ready app.final.cd
+::   bootstrap.state.repo.ready bootstrap.state.final.cd
 :: Return codes
 ::   0 Repository workflow completed
 ::   nonzero A workflow step failed
@@ -236,7 +248,7 @@ exit /b 0
 :: Purpose
 ::   Ensure Git is available, clone or update the checkout, and prepare repository tools.
 :: Outputs
-::   app.repo.ready app.repo.tools.prepared app.final.cd
+::   bootstrap.state.repo.ready bootstrap.state.repo.tools.prepared bootstrap.state.final.cd
 :: Return codes
 ::   0 Repository and repository tools are ready
 ::   nonzero Git, synchronization, or repository preparation failed
@@ -244,7 +256,7 @@ exit /b 0
 ::   EnsureGit SynchronizeRepository PrepareRepositoryTools
 :: ============================================================
 :EnsureRepositoryReady
-if defined app.repo.ready goto :EnsureRepositoryReadyPrepare
+if defined bootstrap.state.repo.ready goto :EnsureRepositoryReadyPrepare
 call :EnsureGit
 set "err_rc=%errorlevel%"
 if not "%err_rc%"=="0" exit /b %err_rc%
@@ -269,21 +281,27 @@ exit /b 0
 ::   RunProjectPrepare RunProjectBuild RunProjectInstall PrintWarning PrintInfo
 :: ============================================================
 :RunProjectLifecycle
+set "rpl_prepare=%bootstrap.state.project.prepare%"
+set "rpl_build=%bootstrap.state.project.build%"
+set "rpl_install=%bootstrap.state.project.install%"
 set "rpl_rc=0"
-if /I "%app.project.prepare%"=="yes" call :RunProjectPrepare
-if /I "%app.project.prepare%"=="yes" set "rpl_rc=%errorlevel%"
-if not "%rpl_rc%"=="0" exit /b %rpl_rc%
-if /I not "%app.project.prepare%"=="yes" call :PrintWarning "SKIP: project preparation disabled."
-if /I "%app.project.build%"=="yes" call :RunProjectBuild
-if /I "%app.project.build%"=="yes" set "rpl_rc=%errorlevel%"
-if not "%rpl_rc%"=="0" exit /b %rpl_rc%
-if /I not "%app.project.build%"=="yes" call :PrintWarning "SKIP: project build disabled."
-if /I "%app.project.install%"=="yes" call :RunProjectInstall
-if /I "%app.project.install%"=="yes" set "rpl_rc=%errorlevel%"
-if not "%rpl_rc%"=="0" exit /b %rpl_rc%
-if /I not "%app.project.install%"=="yes" call :PrintInfo "SKIP: project installation not requested."
-set "rpl_rc="
-exit /b 0
+if /I "%rpl_prepare%"=="yes" call :RunProjectPrepare
+if /I "%rpl_prepare%"=="yes" set "rpl_rc=%errorlevel%"
+if not "%rpl_rc%"=="0" goto :RunProjectLifecycleDone
+if /I not "%rpl_prepare%"=="yes" call :PrintWarning "SKIP: project preparation disabled."
+if /I "%rpl_build%"=="yes" call :RunProjectBuild
+if /I "%rpl_build%"=="yes" set "rpl_rc=%errorlevel%"
+if not "%rpl_rc%"=="0" goto :RunProjectLifecycleDone
+if /I not "%rpl_build%"=="yes" call :PrintWarning "SKIP: project build disabled."
+if /I "%rpl_install%"=="yes" call :RunProjectInstall
+if /I "%rpl_install%"=="yes" set "rpl_rc=%errorlevel%"
+if not "%rpl_rc%"=="0" goto :RunProjectLifecycleDone
+if /I not "%rpl_install%"=="yes" call :PrintInfo "SKIP: project installation not requested."
+:RunProjectLifecycleDone
+set "rpl_prepare="
+set "rpl_build="
+set "rpl_install="
+exit /b %rpl_rc%
 
 :: ============================================================
 :: Function RunCheck
@@ -297,17 +315,17 @@ exit /b 0
 :: ============================================================
 :RunCheck
 call :PrintInfo "CHECK: essential bootstrap context"
-call :PrintInfo "Version: %app.version%"
-call :PrintInfo "Provider: %app.provider% [%app.provider.display%]"
-call :PrintInfo "Repository: %app.repo.url%"
-call :PrintInfo "Branch: %app.repo.branch%"
-call :PrintInfo "Folder: %app.folder%"
-call :PrintInfo "GetGit URL: %app.getgit.url%"
-if not defined app.repo.url (call :PrintError "FAIL: repository URL is missing." & exit /b 3)
-if not defined app.repo.name (call :PrintError "FAIL: repository name is missing." & exit /b 3)
-if not defined app.getgit.url call :FindGit
-if not defined app.getgit.url if not defined app.git (call :PrintError "FAIL: Git is unavailable and no GetGit.bat URL could be inferred." & call :PrintWarning "Use getgit URL on the command line." & exit /b 3)
-if not defined app.getgit.url if defined app.git call :PrintInfo "INFO: GetGit.bat URL is unnecessary because Git is already available."
+call :PrintInfo "Version: %bootstrap.state.version%"
+call :PrintInfo "Provider: %bootstrap.state.provider% [%bootstrap.state.provider.display%]"
+call :PrintInfo "Repository: %bootstrap.state.repo.url%"
+call :PrintInfo "Branch: %bootstrap.state.repo.branch%"
+call :PrintInfo "Folder: %bootstrap.state.folder%"
+call :PrintInfo "GetGit URL: %bootstrap.state.getgit.url%"
+if not defined bootstrap.state.repo.url (call :PrintError "FAIL: repository URL is missing." & exit /b 3)
+if not defined bootstrap.state.repo.name (call :PrintError "FAIL: repository name is missing." & exit /b 3)
+if not defined bootstrap.state.getgit.url call :FindGit
+if not defined bootstrap.state.getgit.url if not defined bootstrap.state.git (call :PrintError "FAIL: Git is unavailable and no GetGit.bat URL could be inferred." & call :PrintWarning "Use getgit URL on the command line." & exit /b 3)
+if not defined bootstrap.state.getgit.url if defined bootstrap.state.git call :PrintInfo "INFO: GetGit.bat URL is unnecessary because Git is already available."
 call :PrintSuccess "OK: essential check passed."
 exit /b 0
 
@@ -326,37 +344,37 @@ exit /b 0
 call :RunCheck
 set "rd_rc=%errorlevel%"
 if not "%rd_rc%"=="0" exit /b %rd_rc%
-call :PrintInfo "Provider login capability: %app.provider.can.login%"
-call :PrintInfo "Provider fork capability: %app.provider.can.fork%"
+call :PrintInfo "Provider login capability: %bootstrap.state.provider.can.login%"
+call :PrintInfo "Provider fork capability: %bootstrap.state.provider.can.fork%"
 call :FindGit
-if defined app.git call :PrintSuccess "OK: Git found at %app.git%"
-if not defined app.git call :PrintWarning "MISS: git.exe was not found; bootstrap would install it."
+if defined bootstrap.state.git call :PrintSuccess "OK: Git found at %bootstrap.state.git%"
+if not defined bootstrap.state.git call :PrintWarning "MISS: git.exe was not found; bootstrap would install it."
 call :FindGitHubCli
-if defined app.gh call :PrintSuccess "OK: GitHub CLI found at %app.gh%"
-if not defined app.gh if /I "%app.provider%"=="github" call :PrintWarning "MISS: gh.exe was not found; repository preparation or login would install it."
-if not exist "%app.folder%\.git" call :PrintInfo "INFO: checkout does not exist yet."
-if exist "%app.folder%\.git" call :PrintSuccess "OK: existing checkout found."
+if defined bootstrap.state.gh call :PrintSuccess "OK: GitHub CLI found at %bootstrap.state.gh%"
+if not defined bootstrap.state.gh if /I "%bootstrap.state.provider%"=="github" call :PrintWarning "MISS: gh.exe was not found; repository preparation or login would install it."
+if not exist "%bootstrap.state.folder%\.git" call :PrintInfo "INFO: checkout does not exist yet."
+if exist "%bootstrap.state.folder%\.git" call :PrintSuccess "OK: existing checkout found."
 set "rd_remote_rc=0"
-if exist "%app.folder%\.git" if defined app.git call :VerifyRepositoryRemote
-if exist "%app.folder%\.git" if defined app.git set "rd_remote_rc=%errorlevel%"
-if exist "%app.folder%\prepare.bat" call :PrintSuccess "OK: prepare.bat found."
-if not exist "%app.folder%\prepare.bat" call :PrintInfo "INFO: prepare.bat is not present."
-if exist "%app.folder%\build.bat" call :PrintSuccess "OK: build.bat found."
-if not exist "%app.folder%\build.bat" call :PrintInfo "INFO: build.bat is not present."
-if exist "%app.folder%\install.bat" call :PrintSuccess "OK: install.bat found."
-if not exist "%app.folder%\install.bat" call :PrintInfo "INFO: install.bat is not present."
-call :PrintInfo "Login mode: %app.login.mode%"
-call :PrintInfo "Login method: %app.login.method%"
-call :PrintInfo "Fork mode: %app.fork.mode%"
-call :PrintInfo "Move mode: %app.move.mode%"
-call :PrintInfo "Project prepare: %app.project.prepare%"
-call :PrintInfo "Project build: %app.project.build%"
-call :PrintInfo "Project install: %app.project.install%"
-call :PrintInfo "Update existing checkout: %app.update.mode%"
-call :PrintInfo "Non-Git target conflict: %app.conflict.mode%"
-call :PrintInfo "Identity mode: %app.identity.mode%"
-call :PrintInfo "Push mode: %app.push.mode%"
-call :PrintInfo "Unattended: %app.unattended%"
+if exist "%bootstrap.state.folder%\.git" if defined bootstrap.state.git call :VerifyRepositoryRemote
+if exist "%bootstrap.state.folder%\.git" if defined bootstrap.state.git set "rd_remote_rc=%errorlevel%"
+if exist "%bootstrap.state.folder%\prepare.bat" call :PrintSuccess "OK: prepare.bat found."
+if not exist "%bootstrap.state.folder%\prepare.bat" call :PrintInfo "INFO: prepare.bat is not present."
+if exist "%bootstrap.state.folder%\build.bat" call :PrintSuccess "OK: build.bat found."
+if not exist "%bootstrap.state.folder%\build.bat" call :PrintInfo "INFO: build.bat is not present."
+if exist "%bootstrap.state.folder%\install.bat" call :PrintSuccess "OK: install.bat found."
+if not exist "%bootstrap.state.folder%\install.bat" call :PrintInfo "INFO: install.bat is not present."
+call :PrintInfo "Login mode: %bootstrap.state.login.mode%"
+call :PrintInfo "Login method: %bootstrap.state.login.method%"
+call :PrintInfo "Fork mode: %bootstrap.state.fork.mode%"
+call :PrintInfo "Move mode: %bootstrap.state.move.mode%"
+call :PrintInfo "Project prepare: %bootstrap.state.project.prepare%"
+call :PrintInfo "Project build: %bootstrap.state.project.build%"
+call :PrintInfo "Project install: %bootstrap.state.project.install%"
+call :PrintInfo "Update existing checkout: %bootstrap.state.update.mode%"
+call :PrintInfo "Non-Git target conflict: %bootstrap.state.conflict.mode%"
+call :PrintInfo "Identity mode: %bootstrap.state.identity.mode%"
+call :PrintInfo "Push mode: %bootstrap.state.push.mode%"
+call :PrintInfo "Unattended: %bootstrap.state.unattended%"
 if not "%rd_remote_rc%"=="0" (call :PrintError "FAIL: doctor found an unexpected repository remote." & set "rd_rc=" & set "rd_remote_rc=" & exit /b 5)
 call :PrintSuccess "OK: doctor completed."
 set "rd_rc="
@@ -374,36 +392,36 @@ exit /b 0
 ::   FindGit VerifyRepositoryRemote PrintInfo PrintSuccess PrintError
 :: ============================================================
 :RunDryRun
-call :PrintInfo "MODE: dryrun [%app.version%]"
+call :PrintInfo "MODE: dryrun [%bootstrap.state.version%]"
 call :FindGit
 set "rdr_remote_rc=0"
-if exist "%app.folder%\.git" if defined app.git call :VerifyRepositoryRemote
-if exist "%app.folder%\.git" if defined app.git set "rdr_remote_rc=%errorlevel%"
+if exist "%bootstrap.state.folder%\.git" if defined bootstrap.state.git call :VerifyRepositoryRemote
+if exist "%bootstrap.state.folder%\.git" if defined bootstrap.state.git set "rdr_remote_rc=%errorlevel%"
 if not "%rdr_remote_rc%"=="0" (call :PrintError "FAIL: dryrun found an unexpected repository remote." & set "rdr_remote_rc=" & exit /b 5)
 set "rdr_remote_rc="
-call :PrintInfo "Provider: %app.provider% [%app.provider.display%]"
-call :PrintInfo "Repository: %app.repo.url%"
-call :PrintInfo "Branch: %app.repo.branch%"
-call :PrintInfo "Folder: %app.folder%"
-if defined app.git call :PrintInfo "Would use Git at %app.git%."
-if not defined app.git call :PrintInfo "Would install Git using %app.getgit.url%."
-if exist "%app.folder%\.git" if /I "%app.update.mode%"=="yes" call :PrintInfo "Would update the existing checkout."
-if exist "%app.folder%\.git" if /I "%app.update.mode%"=="no" call :PrintInfo "Would verify and reuse the existing checkout without fetching or pulling."
-if not exist "%app.folder%\.git" if not exist "%app.folder%\" call :PrintInfo "Would clone the repository."
-if not exist "%app.folder%\.git" if exist "%app.folder%\" if /I "%app.conflict.mode%"=="quarantine" call :PrintInfo "Would move the non-Git target aside, then clone."
-if not exist "%app.folder%\.git" if exist "%app.folder%\" if /I "%app.conflict.mode%"=="fail" call :PrintInfo "Would stop because the target is not a Git checkout."
-if /I "%app.login.mode%"=="none" call :PrintInfo "Would skip provider login and fork handling."
-if /I not "%app.login.mode%"=="none" call :PrintInfo "Provider login is optional or explicitly requested."
-if /I "%app.move.mode%"=="no" call :PrintInfo "Would not move the repository."
-if /I "%app.move.mode%"=="ask" call :PrintInfo "Would ask whether to move the repository."
-if /I "%app.move.mode%"=="documents" call :PrintInfo "Would move the repository to Documents."
-if /I "%app.move.mode%"=="path" call :PrintInfo "Would move the repository beneath %app.move.parent%."
-if /I "%app.mode%"=="auto" if /I "%app.project.prepare%"=="yes" call :PrintInfo "Would run project preparation."
-if /I "%app.mode%"=="auto" if /I not "%app.project.prepare%"=="yes" call :PrintInfo "Would skip project preparation."
-if /I "%app.mode%"=="auto" if /I "%app.project.build%"=="yes" call :PrintInfo "Would run project build."
-if /I "%app.mode%"=="auto" if /I not "%app.project.build%"=="yes" call :PrintInfo "Would skip project build."
-if /I "%app.mode%"=="auto" if /I "%app.project.install%"=="yes" call :PrintInfo "Would run project installation."
-if /I "%app.mode%"=="auto" if /I not "%app.project.install%"=="yes" call :PrintInfo "Would skip project installation."
+call :PrintInfo "Provider: %bootstrap.state.provider% [%bootstrap.state.provider.display%]"
+call :PrintInfo "Repository: %bootstrap.state.repo.url%"
+call :PrintInfo "Branch: %bootstrap.state.repo.branch%"
+call :PrintInfo "Folder: %bootstrap.state.folder%"
+if defined bootstrap.state.git call :PrintInfo "Would use Git at %bootstrap.state.git%."
+if not defined bootstrap.state.git call :PrintInfo "Would install Git using %bootstrap.state.getgit.url%."
+if exist "%bootstrap.state.folder%\.git" if /I "%bootstrap.state.update.mode%"=="yes" call :PrintInfo "Would update the existing checkout."
+if exist "%bootstrap.state.folder%\.git" if /I "%bootstrap.state.update.mode%"=="no" call :PrintInfo "Would verify and reuse the existing checkout without fetching or pulling."
+if not exist "%bootstrap.state.folder%\.git" if not exist "%bootstrap.state.folder%\" call :PrintInfo "Would clone the repository."
+if not exist "%bootstrap.state.folder%\.git" if exist "%bootstrap.state.folder%\" if /I "%bootstrap.state.conflict.mode%"=="quarantine" call :PrintInfo "Would move the non-Git target aside, then clone."
+if not exist "%bootstrap.state.folder%\.git" if exist "%bootstrap.state.folder%\" if /I "%bootstrap.state.conflict.mode%"=="fail" call :PrintInfo "Would stop because the target is not a Git checkout."
+if /I "%bootstrap.state.login.mode%"=="none" call :PrintInfo "Would skip provider login and fork handling."
+if /I not "%bootstrap.state.login.mode%"=="none" call :PrintInfo "Provider login is optional or explicitly requested."
+if /I "%bootstrap.state.move.mode%"=="no" call :PrintInfo "Would not move the repository."
+if /I "%bootstrap.state.move.mode%"=="ask" call :PrintInfo "Would ask whether to move the repository."
+if /I "%bootstrap.state.move.mode%"=="documents" call :PrintInfo "Would move the repository to Documents."
+if /I "%bootstrap.state.move.mode%"=="path" call :PrintInfo "Would move the repository beneath %bootstrap.state.move.parent%."
+if /I "%bootstrap.state.mode%"=="auto" if /I "%bootstrap.state.project.prepare%"=="yes" call :PrintInfo "Would run project preparation."
+if /I "%bootstrap.state.mode%"=="auto" if /I not "%bootstrap.state.project.prepare%"=="yes" call :PrintInfo "Would skip project preparation."
+if /I "%bootstrap.state.mode%"=="auto" if /I "%bootstrap.state.project.build%"=="yes" call :PrintInfo "Would run project build."
+if /I "%bootstrap.state.mode%"=="auto" if /I not "%bootstrap.state.project.build%"=="yes" call :PrintInfo "Would skip project build."
+if /I "%bootstrap.state.mode%"=="auto" if /I "%bootstrap.state.project.install%"=="yes" call :PrintInfo "Would run project installation."
+if /I "%bootstrap.state.mode%"=="auto" if /I not "%bootstrap.state.project.install%"=="yes" call :PrintInfo "Would skip project installation."
 call :PrintSuccess "OK: dryrun complete; no repository changes were made."
 exit /b 0
 
@@ -447,9 +465,9 @@ if not errorlevel 1 call :SynchronizeRepository
 pause
 goto :RunMenuLoop
 :RunMenuLogin
-set "app.login.mode=ask"
-if not defined app.explicit.fork set "app.fork.mode=ask"
-if not defined app.explicit.identity set "app.identity.mode=ask"
+set "bootstrap.state.login.mode=ask"
+if not defined bootstrap.state.explicit.fork set "bootstrap.state.fork.mode=ask"
+if not defined bootstrap.state.explicit.identity set "bootstrap.state.identity.mode=ask"
 call :EnsureRepositoryReady
 if not errorlevel 1 call :ResolveLoginDecision
 if not errorlevel 1 call :RunProviderLogin
@@ -471,7 +489,7 @@ if not errorlevel 1 call :RunProjectInstall
 pause
 goto :RunMenuLoop
 :RunMenuMove
-set "app.move.mode=ask"
+set "bootstrap.state.move.mode=ask"
 call :MaybeMoveRepository
 pause
 goto :RunMenuLoop
@@ -491,10 +509,10 @@ goto :RunMenuLoop
 :: ============================================================
 :ShowHelp
 echo(
-echo %app.launch.name% [%app.version%]
+echo %bootstrap.state.launch.name% [%bootstrap.state.version%]
 echo(
 echo Usage:
-echo   %app.launch.name% [MODE] [OPTIONS]
+echo   %bootstrap.state.launch.name% [MODE] [OPTIONS]
 echo(
 echo Modes:
 echo   auto                 Set up the repository, then run requested project steps
@@ -572,14 +590,14 @@ echo Help aliases:
 echo   help  /help  -help  --help  /h  -h  --h  /?  -?  --?  ?
 echo(
 echo Examples:
-echo   %app.launch.name% auto
-echo   %app.launch.name% auto unattended
-echo   %app.launch.name% auto unattended nologin
-echo   %app.launch.name% auto unattended login 4 fork yes identity defaults
-echo   %app.launch.name% auto login 4 gitname "Example User" gitemail user@example.com
-echo   %app.launch.name% auto repo https://github.com/Owner/Repo.git branch main
-echo   %app.launch.name% auto dir projects\Repo move no prepare yes build yes install no
-echo   %app.launch.name% doctor repo https://github.com/Owner/Repo.git
+echo   %bootstrap.state.launch.name% auto
+echo   %bootstrap.state.launch.name% auto unattended
+echo   %bootstrap.state.launch.name% auto unattended nologin
+echo   %bootstrap.state.launch.name% auto unattended login 4 fork yes identity defaults
+echo   %bootstrap.state.launch.name% auto login 4 gitname "Example User" gitemail user@example.com
+echo   %bootstrap.state.launch.name% auto repo https://github.com/Owner/Repo.git branch main
+echo   %bootstrap.state.launch.name% auto dir projects\Repo move no prepare yes build yes install no
+echo   %bootstrap.state.launch.name% doctor repo https://github.com/Owner/Repo.git
 echo(
 echo Notes:
 echo   Options may be combined in any order; later repeated options win.
@@ -602,7 +620,7 @@ exit /b 0
 ::   none
 :: ============================================================
 :ShowVersion
-echo %app.version%
+echo %bootstrap.state.version%
 exit /b 0
 
 :: ============================================================
@@ -614,7 +632,7 @@ exit /b 0
 :: Purpose
 ::   Create the log file and initialize optional ANSI colours.
 :: Outputs
-::   app.timestamp app.log app.esc
+::   bootstrap.state.timestamp bootstrap.state.log bootstrap.state.esc
 :: Return codes
 ::   0 Runtime initialized
 ::   1 Timestamp or log initialization failed
@@ -624,14 +642,14 @@ exit /b 0
 :InitializeRuntime
 call :MakeTimestamp
 if errorlevel 1 exit /b 1
-if not exist "%app.log.dir%\" mkdir "%app.log.dir%" >nul 2>&1
-if not exist "%app.log.dir%\" exit /b 1
-set "app.log=%app.log.dir%\bootstrap.%app.timestamp%.log"
-type nul >"%app.log%" 2>nul
-if not exist "%app.log%" exit /b 1
-call :SetEscapeCharacter app.esc
-if errorlevel 1 set "app.esc="
-call :PrintInfo "LOG: %app.log%"
+if not exist "%bootstrap.state.log.dir%\" mkdir "%bootstrap.state.log.dir%" >nul 2>&1
+if not exist "%bootstrap.state.log.dir%\" exit /b 1
+set "bootstrap.state.log=%bootstrap.state.log.dir%\bootstrap.%bootstrap.state.timestamp%.log"
+type nul >"%bootstrap.state.log%" 2>nul
+if not exist "%bootstrap.state.log%" exit /b 1
+call :SetEscapeCharacter bootstrap.state.esc
+if errorlevel 1 set "bootstrap.state.esc="
+call :PrintInfo "LOG: %bootstrap.state.log%"
 exit /b 0
 
 :: ============================================================
@@ -641,7 +659,7 @@ exit /b 0
 :: Inputs
 ::   All command-line arguments
 :: Outputs
-::   app.mode and related app option variables
+::   bootstrap.state.mode and related app option variables
 :: Return codes
 ::   0 Arguments accepted
 ::   2 An argument is unknown incomplete or invalid
@@ -651,34 +669,34 @@ exit /b 0
 :ParseArguments
 if "%~1"=="" exit /b 0
 set "pa_arg=%~1"
-if /I "%pa_arg:~0,7%"=="http://" (set "app.repo.url=%~1" & set "app.explicit.repo=1" & shift & goto :ParseArguments)
-if /I "%pa_arg:~0,8%"=="https://" (set "app.repo.url=%~1" & set "app.explicit.repo=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="auto" (set "app.mode=auto" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="bootstrap" (set "app.mode=default" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="default" (set "app.mode=default" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="menu" (set "app.mode=menu" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="check" (set "app.mode=check" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="doctor" (set "app.mode=doctor" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="dryrun" (set "app.dryrun=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="version" (set "app.mode=version" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--version" (set "app.mode=version" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="/version" (set "app.mode=version" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="unattended" (set "app.unattended=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--unattended" (set "app.unattended=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="noninteractive" (set "app.unattended=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--noninteractive" (set "app.unattended=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="nobuild" (set "app.project.build=no" & set "app.explicit.build=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-build" (set "app.project.build=no" & set "app.explicit.build=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="noprepare" (set "app.project.prepare=no" & set "app.explicit.prepare=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-prepare" (set "app.project.prepare=no" & set "app.explicit.prepare=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="noinstall" (set "app.project.install=no" & set "app.explicit.install=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-install" (set "app.project.install=no" & set "app.explicit.install=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="noupdate" (set "app.update.mode=no" & set "app.explicit.update=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-update" (set "app.update.mode=no" & set "app.explicit.update=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="nomove" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-move" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="nologin" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-login" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
+if /I "%pa_arg:~0,7%"=="http://" (set "bootstrap.state.repo.url=%~1" & set "bootstrap.state.explicit.repo=1" & shift & goto :ParseArguments)
+if /I "%pa_arg:~0,8%"=="https://" (set "bootstrap.state.repo.url=%~1" & set "bootstrap.state.explicit.repo=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="auto" (set "bootstrap.state.mode=auto" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="bootstrap" (set "bootstrap.state.mode=default" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="default" (set "bootstrap.state.mode=default" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="menu" (set "bootstrap.state.mode=menu" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="check" (set "bootstrap.state.mode=check" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="doctor" (set "bootstrap.state.mode=doctor" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="dryrun" (set "bootstrap.state.dryrun=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="version" (set "bootstrap.state.mode=version" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--version" (set "bootstrap.state.mode=version" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="/version" (set "bootstrap.state.mode=version" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="unattended" (set "bootstrap.state.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--unattended" (set "bootstrap.state.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noninteractive" (set "bootstrap.state.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--noninteractive" (set "bootstrap.state.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="nobuild" (set "bootstrap.state.project.build=no" & set "bootstrap.state.explicit.build=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-build" (set "bootstrap.state.project.build=no" & set "bootstrap.state.explicit.build=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noprepare" (set "bootstrap.state.project.prepare=no" & set "bootstrap.state.explicit.prepare=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-prepare" (set "bootstrap.state.project.prepare=no" & set "bootstrap.state.explicit.prepare=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noinstall" (set "bootstrap.state.project.install=no" & set "bootstrap.state.explicit.install=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-install" (set "bootstrap.state.project.install=no" & set "bootstrap.state.explicit.install=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noupdate" (set "bootstrap.state.update.mode=no" & set "bootstrap.state.explicit.update=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-update" (set "bootstrap.state.update.mode=no" & set "bootstrap.state.explicit.update=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="nomove" (set "bootstrap.state.move.mode=no" & set "bootstrap.state.move.parent=" & set "bootstrap.state.explicit.move=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-move" (set "bootstrap.state.move.mode=no" & set "bootstrap.state.move.parent=" & set "bootstrap.state.explicit.move=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="nologin" (set "bootstrap.state.login.mode=none" & set "bootstrap.state.login.method=ask" & set "bootstrap.state.explicit.login=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-login" (set "bootstrap.state.login.mode=none" & set "bootstrap.state.login.method=ask" & set "bootstrap.state.explicit.login=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="login" goto :ParseArgumentsLogin
 if /I "%pa_arg%"=="repo" goto :ParseArgumentsRepo
 if /I "%pa_arg%"=="provider" goto :ParseArgumentsProvider
@@ -710,158 +728,158 @@ if /I "%pa_arg%"=="-?" goto :ParseArgumentsHelp
 if /I "%pa_arg%"=="--?" goto :ParseArgumentsHelp
 if /I "%pa_arg%"=="?" goto :ParseArgumentsHelp
 call :PrintError "FAIL: unknown argument %~1"
-call :PrintWarning "Use %app.launch.name% --help for current command syntax."
+call :PrintWarning "Use %bootstrap.state.launch.name% --help for current command syntax."
 set "pa_arg="
 exit /b 2
 :ParseArgumentsHelp
-set "app.mode=help"
+set "bootstrap.state.mode=help"
 exit /b 0
 :ParseArgumentsLogin
-set "app.login.mode=login"
-set "app.login.method=ask"
-set "app.explicit.login=1"
-if /I "%~2"=="no" (set "app.login.mode=none" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="ask" (set "app.login.method=ask" & shift & shift & goto :ParseArguments)
-if "%~2"=="1" (set "app.login.method=1" & shift & shift & goto :ParseArguments)
-if "%~2"=="2" (set "app.login.method=2" & shift & shift & goto :ParseArguments)
-if "%~2"=="3" (set "app.login.method=3" & shift & shift & goto :ParseArguments)
-if "%~2"=="4" (set "app.login.method=4" & shift & shift & goto :ParseArguments)
+set "bootstrap.state.login.mode=login"
+set "bootstrap.state.login.method=ask"
+set "bootstrap.state.explicit.login=1"
+if /I "%~2"=="no" (set "bootstrap.state.login.mode=none" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="ask" (set "bootstrap.state.login.method=ask" & shift & shift & goto :ParseArguments)
+if "%~2"=="1" (set "bootstrap.state.login.method=1" & shift & shift & goto :ParseArguments)
+if "%~2"=="2" (set "bootstrap.state.login.method=2" & shift & shift & goto :ParseArguments)
+if "%~2"=="3" (set "bootstrap.state.login.method=3" & shift & shift & goto :ParseArguments)
+if "%~2"=="4" (set "bootstrap.state.login.method=4" & shift & shift & goto :ParseArguments)
 shift
 goto :ParseArguments
 :ParseArgumentsRepo
 if "%~2"=="" (call :PrintError "FAIL: repo requires a URL." & exit /b 2)
-set "app.repo.url=%~2"
-set "app.explicit.repo=1"
+set "bootstrap.state.repo.url=%~2"
+set "bootstrap.state.explicit.repo=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsProvider
 if "%~2"=="" (call :PrintError "FAIL: provider requires a name." & exit /b 2)
-set "app.provider.requested=%~2"
-set "app.explicit.provider=1"
+set "bootstrap.state.provider.requested=%~2"
+set "bootstrap.state.explicit.provider=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsToolsUrl
 if "%~2"=="" (call :PrintError "FAIL: toolsurl requires a URL." & exit /b 2)
-set "app.raw.tools.url=%~2"
-set "app.explicit.toolsurl=1"
+set "bootstrap.state.raw.tools.url=%~2"
+set "bootstrap.state.explicit.toolsurl=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsGetGit
 if "%~2"=="" (call :PrintError "FAIL: getgit requires a URL." & exit /b 2)
-set "app.getgit.url=%~2"
+set "bootstrap.state.getgit.url=%~2"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsGetGitHubCli
 if "%~2"=="" (call :PrintError "FAIL: getgithubcli requires a URL." & exit /b 2)
-set "app.getgh.url=%~2"
+set "bootstrap.state.getgh.url=%~2"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsBranch
 if "%~2"=="" (call :PrintError "FAIL: branch requires a name." & exit /b 2)
-set "app.repo.branch=%~2"
-set "app.explicit.branch=1"
+set "bootstrap.state.repo.branch=%~2"
+set "bootstrap.state.explicit.branch=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsDir
 if "%~2"=="" (call :PrintError "FAIL: dir requires a path." & exit /b 2)
-call :ResolvePathFromStart "%~2" app.folder
+call :ResolvePathFromStart "%~2" bootstrap.state.folder
 if errorlevel 1 (call :PrintError "FAIL: dir path could not be resolved." & exit /b 2)
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsFork
 if "%~2"=="" (call :PrintError "FAIL: fork requires ask, yes, or no." & exit /b 2)
-if /I "%~2"=="ask" (set "app.fork.mode=ask" & set "app.explicit.fork=1" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="yes" (set "app.fork.mode=yes" & set "app.explicit.fork=1" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="no" (set "app.fork.mode=no" & set "app.explicit.fork=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="ask" (set "bootstrap.state.fork.mode=ask" & set "bootstrap.state.explicit.fork=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="yes" (set "bootstrap.state.fork.mode=yes" & set "bootstrap.state.explicit.fork=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="no" (set "bootstrap.state.fork.mode=no" & set "bootstrap.state.explicit.fork=1" & shift & shift & goto :ParseArguments)
 call :PrintError "FAIL: fork requires ask, yes, or no."
 exit /b 2
 :ParseArgumentsIdentity
 if "%~2"=="" (call :PrintError "FAIL: identity requires ask or defaults." & exit /b 2)
-if /I "%~2"=="ask" (set "app.identity.mode=ask" & set "app.explicit.identity=1" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="defaults" (set "app.identity.mode=defaults" & set "app.explicit.identity=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="ask" (set "bootstrap.state.identity.mode=ask" & set "bootstrap.state.explicit.identity=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="defaults" (set "bootstrap.state.identity.mode=defaults" & set "bootstrap.state.explicit.identity=1" & shift & shift & goto :ParseArguments)
 call :PrintError "FAIL: identity requires ask or defaults."
 exit /b 2
 :ParseArgumentsGitName
 if "%~2"=="" (call :PrintError "FAIL: gitname requires a value." & exit /b 2)
-set "app.git_name=%~2"
+set "bootstrap.state.git_name=%~2"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsGitEmail
 if "%~2"=="" (call :PrintError "FAIL: gitemail requires a value." & exit /b 2)
-set "app.git_email=%~2"
+set "bootstrap.state.git_email=%~2"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsPush
 if "%~2"=="" (call :PrintError "FAIL: push requires yes or no." & exit /b 2)
-call :ParseYesNoValue "%~2" app.push.mode
+call :ParseYesNoValue "%~2" bootstrap.state.push.mode
 if errorlevel 1 (call :PrintError "FAIL: push requires yes or no." & exit /b 2)
-set "app.explicit.push=1"
+set "bootstrap.state.explicit.push=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsMove
 if "%~2"=="" (call :PrintError "FAIL: move requires no, ask, documents, or path PATH." & exit /b 2)
-if /I "%~2"=="no" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="ask" (set "app.move.mode=ask" & set "app.move.parent=" & set "app.explicit.move=1" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="documents" (set "app.move.mode=documents" & set "app.move.parent=" & set "app.explicit.move=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="no" (set "bootstrap.state.move.mode=no" & set "bootstrap.state.move.parent=" & set "bootstrap.state.explicit.move=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="ask" (set "bootstrap.state.move.mode=ask" & set "bootstrap.state.move.parent=" & set "bootstrap.state.explicit.move=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="documents" (set "bootstrap.state.move.mode=documents" & set "bootstrap.state.move.parent=" & set "bootstrap.state.explicit.move=1" & shift & shift & goto :ParseArguments)
 if /I "%~2"=="path" goto :ParseArgumentsMovePath
 call :PrintError "FAIL: move requires no, ask, documents, or path PATH."
 exit /b 2
 :ParseArgumentsMovePath
 if "%~3"=="" (call :PrintError "FAIL: move path requires a parent path." & exit /b 2)
-call :ResolvePathFromStart "%~3" app.move.parent
+call :ResolvePathFromStart "%~3" bootstrap.state.move.parent
 if errorlevel 1 (call :PrintError "FAIL: move parent path could not be resolved." & exit /b 2)
-set "app.move.mode=path"
-set "app.explicit.move=1"
+set "bootstrap.state.move.mode=path"
+set "bootstrap.state.explicit.move=1"
 shift
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsPrepare
 if "%~2"=="" (call :PrintError "FAIL: prepare requires yes or no." & exit /b 2)
-call :ParseYesNoValue "%~2" app.project.prepare
+call :ParseYesNoValue "%~2" bootstrap.state.project.prepare
 if errorlevel 1 (call :PrintError "FAIL: prepare requires yes or no." & exit /b 2)
-set "app.explicit.prepare=1"
+set "bootstrap.state.explicit.prepare=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsBuild
 if "%~2"=="" (call :PrintError "FAIL: build requires yes or no." & exit /b 2)
-call :ParseYesNoValue "%~2" app.project.build
+call :ParseYesNoValue "%~2" bootstrap.state.project.build
 if errorlevel 1 (call :PrintError "FAIL: build requires yes or no." & exit /b 2)
-set "app.explicit.build=1"
+set "bootstrap.state.explicit.build=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsInstall
-if "%~2"=="" (set "app.project.install=yes" & set "app.explicit.install=1" & shift & goto :ParseArguments)
-call :ParseYesNoValue "%~2" app.project.install
-if errorlevel 1 (set "app.project.install=yes" & set "app.explicit.install=1" & shift & goto :ParseArguments)
-set "app.explicit.install=1"
+if "%~2"=="" (set "bootstrap.state.project.install=yes" & set "bootstrap.state.explicit.install=1" & shift & goto :ParseArguments)
+call :ParseYesNoValue "%~2" bootstrap.state.project.install
+if errorlevel 1 (set "bootstrap.state.project.install=yes" & set "bootstrap.state.explicit.install=1" & shift & goto :ParseArguments)
+set "bootstrap.state.explicit.install=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsUpdate
 if "%~2"=="" (call :PrintError "FAIL: update requires yes or no." & exit /b 2)
-call :ParseYesNoValue "%~2" app.update.mode
+call :ParseYesNoValue "%~2" bootstrap.state.update.mode
 if errorlevel 1 (call :PrintError "FAIL: update requires yes or no." & exit /b 2)
-set "app.explicit.update=1"
+set "bootstrap.state.explicit.update=1"
 shift
 shift
 goto :ParseArguments
 :ParseArgumentsConflict
 if "%~2"=="" (call :PrintError "FAIL: conflict requires quarantine or fail." & exit /b 2)
-if /I "%~2"=="quarantine" (set "app.conflict.mode=quarantine" & set "app.explicit.conflict=1" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="fail" (set "app.conflict.mode=fail" & set "app.explicit.conflict=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="quarantine" (set "bootstrap.state.conflict.mode=quarantine" & set "bootstrap.state.explicit.conflict=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="fail" (set "bootstrap.state.conflict.mode=fail" & set "bootstrap.state.explicit.conflict=1" & shift & shift & goto :ParseArguments)
 call :PrintError "FAIL: conflict requires quarantine or fail."
 exit /b 2
 
@@ -878,20 +896,20 @@ exit /b 2
 ::   none
 :: ============================================================
 :ApplyAutomationDefaults
-if defined app.git_name if defined app.git_email if not defined app.explicit.identity set "app.identity.mode=defaults"
-if not defined app.unattended exit /b 0
-if not defined app.explicit.login set "app.login.mode=none"
-if not defined app.explicit.login set "app.login.method=ask"
-if not defined app.explicit.fork if /I "%app.login.mode%"=="login" set "app.fork.mode=yes"
-if not defined app.explicit.fork if /I not "%app.login.mode%"=="login" set "app.fork.mode=no"
-if not defined app.explicit.identity set "app.identity.mode=defaults"
-if not defined app.explicit.push set "app.push.mode=yes"
-if not defined app.explicit.move set "app.move.mode=no"
-if not defined app.explicit.prepare set "app.project.prepare=yes"
-if not defined app.explicit.build set "app.project.build=yes"
-if not defined app.explicit.install set "app.project.install=no"
-if not defined app.explicit.update set "app.update.mode=yes"
-if not defined app.explicit.conflict set "app.conflict.mode=quarantine"
+if defined bootstrap.state.git_name if defined bootstrap.state.git_email if not defined bootstrap.state.explicit.identity set "bootstrap.state.identity.mode=defaults"
+if not defined bootstrap.state.unattended exit /b 0
+if not defined bootstrap.state.explicit.login set "bootstrap.state.login.mode=none"
+if not defined bootstrap.state.explicit.login set "bootstrap.state.login.method=ask"
+if not defined bootstrap.state.explicit.fork if /I "%bootstrap.state.login.mode%"=="login" set "bootstrap.state.fork.mode=yes"
+if not defined bootstrap.state.explicit.fork if /I not "%bootstrap.state.login.mode%"=="login" set "bootstrap.state.fork.mode=no"
+if not defined bootstrap.state.explicit.identity set "bootstrap.state.identity.mode=defaults"
+if not defined bootstrap.state.explicit.push set "bootstrap.state.push.mode=yes"
+if not defined bootstrap.state.explicit.move set "bootstrap.state.move.mode=no"
+if not defined bootstrap.state.explicit.prepare set "bootstrap.state.project.prepare=yes"
+if not defined bootstrap.state.explicit.build set "bootstrap.state.project.build=yes"
+if not defined bootstrap.state.explicit.install set "bootstrap.state.project.install=no"
+if not defined bootstrap.state.explicit.update set "bootstrap.state.update.mode=yes"
+if not defined bootstrap.state.explicit.conflict set "bootstrap.state.conflict.mode=quarantine"
 exit /b 0
 
 :: ============================================================
@@ -908,22 +926,22 @@ exit /b 0
 ::   ParseBootstrapUrl ParseRepositoryUrl PrintSuccess PrintError PrintWarning
 :: ============================================================
 :ResolveBootstrapContext
-if not defined app.repo.url if not defined app.bootstrap.url (call :PrintError "FAIL: no repository URL or bootstrap loader URL was provided." & exit /b 3)
-if not defined app.explicit.repo if defined app.bootstrap.url call :ParseBootstrapUrl
-if defined app.repo.url call :ParseRepositoryUrl
-if defined app.provider.requested set "app.provider=%app.provider.requested%"
-if not defined app.provider set "app.provider=git"
-if not defined app.repo.url (call :PrintError "FAIL: repository URL could not be inferred." & call :PrintWarning "Use repo URL on the command line." & exit /b 3)
-if not defined app.repo.name (call :PrintError "FAIL: repository name could not be inferred." & exit /b 3)
-if /I "%app.provider%"=="github" if not defined app.repo.owner (call :PrintError "FAIL: GitHub repository owner could not be inferred." & exit /b 3)
-if not defined app.raw.tools.url if /I "%app.provider%"=="github" set "app.raw.tools.url=https://raw.githubusercontent.com/%app.repo.owner%/%app.repo.name%/%app.repo.branch%/tools"
-if not defined app.getgit.url if defined app.raw.tools.url set "app.getgit.url=%app.raw.tools.url%/GetGit.bat"
-if not defined app.getgh.url if defined app.raw.tools.url set "app.getgh.url=%app.raw.tools.url%/GetGithubCLI.bat"
-set "app.repo.original.url=%app.repo.url%"
-set "app.repo.url.normalized="
-call :PrintSuccess "OK: Provider: %app.provider%"
-call :PrintSuccess "OK: Repo: %app.repo.url%"
-call :PrintSuccess "OK: Branch: %app.repo.branch%"
+if not defined bootstrap.state.repo.url if not defined bootstrap.state.bootstrap.url (call :PrintError "FAIL: no repository URL or bootstrap loader URL was provided." & exit /b 3)
+if not defined bootstrap.state.explicit.repo if defined bootstrap.state.bootstrap.url call :ParseBootstrapUrl
+if defined bootstrap.state.repo.url call :ParseRepositoryUrl
+if defined bootstrap.state.provider.requested set "bootstrap.state.provider=%bootstrap.state.provider.requested%"
+if not defined bootstrap.state.provider set "bootstrap.state.provider=git"
+if not defined bootstrap.state.repo.url (call :PrintError "FAIL: repository URL could not be inferred." & call :PrintWarning "Use repo URL on the command line." & exit /b 3)
+if not defined bootstrap.state.repo.name (call :PrintError "FAIL: repository name could not be inferred." & exit /b 3)
+if /I "%bootstrap.state.provider%"=="github" if not defined bootstrap.state.repo.owner (call :PrintError "FAIL: GitHub repository owner could not be inferred." & exit /b 3)
+if not defined bootstrap.state.raw.tools.url if /I "%bootstrap.state.provider%"=="github" set "bootstrap.state.raw.tools.url=https://raw.githubusercontent.com/%bootstrap.state.repo.owner%/%bootstrap.state.repo.name%/%bootstrap.state.repo.branch%/tools"
+if not defined bootstrap.state.getgit.url if defined bootstrap.state.raw.tools.url set "bootstrap.state.getgit.url=%bootstrap.state.raw.tools.url%/GetGit.bat"
+if not defined bootstrap.state.getgh.url if defined bootstrap.state.raw.tools.url set "bootstrap.state.getgh.url=%bootstrap.state.raw.tools.url%/GetGithubCLI.bat"
+set "bootstrap.state.repo.original.url=%bootstrap.state.repo.url%"
+set "bootstrap.state.repo.url.normalized="
+call :PrintSuccess "OK: Provider: %bootstrap.state.provider%"
+call :PrintSuccess "OK: Repo: %bootstrap.state.repo.url%"
+call :PrintSuccess "OK: Branch: %bootstrap.state.repo.branch%"
 exit /b 0
 
 :: ============================================================
@@ -931,7 +949,7 @@ exit /b 0
 :: Purpose
 ::   Choose the target checkout path using explicit path, matching current checkout, writable launch directory, then TEMP fallback.
 :: Outputs
-::   app.folder and app.repo.parent
+::   bootstrap.state.folder and bootstrap.state.repo.parent
 :: Return codes
 ::   0 Target folder resolved
 ::   3 No writable target parent was available
@@ -939,17 +957,17 @@ exit /b 0
 ::   UseCurrentRepository SelectRepositoryParent PrintSuccess
 :: ============================================================
 :ResolveRepositoryFolder
-if defined app.folder goto :ResolveRepositoryFolderNormalize
+if defined bootstrap.state.folder goto :ResolveRepositoryFolderNormalize
 call :UseCurrentRepository
 if not errorlevel 1 goto :ResolveRepositoryFolderNormalize
 call :SelectRepositoryParent
 set "rrf_rc=%errorlevel%"
 if not "%rrf_rc%"=="0" exit /b %rrf_rc%
-set "app.folder=%app.repo.parent%\%app.repo.name%"
+set "bootstrap.state.folder=%bootstrap.state.repo.parent%\%bootstrap.state.repo.name%"
 :ResolveRepositoryFolderNormalize
-for %%A in ("%app.folder%") do set "app.folder=%%~fA"
+for %%A in ("%bootstrap.state.folder%") do set "bootstrap.state.folder=%%~fA"
 set "rrf_rc="
-call :PrintSuccess "OK: Folder: %app.folder%"
+call :PrintSuccess "OK: Folder: %bootstrap.state.folder%"
 exit /b 0
 
 :: ============================================================
@@ -957,7 +975,7 @@ exit /b 0
 :: Purpose
 ::   Reuse the launch directory when it is already the intended repository checkout.
 :: Outputs
-::   app.folder when a matching checkout is found
+::   bootstrap.state.folder when a matching checkout is found
 :: Return codes
 ::   0 Current directory selected
 ::   1 Current directory is not the matching checkout
@@ -966,10 +984,10 @@ exit /b 0
 :: ============================================================
 :UseCurrentRepository
 set "ucr_name="
-if not exist "%app.start.dir%\.git" exit /b 1
-for %%A in ("%app.start.dir%") do set "ucr_name=%%~nxA"
-if /I not "%ucr_name%"=="%app.repo.name%" (set "ucr_name=" & exit /b 1)
-for %%A in ("%app.start.dir%") do set "app.folder=%%~fA"
+if not exist "%bootstrap.state.start.dir%\.git" exit /b 1
+for %%A in ("%bootstrap.state.start.dir%") do set "ucr_name=%%~nxA"
+if /I not "%ucr_name%"=="%bootstrap.state.repo.name%" (set "ucr_name=" & exit /b 1)
+for %%A in ("%bootstrap.state.start.dir%") do set "bootstrap.state.folder=%%~fA"
 set "ucr_name="
 call :PrintInfo "INFO: Reusing the current repository folder."
 exit /b 0
@@ -979,7 +997,7 @@ exit /b 0
 :: Purpose
 ::   Use the writable launch directory as checkout parent and use TEMP only as a fallback.
 :: Outputs
-::   app.repo.parent
+::   bootstrap.state.repo.parent
 :: Return codes
 ::   0 Writable parent selected
 ::   3 Neither launch directory nor TEMP is writable
@@ -987,18 +1005,18 @@ exit /b 0
 ::   IsDirectoryWritable PrintWarning PrintError
 :: ============================================================
 :SelectRepositoryParent
-set "app.repo.parent="
-call :IsDirectoryWritable "%app.start.dir%"
+set "bootstrap.state.repo.parent="
+call :IsDirectoryWritable "%bootstrap.state.start.dir%"
 if not errorlevel 1 goto :SelectRepositoryParentStart
 call :IsDirectoryWritable "%TEMP%"
 if errorlevel 1 (call :PrintError "FAIL: neither the launch directory nor TEMP is writable." & exit /b 3)
-for %%A in ("%TEMP%") do set "app.repo.parent=%%~fA"
+for %%A in ("%TEMP%") do set "bootstrap.state.repo.parent=%%~fA"
 call :PrintWarning "WARN: launch directory is not writable; using TEMP for the repository."
-call :PrintWarning "CURRENT: %app.start.dir%"
-call :PrintWarning "TEMP: %app.repo.parent%"
+call :PrintWarning "CURRENT: %bootstrap.state.start.dir%"
+call :PrintWarning "TEMP: %bootstrap.state.repo.parent%"
 exit /b 0
 :SelectRepositoryParentStart
-for %%A in ("%app.start.dir%") do set "app.repo.parent=%%~fA"
+for %%A in ("%bootstrap.state.start.dir%") do set "bootstrap.state.repo.parent=%%~fA"
 exit /b 0
 
 :: ============================================================
@@ -1006,22 +1024,22 @@ exit /b 0
 :: Purpose
 ::   Set provider display name and supported login, fork, and raw-tools capabilities.
 :: Outputs
-::   app.provider.display and provider capability flags
+::   bootstrap.state.provider.display and provider capability flags
 :: Return codes
 ::   0 Provider configured
 :: Dependencies
 ::   none
 :: ============================================================
 :ConfigureProvider
-set "app.provider.display=Generic Git"
-set "app.provider.can.login=0"
-set "app.provider.can.fork=0"
-if /I "%app.provider%"=="github" set "app.provider.display=GitHub"
-if /I "%app.provider%"=="github" set "app.provider.can.login=1"
-if /I "%app.provider%"=="github" set "app.provider.can.fork=1"
-if /I "%app.provider%"=="gitlab" set "app.provider.display=GitLab"
-if /I "%app.provider%"=="bitbucket" set "app.provider.display=Bitbucket"
-if /I "%app.provider%"=="gitea" set "app.provider.display=Gitea or Forgejo"
+set "bootstrap.state.provider.display=Generic Git"
+set "bootstrap.state.provider.can.login=0"
+set "bootstrap.state.provider.can.fork=0"
+if /I "%bootstrap.state.provider%"=="github" set "bootstrap.state.provider.display=GitHub"
+if /I "%bootstrap.state.provider%"=="github" set "bootstrap.state.provider.can.login=1"
+if /I "%bootstrap.state.provider%"=="github" set "bootstrap.state.provider.can.fork=1"
+if /I "%bootstrap.state.provider%"=="gitlab" set "bootstrap.state.provider.display=GitLab"
+if /I "%bootstrap.state.provider%"=="bitbucket" set "bootstrap.state.provider.display=Bitbucket"
+if /I "%bootstrap.state.provider%"=="gitea" set "bootstrap.state.provider.display=Gitea or Forgejo"
 exit /b 0
 
 :: ============================================================
@@ -1029,7 +1047,7 @@ exit /b 0
 :: Purpose
 ::   Find Git or install it through the inferred GetGit helper.
 :: Outputs
-::   app.git and PATH
+::   bootstrap.state.git and PATH
 :: Return codes
 ::   0 Git is ready
 ::   4 Git could not be installed
@@ -1038,21 +1056,21 @@ exit /b 0
 :: ============================================================
 :EnsureGit
 call :FindGit
-if defined app.git goto :EnsureGitReady
+if defined bootstrap.state.git goto :EnsureGitReady
 call :PrintWarning "MISS: git.exe not found."
 call :EnsureGetGitHelper
 if errorlevel 1 exit /b 4
 call :PrintWarning "DO: Installing Git using GetGit.bat."
-cmd.exe /D /C call "%app.tools%\GetGit.bat" >>"%app.log%" 2>&1
+cmd.exe /D /C call "%bootstrap.state.tools%\GetGit.bat" >>"%bootstrap.state.log%" 2>&1
 set "eg_rc=%errorlevel%"
-cd /d "%app.script.dir%" >nul 2>&1
-if not "%eg_rc%"=="0" (call :PrintError "FAIL: GetGit.bat failed." & call :PrintWarning "LOG: %app.log%" & set "eg_rc=" & exit /b 4)
+cd /d "%bootstrap.state.script.dir%" >nul 2>&1
+if not "%eg_rc%"=="0" (call :PrintError "FAIL: GetGit.bat failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "eg_rc=" & exit /b 4)
 set "eg_rc="
 call :FindGit
-if not defined app.git (call :PrintError "FAIL: Git is still missing after GetGit.bat." & exit /b 4)
+if not defined bootstrap.state.git (call :PrintError "FAIL: Git is still missing after GetGit.bat." & exit /b 4)
 :EnsureGitReady
-call :PrependExecutableDirectoryToPath "%app.git%"
-call :PrintSuccess "OK: Git ready: %app.git%"
+call :PrependExecutableDirectoryToPath "%bootstrap.state.git%"
+call :PrintSuccess "OK: Git ready: %bootstrap.state.git%"
 exit /b 0
 
 :: ============================================================
@@ -1060,7 +1078,7 @@ exit /b 0
 :: Purpose
 ::   Clone the repository or safely fast-forward an existing matching checkout.
 :: Outputs
-::   app.repo.ready app.final.cd
+::   bootstrap.state.repo.ready bootstrap.state.final.cd
 :: Return codes
 ::   0 Checkout ready
 ::   5 Clone or update failed
@@ -1069,11 +1087,11 @@ exit /b 0
 ::   PrintInfo
 :: ============================================================
 :SynchronizeRepository
-if not defined app.git call :EnsureGit
+if not defined bootstrap.state.git call :EnsureGit
 if errorlevel 1 exit /b 5
-if exist "%app.folder%\.git" goto :SynchronizeRepositoryExisting
-if not exist "%app.folder%\" goto :SynchronizeRepositoryClone
-if /I "%app.conflict.mode%"=="fail" (call :PrintError "FAIL: target exists and is not a Git checkout: %app.folder%" & exit /b 5)
+if exist "%bootstrap.state.folder%\.git" goto :SynchronizeRepositoryExisting
+if not exist "%bootstrap.state.folder%\" goto :SynchronizeRepositoryClone
+if /I "%bootstrap.state.conflict.mode%"=="fail" (call :PrintError "FAIL: target exists and is not a Git checkout: %bootstrap.state.folder%" & exit /b 5)
 call :QuarantineNonGitFolder
 set "sr_rc=%errorlevel%"
 if not "%sr_rc%"=="0" exit /b %sr_rc%
@@ -1083,7 +1101,7 @@ set "sr_rc=%errorlevel%"
 if not "%sr_rc%"=="0" exit /b %sr_rc%
 goto :SynchronizeRepositoryDone
 :SynchronizeRepositoryExisting
-if /I "%app.update.mode%"=="no" goto :SynchronizeRepositoryReuse
+if /I "%bootstrap.state.update.mode%"=="no" goto :SynchronizeRepositoryReuse
 call :UpdateRepository
 set "sr_rc=%errorlevel%"
 if not "%sr_rc%"=="0" exit /b %sr_rc%
@@ -1094,8 +1112,8 @@ set "sr_rc=%errorlevel%"
 if not "%sr_rc%"=="0" exit /b %sr_rc%
 call :PrintInfo "INFO: Existing checkout verified; fetch and pull were skipped."
 :SynchronizeRepositoryDone
-set "app.repo.ready=1"
-set "app.final.cd=%app.folder%"
+set "bootstrap.state.repo.ready=1"
+set "bootstrap.state.final.cd=%bootstrap.state.folder%"
 set "sr_rc="
 exit /b 0
 
@@ -1110,10 +1128,10 @@ exit /b 0
 ::   PrintInfo PrintSuccess PrintError PrintWarning
 :: ============================================================
 :CloneRepository
-call :PrintInfo "DO: Cloning %app.repo.url%."
-"%app.git%" clone --branch "%app.repo.branch%" "%app.repo.url%" "%app.folder%" >>"%app.log%" 2>&1
+call :PrintInfo "DO: Cloning %bootstrap.state.repo.url%."
+"%bootstrap.state.git%" clone --branch "%bootstrap.state.repo.branch%" "%bootstrap.state.repo.url%" "%bootstrap.state.folder%" >>"%bootstrap.state.log%" 2>&1
 set "cr_rc=%errorlevel%"
-if not "%cr_rc%"=="0" (call :PrintError "FAIL: git clone failed." & call :PrintWarning "LOG: %app.log%" & set "cr_rc=" & exit /b 5)
+if not "%cr_rc%"=="0" (call :PrintError "FAIL: git clone failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "cr_rc=" & exit /b 5)
 call :PrintSuccess "OK: Repo cloned."
 set "cr_rc="
 exit /b 0
@@ -1124,7 +1142,7 @@ exit /b 0
 ::   Verify the expected original remote and fast-forward the configured branch from that remote.
 ::   A missing local branch may be created to track the selected remote branch.
 :: Outputs
-::   app.repo.sync.remote
+::   bootstrap.state.repo.sync.remote
 :: Return codes
 ::   0 Repository updated
 ::   5 Remote verification or Git update failed
@@ -1135,23 +1153,23 @@ exit /b 0
 call :VerifyRepositoryRemote
 set "ur_rc=%errorlevel%"
 if not "%ur_rc%"=="0" (set "ur_rc=" & exit /b 5)
-call :PrintInfo "DO: Updating existing repository from %app.repo.sync.remote%."
-"%app.git%" -C "%app.folder%" fetch "%app.repo.sync.remote%" --prune >>"%app.log%" 2>&1
+call :PrintInfo "DO: Updating existing repository from %bootstrap.state.repo.sync.remote%."
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" fetch "%bootstrap.state.repo.sync.remote%" --prune >>"%bootstrap.state.log%" 2>&1
 set "ur_rc=%errorlevel%"
-if not "%ur_rc%"=="0" (call :PrintError "FAIL: git fetch failed." & call :PrintWarning "LOG: %app.log%" & set "ur_rc=" & exit /b 5)
-"%app.git%" -C "%app.folder%" checkout "%app.repo.branch%" >>"%app.log%" 2>&1
-set "ur_rc=%errorlevel%"
-if "%ur_rc%"=="0" goto :UpdateRepositoryPull
-"%app.git%" -C "%app.folder%" switch "%app.repo.branch%" >>"%app.log%" 2>&1
+if not "%ur_rc%"=="0" (call :PrintError "FAIL: git fetch failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "ur_rc=" & exit /b 5)
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" checkout "%bootstrap.state.repo.branch%" >>"%bootstrap.state.log%" 2>&1
 set "ur_rc=%errorlevel%"
 if "%ur_rc%"=="0" goto :UpdateRepositoryPull
-"%app.git%" -C "%app.folder%" switch --track -c "%app.repo.branch%" "%app.repo.sync.remote%/%app.repo.branch%" >>"%app.log%" 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" switch "%bootstrap.state.repo.branch%" >>"%bootstrap.state.log%" 2>&1
 set "ur_rc=%errorlevel%"
-if not "%ur_rc%"=="0" (call :PrintError "FAIL: Git could not switch to branch %app.repo.branch%." & call :PrintWarning "LOG: %app.log%" & set "ur_rc=" & exit /b 5)
+if "%ur_rc%"=="0" goto :UpdateRepositoryPull
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" switch --track -c "%bootstrap.state.repo.branch%" "%bootstrap.state.repo.sync.remote%/%bootstrap.state.repo.branch%" >>"%bootstrap.state.log%" 2>&1
+set "ur_rc=%errorlevel%"
+if not "%ur_rc%"=="0" (call :PrintError "FAIL: Git could not switch to branch %bootstrap.state.repo.branch%." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "ur_rc=" & exit /b 5)
 :UpdateRepositoryPull
-"%app.git%" -C "%app.folder%" pull --ff-only "%app.repo.sync.remote%" "%app.repo.branch%" >>"%app.log%" 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" pull --ff-only "%bootstrap.state.repo.sync.remote%" "%bootstrap.state.repo.branch%" >>"%bootstrap.state.log%" 2>&1
 set "ur_rc=%errorlevel%"
-if not "%ur_rc%"=="0" (call :PrintError "FAIL: git pull --ff-only failed; local work was not overwritten." & call :PrintWarning "LOG: %app.log%" & set "ur_rc=" & exit /b 5)
+if not "%ur_rc%"=="0" (call :PrintError "FAIL: git pull --ff-only failed; local work was not overwritten." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "ur_rc=" & exit /b 5)
 call :PrintSuccess "OK: Repo ready."
 set "ur_rc="
 exit /b 0
@@ -1161,7 +1179,7 @@ exit /b 0
 :: Purpose
 ::   Confirm that origin or upstream points to the original repository and select that remote for updates.
 :: Outputs
-::   app.repo.sync.remote and normalized remote values
+::   bootstrap.state.repo.sync.remote and normalized remote values
 :: Return codes
 ::   0 Expected remote found
 ::   5 Checkout is not the expected repository
@@ -1169,24 +1187,24 @@ exit /b 0
 ::   NormalizeGitUrl PrintError PrintWarning
 :: ============================================================
 :VerifyRepositoryRemote
-"%app.git%" -C "%app.folder%" rev-parse --is-inside-work-tree >nul 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: target is not a Git worktree." & exit /b 5)
-set "app.folder.origin="
-set "app.folder.origin.normalized="
-set "app.folder.upstream="
-set "app.folder.upstream.normalized="
-for /f "delims=" %%A in ('"%app.git%" -C "%app.folder%" remote get-url origin 2^>nul') do if not defined app.folder.origin set "app.folder.origin=%%A"
-for /f "delims=" %%A in ('"%app.git%" -C "%app.folder%" remote get-url upstream 2^>nul') do if not defined app.folder.upstream set "app.folder.upstream=%%A"
-if not defined app.repo.url.normalized call :NormalizeGitUrl "%app.repo.original.url%" app.repo.url.normalized
-if not defined app.repo.url.normalized (call :PrintError "FAIL: expected repository URL could not be normalized." & exit /b 5)
-if defined app.folder.origin call :NormalizeGitUrl "%app.folder.origin%" app.folder.origin.normalized
-if defined app.folder.upstream call :NormalizeGitUrl "%app.folder.upstream%" app.folder.upstream.normalized
-if defined app.folder.origin.normalized if /I "%app.folder.origin.normalized%"=="%app.repo.url.normalized%" (set "app.repo.sync.remote=origin" & exit /b 0)
-if defined app.folder.upstream.normalized if /I "%app.folder.upstream.normalized%"=="%app.repo.url.normalized%" (set "app.repo.sync.remote=upstream" & exit /b 0)
+set "bootstrap.state.folder.origin="
+set "bootstrap.state.folder.origin.normalized="
+set "bootstrap.state.folder.upstream="
+set "bootstrap.state.folder.upstream.normalized="
+for /f "delims=" %%A in ('"%bootstrap.state.git%" -C "%bootstrap.state.folder%" remote get-url origin 2^>nul') do if not defined bootstrap.state.folder.origin set "bootstrap.state.folder.origin=%%A"
+for /f "delims=" %%A in ('"%bootstrap.state.git%" -C "%bootstrap.state.folder%" remote get-url upstream 2^>nul') do if not defined bootstrap.state.folder.upstream set "bootstrap.state.folder.upstream=%%A"
+if not defined bootstrap.state.repo.url.normalized call :NormalizeGitUrl "%bootstrap.state.repo.original.url%" bootstrap.state.repo.url.normalized
+if not defined bootstrap.state.repo.url.normalized (call :PrintError "FAIL: expected repository URL could not be normalized." & exit /b 5)
+if defined bootstrap.state.folder.origin call :NormalizeGitUrl "%bootstrap.state.folder.origin%" bootstrap.state.folder.origin.normalized
+if defined bootstrap.state.folder.upstream call :NormalizeGitUrl "%bootstrap.state.folder.upstream%" bootstrap.state.folder.upstream.normalized
+if defined bootstrap.state.folder.origin.normalized if /I "%bootstrap.state.folder.origin.normalized%"=="%bootstrap.state.repo.url.normalized%" (set "bootstrap.state.repo.sync.remote=origin" & exit /b 0)
+if defined bootstrap.state.folder.upstream.normalized if /I "%bootstrap.state.folder.upstream.normalized%"=="%bootstrap.state.repo.url.normalized%" (set "bootstrap.state.repo.sync.remote=upstream" & exit /b 0)
 call :PrintError "FAIL: existing checkout does not reference the expected repository."
-call :PrintWarning "EXPECTED: %app.repo.original.url%"
-if defined app.folder.origin call :PrintWarning "ORIGIN: %app.folder.origin%"
-if defined app.folder.upstream call :PrintWarning "UPSTREAM: %app.folder.upstream%"
+call :PrintWarning "EXPECTED: %bootstrap.state.repo.original.url%"
+if defined bootstrap.state.folder.origin call :PrintWarning "ORIGIN: %bootstrap.state.folder.origin%"
+if defined bootstrap.state.folder.upstream call :PrintWarning "UPSTREAM: %bootstrap.state.folder.upstream%"
 exit /b 5
 
 :: ============================================================
@@ -1194,7 +1212,7 @@ exit /b 5
 :: Purpose
 ::   Let the cloned repository prepare Git and provider command-line tools without authenticating.
 :: Outputs
-::   app.repo.tools.prepared and refreshed tool paths
+::   bootstrap.state.repo.tools.prepared and refreshed tool paths
 :: Return codes
 ::   0 Repository tools prepared or no launcher exists
 ::   8 Repository preparation failed
@@ -1202,16 +1220,16 @@ exit /b 5
 ::   RunRepositoryLauncher FindGit FindGitHubCli PrependExecutableDirectoryToPath
 :: ============================================================
 :PrepareRepositoryTools
-if defined app.repo.tools.prepared exit /b 0
+if defined bootstrap.state.repo.tools.prepared exit /b 0
 call :RunRepositoryLauncher "prepare.bat" "Repository preparation" "repository"
 set "prt_rc=%errorlevel%"
 if not "%prt_rc%"=="0" exit /b %prt_rc%
-set "app.repo.tools.prepared=1"
+set "bootstrap.state.repo.tools.prepared=1"
 set "prt_rc="
 call :FindGit
-if defined app.git call :PrependExecutableDirectoryToPath "%app.git%"
+if defined bootstrap.state.git call :PrependExecutableDirectoryToPath "%bootstrap.state.git%"
 call :FindGitHubCli
-if defined app.gh call :PrependExecutableDirectoryToPath "%app.gh%"
+if defined bootstrap.state.gh call :PrependExecutableDirectoryToPath "%bootstrap.state.gh%"
 exit /b 0
 
 :: ============================================================
@@ -1219,25 +1237,25 @@ exit /b 0
 :: Purpose
 ::   Respect explicit login settings or ask once whether provider login and fork handling should run.
 :: Outputs
-::   app.login.mode app.fork.mode
+::   bootstrap.state.login.mode bootstrap.state.fork.mode
 :: Return codes
 ::   0 Login decision resolved
 :: Dependencies
 ::   PrintInfo PrintWarning
 :: ============================================================
 :ResolveLoginDecision
-if /I not "%app.provider.can.login%"=="1" (set "app.login.mode=none" & set "app.fork.mode=no" & call :PrintWarning "SKIP: provider login is not implemented for %app.provider%." & exit /b 0)
-if /I "%app.login.mode%"=="none" (set "app.fork.mode=no" & exit /b 0)
-if /I "%app.login.mode%"=="login" exit /b 0
+if /I not "%bootstrap.state.provider.can.login%"=="1" (set "bootstrap.state.login.mode=none" & set "bootstrap.state.fork.mode=no" & call :PrintWarning "SKIP: provider login is not implemented for %bootstrap.state.provider%." & exit /b 0)
+if /I "%bootstrap.state.login.mode%"=="none" (set "bootstrap.state.fork.mode=no" & exit /b 0)
+if /I "%bootstrap.state.login.mode%"=="login" exit /b 0
 set "rld_choice="
-call :PrintInfo "%app.provider.display% login is optional."
+call :PrintInfo "%bootstrap.state.provider.display% login is optional."
 call :PrintInfo "Press Enter to skip provider login and fork, or type y to login."
-set /p "rld_choice=%app.provider.display% login? [y/N]: "
-if /I "%rld_choice%"=="y" (set "app.login.mode=login" & set "rld_choice=" & exit /b 0)
-if /I "%rld_choice%"=="yes" (set "app.login.mode=login" & set "rld_choice=" & exit /b 0)
+set /p "rld_choice=%bootstrap.state.provider.display% login? [y/N]: "
+if /I "%rld_choice%"=="y" (set "bootstrap.state.login.mode=login" & set "rld_choice=" & exit /b 0)
+if /I "%rld_choice%"=="yes" (set "bootstrap.state.login.mode=login" & set "rld_choice=" & exit /b 0)
 if defined rld_choice if /I not "%rld_choice%"=="n" if /I not "%rld_choice%"=="no" call :PrintWarning "NOTE: unrecognized input; skipping provider login and fork."
-set "app.login.mode=none"
-set "app.fork.mode=no"
+set "bootstrap.state.login.mode=none"
+set "bootstrap.state.fork.mode=no"
 set "rld_choice="
 exit /b 0
 
@@ -1252,9 +1270,9 @@ exit /b 0
 ::   RunGitHubLoginWorkflow PrintWarning
 :: ============================================================
 :RunProviderLogin
-if /I "%app.login.mode%"=="none" (call :PrintWarning "SKIP: provider login and fork steps skipped." & exit /b 0)
-if /I "%app.provider%"=="github" goto :RunProviderLoginGitHub
-call :PrintWarning "SKIP: provider login is not implemented for %app.provider%."
+if /I "%bootstrap.state.login.mode%"=="none" (call :PrintWarning "SKIP: provider login and fork steps skipped." & exit /b 0)
+if /I "%bootstrap.state.provider%"=="github" goto :RunProviderLoginGitHub
+call :PrintWarning "SKIP: provider login is not implemented for %bootstrap.state.provider%."
 exit /b 0
 :RunProviderLoginGitHub
 call :RunGitHubLoginWorkflow
@@ -1276,7 +1294,7 @@ call :EnsureGit
 if errorlevel 1 exit /b 6
 call :EnsureGitHubCli
 if errorlevel 1 exit /b 6
-if exist "%app.folder%\just_login.bat" goto :RunGitHubLoginWorkflowRepository
+if exist "%bootstrap.state.folder%\just_login.bat" goto :RunGitHubLoginWorkflowRepository
 call :RunFallbackGitHubLogin
 set "rglw_rc=%errorlevel%"
 if not "%rglw_rc%"=="0" exit /b %rglw_rc%
@@ -1306,9 +1324,9 @@ exit /b %rglw_rc%
 :: ============================================================
 :RunRepositoryLogin
 set "rrl_rc=0"
-pushd "%app.folder%" >nul 2>&1
+pushd "%bootstrap.state.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for login." & exit /b 6)
-call just_login.bat repo "%app.repo.original.url%" branch "%app.repo.branch%" browser %app.login.method% fork %app.fork.mode% identity %app.identity.mode% push %app.push.mode% prepared yes
+call just_login.bat repo "%bootstrap.state.repo.original.url%" branch "%bootstrap.state.repo.branch%" browser %bootstrap.state.login.method% fork %bootstrap.state.fork.mode% identity %bootstrap.state.identity.mode% push %bootstrap.state.push.mode% prepared yes
 set "rrl_rc=%errorlevel%"
 popd >nul
 if not "%rrl_rc%"=="0" (call :PrintError "FAIL: just_login.bat failed." & set "rrl_rc=" & exit /b 6)
@@ -1321,7 +1339,7 @@ exit /b 0
 :: Purpose
 ::   Authenticate GitHub CLI when the repository does not provide just_login.bat.
 :: Outputs
-::   app.github.user
+::   bootstrap.state.github.user
 :: Return codes
 ::   0 GitHub authentication confirmed
 ::   6 GitHub authentication failed
@@ -1334,22 +1352,22 @@ call :CheckGitHubAuthentication
 set "rfgl_rc=%errorlevel%"
 if "%rfgl_rc%"=="0" (set "rfgl_rc=" & exit /b 0)
 set "rfgl_rc="
-if /I "%app.login.method%"=="ask" call :PromptLoginMethod
-if /I "%app.login.method%"=="ask" set "rfgl_rc=%errorlevel%"
+if /I "%bootstrap.state.login.method%"=="ask" call :PromptLoginMethod
+if /I "%bootstrap.state.login.method%"=="ask" set "rfgl_rc=%errorlevel%"
 if defined rfgl_rc if not "%rfgl_rc%"=="0" (set "rfgl_rc=" & exit /b 6)
 set "rfgl_rc="
-call :OpenDeviceLoginPage "%app.login.method%"
+call :OpenDeviceLoginPage "%bootstrap.state.login.method%"
 set "rfgl_old_gh_browser=%GH_BROWSER%"
 set "rfgl_old_browser=%BROWSER%"
-if not "%app.login.method%"=="1" set "GH_BROWSER=echo"
-if not "%app.login.method%"=="1" set "BROWSER=echo"
+if not "%bootstrap.state.login.method%"=="1" set "GH_BROWSER=echo"
+if not "%bootstrap.state.login.method%"=="1" set "BROWSER=echo"
 call :PrintInfo "DO: GitHub device login."
-if "%app.login.method%"=="1" goto :RunFallbackGitHubLoginNormal
-echo.| "%app.gh%" auth login --web --git-protocol https
+if "%bootstrap.state.login.method%"=="1" goto :RunFallbackGitHubLoginNormal
+echo.| "%bootstrap.state.gh%" auth login --web --git-protocol https
 set "rfgl_rc=%errorlevel%"
 goto :RunFallbackGitHubLoginRestore
 :RunFallbackGitHubLoginNormal
-"%app.gh%" auth login --web --git-protocol https
+"%bootstrap.state.gh%" auth login --web --git-protocol https
 set "rfgl_rc=%errorlevel%"
 :RunFallbackGitHubLoginRestore
 if defined rfgl_old_gh_browser (set "GH_BROWSER=%rfgl_old_gh_browser%") else (set "GH_BROWSER=")
@@ -1357,14 +1375,14 @@ if defined rfgl_old_browser (set "BROWSER=%rfgl_old_browser%") else (set "BROWSE
 set "rfgl_old_gh_browser="
 set "rfgl_old_browser="
 if not "%rfgl_rc%"=="0" (call :PrintError "FAIL: GitHub login failed." & set "rfgl_rc=" & exit /b 6)
-"%app.gh%" auth setup-git >>"%app.log%" 2>&1
+"%bootstrap.state.gh%" auth setup-git >>"%bootstrap.state.log%" 2>&1
 set "rfgl_rc=%errorlevel%"
 if not "%rfgl_rc%"=="0" (call :PrintError "FAIL: GitHub CLI could not configure Git authentication." & set "rfgl_rc=" & exit /b 6)
 call :CheckGitHubAuthentication
 if errorlevel 1 (call :PrintError "FAIL: GitHub login was not confirmed." & exit /b 6)
 call :GetGitHubUser
 if errorlevel 1 (call :PrintError "FAIL: authenticated GitHub username could not be resolved." & exit /b 6)
-call :PrintSuccess "OK: GitHub login ready: %app.github.user%"
+call :PrintSuccess "OK: GitHub login ready: %bootstrap.state.github.user%"
 set "rfgl_rc="
 exit /b 0
 
@@ -1386,9 +1404,9 @@ if not "%cfghf_rc%"=="0" (set "cfghf_rc=" & exit /b 6)
 call :CheckGitHubWritePermission
 set "cfghf_rc=%errorlevel%"
 if "%cfghf_rc%"=="0" goto :ConfigureFallbackGitHubForkDirect
-if /I "%app.fork.mode%"=="no" goto :ConfigureFallbackGitHubForkReadOnly
-if /I "%app.fork.mode%"=="ask" call :PromptForkChoice
-if /I "%app.fork.mode%"=="no" goto :ConfigureFallbackGitHubForkReadOnly
+if /I "%bootstrap.state.fork.mode%"=="no" goto :ConfigureFallbackGitHubForkReadOnly
+if /I "%bootstrap.state.fork.mode%"=="ask" call :PromptForkChoice
+if /I "%bootstrap.state.fork.mode%"=="no" goto :ConfigureFallbackGitHubForkReadOnly
 call :CreateGitHubFork
 set "cfghf_rc=%errorlevel%"
 if not "%cfghf_rc%"=="0" (set "cfghf_rc=" & exit /b 6)
@@ -1405,7 +1423,7 @@ call :PrintSuccess "OK: authenticated account can write to the original reposito
 set "cfghf_rc="
 exit /b 0
 :ConfigureFallbackGitHubForkReadOnly
-set "app.push.mode=no"
+set "bootstrap.state.push.mode=no"
 call :ConfigureOriginalRemote
 set "cfghf_rc=%errorlevel%"
 if not "%cfghf_rc%"=="0" (set "cfghf_rc=" & exit /b 6)
@@ -1430,19 +1448,19 @@ set "cfgi_name="
 set "cfgi_email="
 set "cfgi_input="
 set "cfgi_id="
-if defined app.git_name set "cfgi_name=%app.git_name%"
-if defined app.git_email set "cfgi_email=%app.git_email%"
-for /f "delims=" %%A in ('"%app.git%" -C "%app.folder%" config --local --get user.name 2^>nul') do if not defined cfgi_name set "cfgi_name=%%A"
-for /f "delims=" %%A in ('"%app.git%" -C "%app.folder%" config --local --get user.email 2^>nul') do if not defined cfgi_email set "cfgi_email=%%A"
-if not defined cfgi_name for /f "delims=" %%A in ('"%app.git%" config --global --get user.name 2^>nul') do if not defined cfgi_name set "cfgi_name=%%A"
-if not defined cfgi_email for /f "delims=" %%A in ('"%app.git%" config --global --get user.email 2^>nul') do if not defined cfgi_email set "cfgi_email=%%A"
-if not defined app.github.user call :GetGitHubUser
-if not defined cfgi_name set "cfgi_name=%app.github.user%"
-if not defined cfgi_email for /f "delims=" %%A in ('"%app.gh%" api user --jq ".email // empty" 2^>nul') do if not defined cfgi_email set "cfgi_email=%%A"
-if not defined cfgi_email for /f "delims=" %%A in ('"%app.gh%" api user --jq ".id" 2^>nul') do if not defined cfgi_id set "cfgi_id=%%A"
-if not defined cfgi_email if defined cfgi_id set "cfgi_email=%cfgi_id%+%app.github.user%@users.noreply.github.com"
-if not defined cfgi_email if defined app.github.user set "cfgi_email=%app.github.user%@users.noreply.github.com"
-if /I not "%app.identity.mode%"=="ask" goto :ConfigureFallbackGitIdentityValidate
+if defined bootstrap.state.git_name set "cfgi_name=%bootstrap.state.git_name%"
+if defined bootstrap.state.git_email set "cfgi_email=%bootstrap.state.git_email%"
+for /f "delims=" %%A in ('"%bootstrap.state.git%" -C "%bootstrap.state.folder%" config --local --get user.name 2^>nul') do if not defined cfgi_name set "cfgi_name=%%A"
+for /f "delims=" %%A in ('"%bootstrap.state.git%" -C "%bootstrap.state.folder%" config --local --get user.email 2^>nul') do if not defined cfgi_email set "cfgi_email=%%A"
+if not defined cfgi_name for /f "delims=" %%A in ('"%bootstrap.state.git%" config --global --get user.name 2^>nul') do if not defined cfgi_name set "cfgi_name=%%A"
+if not defined cfgi_email for /f "delims=" %%A in ('"%bootstrap.state.git%" config --global --get user.email 2^>nul') do if not defined cfgi_email set "cfgi_email=%%A"
+if not defined bootstrap.state.github.user call :GetGitHubUser
+if not defined cfgi_name set "cfgi_name=%bootstrap.state.github.user%"
+if not defined cfgi_email for /f "delims=" %%A in ('"%bootstrap.state.gh%" api user --jq ".email // empty" 2^>nul') do if not defined cfgi_email set "cfgi_email=%%A"
+if not defined cfgi_email for /f "delims=" %%A in ('"%bootstrap.state.gh%" api user --jq ".id" 2^>nul') do if not defined cfgi_id set "cfgi_id=%%A"
+if not defined cfgi_email if defined cfgi_id set "cfgi_email=%cfgi_id%+%bootstrap.state.github.user%@users.noreply.github.com"
+if not defined cfgi_email if defined bootstrap.state.github.user set "cfgi_email=%bootstrap.state.github.user%@users.noreply.github.com"
+if /I not "%bootstrap.state.identity.mode%"=="ask" goto :ConfigureFallbackGitIdentityValidate
 set /p "cfgi_input=Git name [%cfgi_name%]: "
 if defined cfgi_input set "cfgi_name=%cfgi_input%"
 set "cfgi_input="
@@ -1451,9 +1469,9 @@ if defined cfgi_input set "cfgi_email=%cfgi_input%"
 :ConfigureFallbackGitIdentityValidate
 if not defined cfgi_name (call :PrintError "FAIL: Git author name is required." & exit /b 6)
 if not defined cfgi_email (call :PrintError "FAIL: Git author email is required." & exit /b 6)
-"%app.git%" -C "%app.folder%" config --local user.name "%cfgi_name%" >>"%app.log%" 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" config --local user.name "%cfgi_name%" >>"%bootstrap.state.log%" 2>&1
 if errorlevel 1 (call :PrintError "FAIL: local Git user.name could not be set." & exit /b 6)
-"%app.git%" -C "%app.folder%" config --local user.email "%cfgi_email%" >>"%app.log%" 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" config --local user.email "%cfgi_email%" >>"%bootstrap.state.log%" 2>&1
 if errorlevel 1 (call :PrintError "FAIL: local Git user.email could not be set." & exit /b 6)
 call :PrintSuccess "OK: Local Git identity configured."
 set "cfgi_name="
@@ -1473,15 +1491,15 @@ exit /b 0
 ::   PrintInfo PrintSuccess PrintWarning PrintError
 :: ============================================================
 :RunFallbackGitPush
-if /I "%app.push.mode%"=="no" (call :PrintWarning "SKIP: Git push disabled." & exit /b 0)
-"%app.git%" -C "%app.folder%" rev-parse --verify HEAD >nul 2>&1
+if /I "%bootstrap.state.push.mode%"=="no" (call :PrintWarning "SKIP: Git push disabled." & exit /b 0)
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" rev-parse --verify HEAD >nul 2>&1
 if errorlevel 1 (call :PrintInfo "INFO: No commits exist yet; nothing to push." & exit /b 0)
 set "rfgp_branch="
-for /f "delims=" %%A in ('"%app.git%" -C "%app.folder%" branch --show-current 2^>nul') do if not defined rfgp_branch set "rfgp_branch=%%A"
-if not defined rfgp_branch set "rfgp_branch=%app.repo.branch%"
+for /f "delims=" %%A in ('"%bootstrap.state.git%" -C "%bootstrap.state.folder%" branch --show-current 2^>nul') do if not defined rfgp_branch set "rfgp_branch=%%A"
+if not defined rfgp_branch set "rfgp_branch=%bootstrap.state.repo.branch%"
 call :PrintInfo "DO: Pushing branch %rfgp_branch% to origin."
-"%app.git%" -C "%app.folder%" push -u origin "%rfgp_branch%" >>"%app.log%" 2>&1
-if errorlevel 1 (call :PrintError "FAIL: Git push failed." & call :PrintWarning "LOG: %app.log%" & set "rfgp_branch=" & exit /b 6)
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" push -u origin "%rfgp_branch%" >>"%bootstrap.state.log%" 2>&1
+if errorlevel 1 (call :PrintError "FAIL: Git push failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "rfgp_branch=" & exit /b 6)
 call :PrintSuccess "OK: Git push complete."
 set "rfgp_branch="
 exit /b 0
@@ -1491,7 +1509,7 @@ exit /b 0
 :: Purpose
 ::   Move the repository only when explicitly requested.
 :: Outputs
-::   app.folder app.final.cd
+::   bootstrap.state.folder bootstrap.state.final.cd
 :: Return codes
 ::   0 Repository moved or move skipped
 ::   7 Move failed
@@ -1500,11 +1518,11 @@ exit /b 0
 ::   PrintError
 :: ============================================================
 :MaybeMoveRepository
-if /I "%app.move.mode%"=="no" exit /b 0
-if /I "%app.move.mode%"=="documents" call :MoveRepositoryToDocuments
-if /I "%app.move.mode%"=="documents" exit /b %errorlevel%
-if /I "%app.move.mode%"=="path" call :MoveRepositoryToParent "%app.move.parent%"
-if /I "%app.move.mode%"=="path" exit /b %errorlevel%
+if /I "%bootstrap.state.move.mode%"=="no" exit /b 0
+if /I "%bootstrap.state.move.mode%"=="documents" call :MoveRepositoryToDocuments
+if /I "%bootstrap.state.move.mode%"=="documents" exit /b %errorlevel%
+if /I "%bootstrap.state.move.mode%"=="path" call :MoveRepositoryToParent "%bootstrap.state.move.parent%"
+if /I "%bootstrap.state.move.mode%"=="path" exit /b %errorlevel%
 set "mmr_choice="
 set "mmr_parent="
 set "mmr_rc=0"
@@ -1561,7 +1579,7 @@ exit /b %mrtd_rc%
 :MoveRepositoryWithPicker
 set "mrwp_parent="
 for /f "delims=" %%A in ('powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description='Choose destination parent folder'; if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$d.SelectedPath}"') do set "mrwp_parent=%%A"
-if not defined mrwp_parent (call :PrintWarning "MOVE: cancelled; repository kept at %app.folder%." & exit /b 0)
+if not defined mrwp_parent (call :PrintWarning "MOVE: cancelled; repository kept at %bootstrap.state.folder%." & exit /b 0)
 call :MoveRepositoryToParent "%mrwp_parent%"
 set "mrwp_rc=%errorlevel%"
 set "mrwp_parent="
@@ -1572,7 +1590,7 @@ exit /b %mrwp_rc%
 :: Purpose
 ::   Validate a destination parent then move or reuse a verified matching checkout.
 :: Outputs
-::   app.folder app.final.cd and refreshed repository tool state
+::   bootstrap.state.folder bootstrap.state.final.cd and refreshed repository tool state
 :: Return codes
 ::   0 Repository moved or matching destination reused
 ::   7 Move failed or destination conflicts
@@ -1584,7 +1602,7 @@ exit /b %mrwp_rc%
 set "mrtp_parent=%~1"
 set "mrtp_previous="
 if not defined mrtp_parent exit /b 0
-call :IsPathWithin "%mrtp_parent%" "%app.folder%"
+call :IsPathWithin "%mrtp_parent%" "%bootstrap.state.folder%"
 set "mrtp_path_rc=%errorlevel%"
 if "%mrtp_path_rc%"=="0" (call :PrintError "FAIL: destination parent cannot be inside the current repository." & set "mrtp_parent=" & set "mrtp_path_rc=" & exit /b 7)
 set "mrtp_path_rc="
@@ -1592,42 +1610,42 @@ if not exist "%mrtp_parent%\" mkdir "%mrtp_parent%" >nul 2>&1
 if not exist "%mrtp_parent%\" (call :PrintError "FAIL: destination parent does not exist and could not be created: %mrtp_parent%" & set "mrtp_parent=" & exit /b 7)
 call :IsDirectoryWritable "%mrtp_parent%"
 if errorlevel 1 (call :PrintError "FAIL: destination parent is not writable: %mrtp_parent%" & set "mrtp_parent=" & exit /b 7)
-for %%A in ("%mrtp_parent%\%app.repo.name%") do set "app.final.folder=%%~fA"
-if /I "%app.final.folder%"=="%app.folder%" (set "app.final.cd=%app.folder%" & set "mrtp_parent=" & exit /b 0)
-call :IsPathWithin "%app.final.folder%" "%app.folder%"
+for %%A in ("%mrtp_parent%\%bootstrap.state.repo.name%") do set "bootstrap.state.final.folder=%%~fA"
+if /I "%bootstrap.state.final.folder%"=="%bootstrap.state.folder%" (set "bootstrap.state.final.cd=%bootstrap.state.folder%" & set "mrtp_parent=" & exit /b 0)
+call :IsPathWithin "%bootstrap.state.final.folder%" "%bootstrap.state.folder%"
 if not errorlevel 1 (call :PrintError "FAIL: destination cannot be inside the current repository." & set "mrtp_parent=" & exit /b 7)
-if exist "%app.final.folder%\.git" goto :MoveRepositoryToParentExisting
-if exist "%app.final.folder%\" (call :PrintError "FAIL: destination exists and is not a Git checkout: %app.final.folder%" & set "mrtp_parent=" & exit /b 7)
-set "mrtp_previous=%app.folder%"
-call :PrintInfo "DO: Moving repository to %app.final.folder%."
-robocopy "%app.folder%" "%app.final.folder%" /E /MOVE /NFL /NDL /NJH /NJS /NP >>"%app.log%" 2>&1
-if errorlevel 8 (call :PrintError "FAIL: repository move failed." & call :PrintWarning "LOG: %app.log%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
-if not exist "%app.final.folder%\.git" (call :PrintError "FAIL: moved destination is not a Git checkout." & set "app.folder=%app.final.folder%" & set "app.final.cd=%app.final.folder%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
-set "app.folder=%app.final.folder%"
+if exist "%bootstrap.state.final.folder%\.git" goto :MoveRepositoryToParentExisting
+if exist "%bootstrap.state.final.folder%\" (call :PrintError "FAIL: destination exists and is not a Git checkout: %bootstrap.state.final.folder%" & set "mrtp_parent=" & exit /b 7)
+set "mrtp_previous=%bootstrap.state.folder%"
+call :PrintInfo "DO: Moving repository to %bootstrap.state.final.folder%."
+robocopy "%bootstrap.state.folder%" "%bootstrap.state.final.folder%" /E /MOVE /NFL /NDL /NJH /NJS /NP >>"%bootstrap.state.log%" 2>&1
+if errorlevel 8 (call :PrintError "FAIL: repository move failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
+if not exist "%bootstrap.state.final.folder%\.git" (call :PrintError "FAIL: moved destination is not a Git checkout." & set "bootstrap.state.folder=%bootstrap.state.final.folder%" & set "bootstrap.state.final.cd=%bootstrap.state.final.folder%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
+set "bootstrap.state.folder=%bootstrap.state.final.folder%"
 call :FindGit
-if not defined app.git (call :PrintError "FAIL: Git could not be resolved after moving the repository." & set "app.final.cd=%app.folder%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
-call :PrependExecutableDirectoryToPath "%app.git%"
+if not defined bootstrap.state.git (call :PrintError "FAIL: Git could not be resolved after moving the repository." & set "bootstrap.state.final.cd=%bootstrap.state.folder%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
+call :PrependExecutableDirectoryToPath "%bootstrap.state.git%"
 call :VerifyRepositoryRemote
-if errorlevel 1 (call :PrintError "FAIL: moved destination does not reference the expected repository." & set "app.final.cd=%app.folder%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
+if errorlevel 1 (call :PrintError "FAIL: moved destination does not reference the expected repository." & set "bootstrap.state.final.cd=%bootstrap.state.folder%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
 set "mrtp_previous="
 goto :MoveRepositoryToParentRefresh
 :MoveRepositoryToParentExisting
-set "mrtp_previous=%app.folder%"
-set "app.folder=%app.final.folder%"
+set "mrtp_previous=%bootstrap.state.folder%"
+set "bootstrap.state.folder=%bootstrap.state.final.folder%"
 call :FindGit
-if not defined app.git (set "app.folder=%mrtp_previous%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
-call :PrependExecutableDirectoryToPath "%app.git%"
+if not defined bootstrap.state.git (set "bootstrap.state.folder=%mrtp_previous%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
+call :PrependExecutableDirectoryToPath "%bootstrap.state.git%"
 call :VerifyRepositoryRemote
-if errorlevel 1 (set "app.folder=%mrtp_previous%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
+if errorlevel 1 (set "bootstrap.state.folder=%mrtp_previous%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
 call :PrintInfo "INFO: using the existing matching destination checkout."
 call :PrintWarning "NOTE: the original checkout remains at %mrtp_previous%."
 set "mrtp_previous="
 :MoveRepositoryToParentRefresh
-set "app.final.cd=%app.folder%"
-set "app.repo.tools.prepared="
+set "bootstrap.state.final.cd=%bootstrap.state.folder%"
+set "bootstrap.state.repo.tools.prepared="
 call :PrepareRepositoryTools
 if errorlevel 1 (set "mrtp_parent=" & exit /b 7)
-call :PrintSuccess "OK: Repository ready at %app.folder%."
+call :PrintSuccess "OK: Repository ready at %bootstrap.state.folder%."
 set "mrtp_parent="
 exit /b 0
 
@@ -1686,7 +1704,7 @@ exit /b %rpi_rc%
 ::   Parse a supported raw bootstrap URL into inferred repository and tools metadata.
 ::   Explicit provider branch and tools URL values remain unchanged.
 :: Outputs
-::   app.provider app.repo owner name branch URL and app.raw.tools.url
+::   bootstrap.state.provider bootstrap.state.repo owner name branch URL and bootstrap.state.raw.tools.url
 :: Return codes
 ::   0 Parsing attempted
 :: Dependencies
@@ -1699,13 +1717,13 @@ set "pbu.repo.owner="
 set "pbu.repo.name="
 set "pbu.repo.branch="
 set "pbu.raw.tools.url="
-for /f "tokens=1,* delims==" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$u=${env:app.bootstrap.url}; if(!$u){$u=$env:bootstrap}; if(!$u){exit 0}; $b=${env:app.repo.branch}; if(!$b){$b='main'}; $x=[uri]$u; $s=$x.Scheme; $h=$x.Host.ToLowerInvariant(); $a=$x.Authority; $p=$x.AbsolutePath.Trim('/') -split '/'; $provider='git'; $owner=''; $repo=''; $branch=$b; $repoUrl=''; $raw=''; $repoPath=''; if($h -eq 'raw.githubusercontent.com' -and $p.Length -ge 4){$provider='github';$owner=$p[0];$repo=$p[1];$branch=$p[2];$repoPath=$owner+'/'+$repo;$repoUrl='https://github.com/'+$repoPath+'.git';$raw='https://raw.githubusercontent.com/'+$repoPath+'/'+$branch+'/tools'} elseif($h -eq 'github.com' -and $p.Length -ge 4 -and $p[2] -eq 'blob'){$provider='github';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl='https://github.com/'+$repoPath+'.git';$raw='https://raw.githubusercontent.com/'+$repoPath+'/'+$branch+'/tools'} elseif($h -like '*gitlab*' -and ($p -contains '-')){$provider='gitlab';$i=[array]::IndexOf($p,'-');if($i -gt 0){$repo=$p[$i-1];$owner=($p[0..($i-2)] -join '/');$repoPath=($p[0..($i-1)] -join '/');$repoUrl=$s+'://'+$a+'/'+$repoPath+'.git';$j=$i+1;if($p.Length -gt ($j+1) -and ($p[$j] -eq 'raw' -or $p[$j] -eq 'blob')){$branch=$p[$j+1]};$raw=$s+'://'+$a+'/'+$repoPath+'/-/raw/'+$branch+'/tools'}} elseif($h -eq 'bitbucket.org' -and $p.Length -ge 4 -and ($p[2] -eq 'raw' -or $p[2] -eq 'src')){$provider='bitbucket';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl='https://bitbucket.org/'+$repoPath+'.git';$raw='https://bitbucket.org/'+$repoPath+'/raw/'+$branch+'/tools'} elseif($p.Length -ge 4 -and ($p[2] -eq 'raw' -or $p[2] -eq 'src')){$provider='gitea';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl=$s+'://'+$a+'/'+$repoPath+'.git';$raw=$s+'://'+$a+'/'+$repoPath+'/raw/'+$branch+'/tools'}; if($provider){'provider='+$provider};if($repoUrl){'repo.url='+$repoUrl};if($owner){'repo.owner='+$owner};if($repo){'repo.name='+$repo};if($branch){'repo.branch='+$branch};if($raw){'raw.tools.url='+$raw}" 2^>nul') do set "pbu.%%A=%%B"
-if not defined app.explicit.provider if defined pbu.provider set "app.provider=%pbu.provider%"
-if defined pbu.repo.url set "app.repo.url=%pbu.repo.url%"
-if defined pbu.repo.owner set "app.repo.owner=%pbu.repo.owner%"
-if defined pbu.repo.name set "app.repo.name=%pbu.repo.name%"
-if not defined app.explicit.branch if defined pbu.repo.branch set "app.repo.branch=%pbu.repo.branch%"
-if not defined app.explicit.toolsurl if defined pbu.raw.tools.url set "app.raw.tools.url=%pbu.raw.tools.url%"
+for /f "tokens=1,* delims==" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$u=${env:bootstrap.state.bootstrap.url}; if(!$u){$u=$env:bootstrap}; if(!$u){exit 0}; $b=${env:bootstrap.state.repo.branch}; if(!$b){$b='main'}; $x=[uri]$u; $s=$x.Scheme; $h=$x.Host.ToLowerInvariant(); $a=$x.Authority; $p=$x.AbsolutePath.Trim('/') -split '/'; $provider='git'; $owner=''; $repo=''; $branch=$b; $repoUrl=''; $raw=''; $repoPath=''; if($h -eq 'raw.githubusercontent.com' -and $p.Length -ge 4){$provider='github';$owner=$p[0];$repo=$p[1];$branch=$p[2];$repoPath=$owner+'/'+$repo;$repoUrl='https://github.com/'+$repoPath+'.git';$raw='https://raw.githubusercontent.com/'+$repoPath+'/'+$branch+'/tools'} elseif($h -eq 'github.com' -and $p.Length -ge 4 -and $p[2] -eq 'blob'){$provider='github';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl='https://github.com/'+$repoPath+'.git';$raw='https://raw.githubusercontent.com/'+$repoPath+'/'+$branch+'/tools'} elseif($h -like '*gitlab*' -and ($p -contains '-')){$provider='gitlab';$i=[array]::IndexOf($p,'-');if($i -gt 0){$repo=$p[$i-1];$owner=($p[0..($i-2)] -join '/');$repoPath=($p[0..($i-1)] -join '/');$repoUrl=$s+'://'+$a+'/'+$repoPath+'.git';$j=$i+1;if($p.Length -gt ($j+1) -and ($p[$j] -eq 'raw' -or $p[$j] -eq 'blob')){$branch=$p[$j+1]};$raw=$s+'://'+$a+'/'+$repoPath+'/-/raw/'+$branch+'/tools'}} elseif($h -eq 'bitbucket.org' -and $p.Length -ge 4 -and ($p[2] -eq 'raw' -or $p[2] -eq 'src')){$provider='bitbucket';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl='https://bitbucket.org/'+$repoPath+'.git';$raw='https://bitbucket.org/'+$repoPath+'/raw/'+$branch+'/tools'} elseif($p.Length -ge 4 -and ($p[2] -eq 'raw' -or $p[2] -eq 'src')){$provider='gitea';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl=$s+'://'+$a+'/'+$repoPath+'.git';$raw=$s+'://'+$a+'/'+$repoPath+'/raw/'+$branch+'/tools'}; if($provider){'provider='+$provider};if($repoUrl){'repo.url='+$repoUrl};if($owner){'repo.owner='+$owner};if($repo){'repo.name='+$repo};if($branch){'repo.branch='+$branch};if($raw){'raw.tools.url='+$raw}" 2^>nul') do set "pbu.%%A=%%B"
+if not defined bootstrap.state.explicit.provider if defined pbu.provider set "bootstrap.state.provider=%pbu.provider%"
+if defined pbu.repo.url set "bootstrap.state.repo.url=%pbu.repo.url%"
+if defined pbu.repo.owner set "bootstrap.state.repo.owner=%pbu.repo.owner%"
+if defined pbu.repo.name set "bootstrap.state.repo.name=%pbu.repo.name%"
+if not defined bootstrap.state.explicit.branch if defined pbu.repo.branch set "bootstrap.state.repo.branch=%pbu.repo.branch%"
+if not defined bootstrap.state.explicit.toolsurl if defined pbu.raw.tools.url set "bootstrap.state.raw.tools.url=%pbu.raw.tools.url%"
 set "pbu.provider="
 set "pbu.repo.url="
 set "pbu.repo.owner="
@@ -1720,7 +1738,7 @@ exit /b 0
 ::   Normalize common HTTPS and SSH repository URLs and infer provider-specific raw tools URLs.
 ::   Explicit provider and tools URL values remain unchanged.
 :: Outputs
-::   app.provider app.repo owner name and helper URLs
+::   bootstrap.state.provider bootstrap.state.repo owner name and helper URLs
 :: Return codes
 ::   0 Parsing attempted
 :: Dependencies
@@ -1731,17 +1749,17 @@ set "pru.provider="
 set "pru.repo.owner="
 set "pru.repo.name="
 set "pru.raw.tools.url="
-for /f "tokens=1,* delims==" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$u=${env:app.repo.url}; if(!$u){exit 0}; $b=${env:app.repo.branch}; if(!$b){$b='main'}; $q=$u -replace '^git@([^:]+):','https://$1/' -replace '^ssh://git@','https://'; $x=[uri]$q; $h=$x.Host.ToLowerInvariant(); $a=$x.Authority; $path=$x.AbsolutePath.Trim('/') -replace '\.git$',''; $p=$path -split '/'; $provider='git';$owner='';$repo='';$raw='';if($p.Length -ge 1){$repo=$p[$p.Length-1]};if($p.Length -ge 2){$owner=($p[0..($p.Length-2)] -join '/')};if($h -eq 'github.com'){$provider='github';$raw='https://raw.githubusercontent.com/'+$path+'/'+$b+'/tools'} elseif($h -like '*gitlab*'){$provider='gitlab';$raw=$x.Scheme+'://'+$a+'/'+$path+'/-/raw/'+$b+'/tools'} elseif($h -eq 'bitbucket.org'){$provider='bitbucket';$raw='https://bitbucket.org/'+$path+'/raw/'+$b+'/tools'} elseif($h -like '*codeberg.org' -or $h -like '*gitea*' -or $h -like '*forgejo*'){$provider='gitea';$raw=$x.Scheme+'://'+$a+'/'+$path+'/raw/'+$b+'/tools'};'provider='+$provider;if($owner){'repo.owner='+$owner};if($repo){'repo.name='+$repo};if($raw){'raw.tools.url='+$raw}" 2^>nul') do set "pru.%%A=%%B"
-if not defined app.explicit.provider if defined pru.provider set "app.provider=%pru.provider%"
-if defined pru.repo.owner set "app.repo.owner=%pru.repo.owner%"
-if defined pru.repo.name set "app.repo.name=%pru.repo.name%"
-if not defined app.explicit.toolsurl if defined pru.raw.tools.url set "app.raw.tools.url=%pru.raw.tools.url%"
+for /f "tokens=1,* delims==" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$u=${env:bootstrap.state.repo.url}; if(!$u){exit 0}; $b=${env:bootstrap.state.repo.branch}; if(!$b){$b='main'}; $q=$u -replace '^git@([^:]+):','https://$1/' -replace '^ssh://git@','https://'; $x=[uri]$q; $h=$x.Host.ToLowerInvariant(); $a=$x.Authority; $path=$x.AbsolutePath.Trim('/') -replace '\.git$',''; $p=$path -split '/'; $provider='git';$owner='';$repo='';$raw='';if($p.Length -ge 1){$repo=$p[$p.Length-1]};if($p.Length -ge 2){$owner=($p[0..($p.Length-2)] -join '/')};if($h -eq 'github.com'){$provider='github';$raw='https://raw.githubusercontent.com/'+$path+'/'+$b+'/tools'} elseif($h -like '*gitlab*'){$provider='gitlab';$raw=$x.Scheme+'://'+$a+'/'+$path+'/-/raw/'+$b+'/tools'} elseif($h -eq 'bitbucket.org'){$provider='bitbucket';$raw='https://bitbucket.org/'+$path+'/raw/'+$b+'/tools'} elseif($h -like '*codeberg.org' -or $h -like '*gitea*' -or $h -like '*forgejo*'){$provider='gitea';$raw=$x.Scheme+'://'+$a+'/'+$path+'/raw/'+$b+'/tools'};'provider='+$provider;if($owner){'repo.owner='+$owner};if($repo){'repo.name='+$repo};if($raw){'raw.tools.url='+$raw}" 2^>nul') do set "pru.%%A=%%B"
+if not defined bootstrap.state.explicit.provider if defined pru.provider set "bootstrap.state.provider=%pru.provider%"
+if defined pru.repo.owner set "bootstrap.state.repo.owner=%pru.repo.owner%"
+if defined pru.repo.name set "bootstrap.state.repo.name=%pru.repo.name%"
+if not defined bootstrap.state.explicit.toolsurl if defined pru.raw.tools.url set "bootstrap.state.raw.tools.url=%pru.raw.tools.url%"
 set "pru.provider="
 set "pru.repo.owner="
 set "pru.repo.name="
 set "pru.raw.tools.url="
-if defined app.raw.tools.url if not defined app.getgit.url set "app.getgit.url=%app.raw.tools.url%/GetGit.bat"
-if defined app.raw.tools.url if not defined app.getgh.url set "app.getgh.url=%app.raw.tools.url%/GetGithubCLI.bat"
+if defined bootstrap.state.raw.tools.url if not defined bootstrap.state.getgit.url set "bootstrap.state.getgit.url=%bootstrap.state.raw.tools.url%/GetGit.bat"
+if defined bootstrap.state.raw.tools.url if not defined bootstrap.state.getgh.url set "bootstrap.state.getgh.url=%bootstrap.state.raw.tools.url%/GetGithubCLI.bat"
 exit /b 0
 
 :: ============================================================
@@ -1755,13 +1773,13 @@ exit /b 0
 ::   IsFileNonEmpty DownloadFile PrintInfo PrintError
 :: ============================================================
 :EnsureGetGitHelper
-call :IsFileNonEmpty "%app.tools%\GetGit.bat"
+call :IsFileNonEmpty "%bootstrap.state.tools%\GetGit.bat"
 if not errorlevel 1 exit /b 0
-if exist "%app.tools%\GetGit.bat" del /q "%app.tools%\GetGit.bat" >nul 2>&1
-if not exist "%app.tools%\" mkdir "%app.tools%" >nul 2>&1
-if not defined app.getgit.url (call :PrintError "FAIL: GetGit.bat URL is unknown." & exit /b 4)
-call :PrintInfo "GET: %app.getgit.url%"
-call :DownloadFile "%app.getgit.url%" "%app.tools%\GetGit.bat"
+if exist "%bootstrap.state.tools%\GetGit.bat" del /q "%bootstrap.state.tools%\GetGit.bat" >nul 2>&1
+if not exist "%bootstrap.state.tools%\" mkdir "%bootstrap.state.tools%" >nul 2>&1
+if not defined bootstrap.state.getgit.url (call :PrintError "FAIL: GetGit.bat URL is unknown." & exit /b 4)
+call :PrintInfo "GET: %bootstrap.state.getgit.url%"
+call :DownloadFile "%bootstrap.state.getgit.url%" "%bootstrap.state.tools%\GetGit.bat"
 if errorlevel 1 (call :PrintError "FAIL: GetGit.bat was not downloaded." & exit /b 4)
 exit /b 0
 
@@ -1770,18 +1788,18 @@ exit /b 0
 :: Purpose
 ::   Resolve a repository-local, bootstrap-local, or PATH git.exe.
 :: Outputs
-::   app.git
+::   bootstrap.state.git
 :: Return codes
 ::   0 Search completed
 :: Dependencies
 ::   none
 :: ============================================================
 :FindGit
-set "app.git="
-if exist "%app.folder%\tools\git\cmd\git.exe" for %%A in ("%app.folder%\tools\git\cmd\git.exe") do set "app.git=%%~fA"
-if not defined app.git if exist "%app.tools%\git\cmd\git.exe" for %%A in ("%app.tools%\git\cmd\git.exe") do set "app.git=%%~fA"
-if not defined app.git for /f "delims=" %%A in ('where git.exe 2^>nul') do if not defined app.git set "app.git=%%~fA"
-if defined app.git if not exist "%app.git%" set "app.git="
+set "bootstrap.state.git="
+if exist "%bootstrap.state.folder%\tools\git\cmd\git.exe" for %%A in ("%bootstrap.state.folder%\tools\git\cmd\git.exe") do set "bootstrap.state.git=%%~fA"
+if not defined bootstrap.state.git if exist "%bootstrap.state.tools%\git\cmd\git.exe" for %%A in ("%bootstrap.state.tools%\git\cmd\git.exe") do set "bootstrap.state.git=%%~fA"
+if not defined bootstrap.state.git for /f "delims=" %%A in ('where git.exe 2^>nul') do if not defined bootstrap.state.git set "bootstrap.state.git=%%~fA"
+if defined bootstrap.state.git if not exist "%bootstrap.state.git%" set "bootstrap.state.git="
 exit /b 0
 
 :: ============================================================
@@ -1789,7 +1807,7 @@ exit /b 0
 :: Purpose
 ::   Resolve or install GitHub CLI through repository preparation or GetGithubCLI.bat.
 :: Outputs
-::   app.gh and PATH
+::   bootstrap.state.gh and PATH
 :: Return codes
 ::   0 GitHub CLI ready
 ::   6 GitHub CLI could not be installed
@@ -1801,28 +1819,28 @@ exit /b 0
 call :PrepareRepositoryTools
 if errorlevel 1 exit /b 6
 call :FindGitHubCli
-if defined app.gh goto :EnsureGitHubCliReady
-if not defined app.getgh.url (call :PrintError "FAIL: GetGithubCLI.bat URL is unknown." & exit /b 6)
-if not exist "%app.folder%\tools\" mkdir "%app.folder%\tools" >nul 2>&1
-call :IsFileNonEmpty "%app.folder%\tools\GetGithubCLI.bat"
-if errorlevel 1 if exist "%app.folder%\tools\GetGithubCLI.bat" del /q "%app.folder%\tools\GetGithubCLI.bat" >nul 2>&1
-call :IsFileNonEmpty "%app.folder%\tools\GetGithubCLI.bat"
-if errorlevel 1 call :DownloadFile "%app.getgh.url%" "%app.folder%\tools\GetGithubCLI.bat"
-call :IsFileNonEmpty "%app.folder%\tools\GetGithubCLI.bat"
+if defined bootstrap.state.gh goto :EnsureGitHubCliReady
+if not defined bootstrap.state.getgh.url (call :PrintError "FAIL: GetGithubCLI.bat URL is unknown." & exit /b 6)
+if not exist "%bootstrap.state.folder%\tools\" mkdir "%bootstrap.state.folder%\tools" >nul 2>&1
+call :IsFileNonEmpty "%bootstrap.state.folder%\tools\GetGithubCLI.bat"
+if errorlevel 1 if exist "%bootstrap.state.folder%\tools\GetGithubCLI.bat" del /q "%bootstrap.state.folder%\tools\GetGithubCLI.bat" >nul 2>&1
+call :IsFileNonEmpty "%bootstrap.state.folder%\tools\GetGithubCLI.bat"
+if errorlevel 1 call :DownloadFile "%bootstrap.state.getgh.url%" "%bootstrap.state.folder%\tools\GetGithubCLI.bat"
+call :IsFileNonEmpty "%bootstrap.state.folder%\tools\GetGithubCLI.bat"
 if errorlevel 1 (call :PrintError "FAIL: GetGithubCLI.bat was not found or is empty." & exit /b 6)
 call :PrintInfo "DO: Installing GitHub CLI using GetGithubCLI.bat."
-pushd "%app.folder%" >nul 2>&1
+pushd "%bootstrap.state.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for GitHub CLI installation." & exit /b 6)
-cmd.exe /D /C call "tools\GetGithubCLI.bat" >>"%app.log%" 2>&1
+cmd.exe /D /C call "tools\GetGithubCLI.bat" >>"%bootstrap.state.log%" 2>&1
 set "eghc_rc=%errorlevel%"
 popd >nul
-if not "%eghc_rc%"=="0" (call :PrintError "FAIL: GetGithubCLI.bat failed." & call :PrintWarning "LOG: %app.log%" & set "eghc_rc=" & exit /b 6)
+if not "%eghc_rc%"=="0" (call :PrintError "FAIL: GetGithubCLI.bat failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "eghc_rc=" & exit /b 6)
 set "eghc_rc="
 call :FindGitHubCli
-if not defined app.gh (call :PrintError "FAIL: gh.exe is missing after GetGithubCLI.bat." & exit /b 6)
+if not defined bootstrap.state.gh (call :PrintError "FAIL: gh.exe is missing after GetGithubCLI.bat." & exit /b 6)
 :EnsureGitHubCliReady
-call :PrependExecutableDirectoryToPath "%app.gh%"
-call :PrintSuccess "OK: GitHub CLI ready: %app.gh%"
+call :PrependExecutableDirectoryToPath "%bootstrap.state.gh%"
+call :PrintSuccess "OK: GitHub CLI ready: %bootstrap.state.gh%"
 exit /b 0
 
 :: ============================================================
@@ -1830,18 +1848,18 @@ exit /b 0
 :: Purpose
 ::   Resolve a repository-local, bootstrap-local, or PATH gh.exe.
 :: Outputs
-::   app.gh
+::   bootstrap.state.gh
 :: Return codes
 ::   0 Search completed
 :: Dependencies
 ::   none
 :: ============================================================
 :FindGitHubCli
-set "app.gh="
-if exist "%app.folder%\tools\gh\bin\gh.exe" for %%A in ("%app.folder%\tools\gh\bin\gh.exe") do set "app.gh=%%~fA"
-if not defined app.gh if exist "%app.tools%\gh\bin\gh.exe" for %%A in ("%app.tools%\gh\bin\gh.exe") do set "app.gh=%%~fA"
-if not defined app.gh for /f "delims=" %%A in ('where gh.exe 2^>nul') do if not defined app.gh set "app.gh=%%~fA"
-if defined app.gh if not exist "%app.gh%" set "app.gh="
+set "bootstrap.state.gh="
+if exist "%bootstrap.state.folder%\tools\gh\bin\gh.exe" for %%A in ("%bootstrap.state.folder%\tools\gh\bin\gh.exe") do set "bootstrap.state.gh=%%~fA"
+if not defined bootstrap.state.gh if exist "%bootstrap.state.tools%\gh\bin\gh.exe" for %%A in ("%bootstrap.state.tools%\gh\bin\gh.exe") do set "bootstrap.state.gh=%%~fA"
+if not defined bootstrap.state.gh for /f "delims=" %%A in ('where gh.exe 2^>nul') do if not defined bootstrap.state.gh set "bootstrap.state.gh=%%~fA"
+if defined bootstrap.state.gh if not exist "%bootstrap.state.gh%" set "bootstrap.state.gh="
 exit /b 0
 
 :: ============================================================
@@ -1849,7 +1867,7 @@ exit /b 0
 :: Purpose
 ::   Ask which browser behavior the standalone GitHub login fallback should use.
 :: Outputs
-::   app.login.method
+::   bootstrap.state.login.method
 :: Return codes
 ::   0 Valid method selected
 ::   6 Invalid method selected
@@ -1865,10 +1883,10 @@ echo(  4. Do not open a browser on this computer
 set "plm_choice="
 set /p "plm_choice=Choice [1]: "
 if not defined plm_choice set "plm_choice=1"
-if "%plm_choice%"=="1" set "app.login.method=1"
-if "%plm_choice%"=="2" set "app.login.method=2"
-if "%plm_choice%"=="3" set "app.login.method=3"
-if "%plm_choice%"=="4" set "app.login.method=4"
+if "%plm_choice%"=="1" set "bootstrap.state.login.method=1"
+if "%plm_choice%"=="2" set "bootstrap.state.login.method=2"
+if "%plm_choice%"=="3" set "bootstrap.state.login.method=3"
+if "%plm_choice%"=="4" set "bootstrap.state.login.method=4"
 if not "%plm_choice%"=="1" if not "%plm_choice%"=="2" if not "%plm_choice%"=="3" if not "%plm_choice%"=="4" (call :PrintError "FAIL: login method must be 1, 2, 3, or 4." & set "plm_choice=" & exit /b 6)
 set "plm_choice="
 exit /b 0
@@ -1896,7 +1914,7 @@ exit /b 0
 :: Purpose
 ::   Confirm GitHub CLI authentication and capture the authenticated username.
 :: Outputs
-::   app.github.user
+::   bootstrap.state.github.user
 :: Return codes
 ::   0 Authenticated user resolved
 ::   6 Authentication unavailable
@@ -1904,8 +1922,8 @@ exit /b 0
 ::   GetGitHubUser
 :: ============================================================
 :CheckGitHubAuthentication
-if not defined app.gh exit /b 6
-"%app.gh%" auth status -h github.com >>"%app.log%" 2>&1
+if not defined bootstrap.state.gh exit /b 6
+"%bootstrap.state.gh%" auth status -h github.com >>"%bootstrap.state.log%" 2>&1
 if errorlevel 1 exit /b 6
 call :GetGitHubUser
 if errorlevel 1 exit /b 6
@@ -1916,7 +1934,7 @@ exit /b 0
 :: Purpose
 ::   Read the authenticated GitHub login through the API.
 :: Outputs
-::   app.github.user
+::   bootstrap.state.github.user
 :: Return codes
 ::   0 Username resolved
 ::   6 Username unavailable
@@ -1924,10 +1942,10 @@ exit /b 0
 ::   none
 :: ============================================================
 :GetGitHubUser
-set "app.github.user="
-if not defined app.gh exit /b 6
-for /f "usebackq delims=" %%A in (`"%app.gh%" api user --jq ".login" 2^>nul`) do if not defined app.github.user set "app.github.user=%%A"
-if defined app.github.user exit /b 0
+set "bootstrap.state.github.user="
+if not defined bootstrap.state.gh exit /b 6
+for /f "usebackq delims=" %%A in (`"%bootstrap.state.gh%" api user --jq ".login" 2^>nul`) do if not defined bootstrap.state.github.user set "bootstrap.state.github.user=%%A"
+if defined bootstrap.state.github.user exit /b 0
 exit /b 6
 
 :: ============================================================
@@ -1941,11 +1959,11 @@ exit /b 6
 ::   GetGitHubUser
 :: ============================================================
 :CheckGitHubWritePermission
-if not defined app.github.user call :GetGitHubUser
+if not defined bootstrap.state.github.user call :GetGitHubUser
 if errorlevel 1 exit /b 1
-if /I "%app.github.user%"=="%app.repo.owner%" exit /b 0
+if /I "%bootstrap.state.github.user%"=="%bootstrap.state.repo.owner%" exit /b 0
 set "cgp_permission="
-for /f "usebackq delims=" %%A in (`"%app.gh%" repo view "%app.repo.owner%/%app.repo.name%" --json viewerPermission --jq ".viewerPermission" 2^>nul`) do set "cgp_permission=%%A"
+for /f "usebackq delims=" %%A in (`"%bootstrap.state.gh%" repo view "%bootstrap.state.repo.owner%/%bootstrap.state.repo.name%" --json viewerPermission --jq ".viewerPermission" 2^>nul`) do set "cgp_permission=%%A"
 if /I "%cgp_permission%"=="ADMIN" (set "cgp_permission=" & exit /b 0)
 if /I "%cgp_permission%"=="MAINTAIN" (set "cgp_permission=" & exit /b 0)
 if /I "%cgp_permission%"=="WRITE" (set "cgp_permission=" & exit /b 0)
@@ -1957,7 +1975,7 @@ exit /b 1
 :: Purpose
 ::   Ask whether to create or reuse a personal fork, defaulting to yes.
 :: Outputs
-::   app.fork.mode
+::   bootstrap.state.fork.mode
 :: Return codes
 ::   0 Fork decision resolved
 :: Dependencies
@@ -1966,11 +1984,11 @@ exit /b 1
 :PromptForkChoice
 set "pfc_choice="
 set /p "pfc_choice=Create or use a personal fork? [Y/n]: "
-if not defined pfc_choice (set "app.fork.mode=yes" & exit /b 0)
-if /I "%pfc_choice%"=="y" (set "app.fork.mode=yes" & set "pfc_choice=" & exit /b 0)
-if /I "%pfc_choice%"=="yes" (set "app.fork.mode=yes" & set "pfc_choice=" & exit /b 0)
-if /I "%pfc_choice%"=="n" (set "app.fork.mode=no" & set "pfc_choice=" & exit /b 0)
-if /I "%pfc_choice%"=="no" (set "app.fork.mode=no" & set "pfc_choice=" & exit /b 0)
+if not defined pfc_choice (set "bootstrap.state.fork.mode=yes" & exit /b 0)
+if /I "%pfc_choice%"=="y" (set "bootstrap.state.fork.mode=yes" & set "pfc_choice=" & exit /b 0)
+if /I "%pfc_choice%"=="yes" (set "bootstrap.state.fork.mode=yes" & set "pfc_choice=" & exit /b 0)
+if /I "%pfc_choice%"=="n" (set "bootstrap.state.fork.mode=no" & set "pfc_choice=" & exit /b 0)
+if /I "%pfc_choice%"=="no" (set "bootstrap.state.fork.mode=no" & set "pfc_choice=" & exit /b 0)
 call :PrintWarning "Choose y or n."
 goto :PromptForkChoice
 
@@ -1990,8 +2008,8 @@ set "cgf_rc=%errorlevel%"
 if "%cgf_rc%"=="0" (set "cgf_rc=" & exit /b 0)
 if "%cgf_rc%"=="6" (set "cgf_rc=" & exit /b 6)
 set "cgf_rc="
-call :PrintInfo "DO: Creating fork %app.github.user%/%app.repo.name%."
-"%app.gh%" api --method POST "repos/%app.repo.owner%/%app.repo.name%/forks" >nul 2>>"%app.log%"
+call :PrintInfo "DO: Creating fork %bootstrap.state.github.user%/%bootstrap.state.repo.name%."
+"%bootstrap.state.gh%" api --method POST "repos/%bootstrap.state.repo.owner%/%bootstrap.state.repo.name%/forks" >nul 2>>"%bootstrap.state.log%"
 if errorlevel 1 (call :PrintError "FAIL: GitHub could not create the fork." & exit /b 6)
 call :WaitForGitHubFork
 if errorlevel 1 (call :PrintError "FAIL: the new fork did not become visible or did not match the original repository." & exit /b 6)
@@ -2012,15 +2030,15 @@ exit /b 0
 set "vgf_is_fork="
 set "vgf_parent="
 set "vgf_source="
-"%app.gh%" repo view "%app.github.user%/%app.repo.name%" >nul 2>&1
+"%bootstrap.state.gh%" repo view "%bootstrap.state.github.user%/%bootstrap.state.repo.name%" >nul 2>&1
 if errorlevel 1 exit /b 1
-for /f "delims=" %%A in ('"%app.gh%" api "repos/%app.github.user%/%app.repo.name%" --jq ".fork" 2^>nul') do set "vgf_is_fork=%%A"
-for /f "delims=" %%A in ('"%app.gh%" api "repos/%app.github.user%/%app.repo.name%" --jq ".parent.full_name // empty" 2^>nul') do set "vgf_parent=%%A"
-for /f "delims=" %%A in ('"%app.gh%" api "repos/%app.github.user%/%app.repo.name%" --jq ".source.full_name // empty" 2^>nul') do set "vgf_source=%%A"
-if /I "%vgf_is_fork%"=="true" if /I "%vgf_parent%"=="%app.repo.owner%/%app.repo.name%" (set "vgf_is_fork=" & set "vgf_parent=" & set "vgf_source=" & exit /b 0)
-if /I "%vgf_is_fork%"=="true" if /I "%vgf_source%"=="%app.repo.owner%/%app.repo.name%" (set "vgf_is_fork=" & set "vgf_parent=" & set "vgf_source=" & exit /b 0)
-call :PrintError "FAIL: %app.github.user%/%app.repo.name% exists but is not a fork of the expected repository."
-call :PrintWarning "EXPECTED: %app.repo.owner%/%app.repo.name%"
+for /f "delims=" %%A in ('"%bootstrap.state.gh%" api "repos/%bootstrap.state.github.user%/%bootstrap.state.repo.name%" --jq ".fork" 2^>nul') do set "vgf_is_fork=%%A"
+for /f "delims=" %%A in ('"%bootstrap.state.gh%" api "repos/%bootstrap.state.github.user%/%bootstrap.state.repo.name%" --jq ".parent.full_name // empty" 2^>nul') do set "vgf_parent=%%A"
+for /f "delims=" %%A in ('"%bootstrap.state.gh%" api "repos/%bootstrap.state.github.user%/%bootstrap.state.repo.name%" --jq ".source.full_name // empty" 2^>nul') do set "vgf_source=%%A"
+if /I "%vgf_is_fork%"=="true" if /I "%vgf_parent%"=="%bootstrap.state.repo.owner%/%bootstrap.state.repo.name%" (set "vgf_is_fork=" & set "vgf_parent=" & set "vgf_source=" & exit /b 0)
+if /I "%vgf_is_fork%"=="true" if /I "%vgf_source%"=="%bootstrap.state.repo.owner%/%bootstrap.state.repo.name%" (set "vgf_is_fork=" & set "vgf_parent=" & set "vgf_source=" & exit /b 0)
+call :PrintError "FAIL: %bootstrap.state.github.user%/%bootstrap.state.repo.name% exists but is not a fork of the expected repository."
+call :PrintWarning "EXPECTED: %bootstrap.state.repo.owner%/%bootstrap.state.repo.name%"
 set "vgf_is_fork="
 set "vgf_parent="
 set "vgf_source="
@@ -2060,7 +2078,7 @@ goto :WaitForGitHubForkPoll
 ::   SetGitRemote PrintError
 :: ============================================================
 :ConfigureOriginalRemote
-call :SetGitRemote "origin" "%app.repo.original.url%"
+call :SetGitRemote "origin" "%bootstrap.state.repo.original.url%"
 set "cor_rc=%errorlevel%"
 if not "%cor_rc%"=="0" (call :PrintError "FAIL: origin remote could not be configured." & set "cor_rc=" & exit /b 6)
 set "cor_rc="
@@ -2077,20 +2095,20 @@ exit /b 0
 ::   SetGitRemote PrintError PrintWarning PrintSuccess
 :: ============================================================
 :ConfigureForkRemotes
-set "cfr_fork=https://github.com/%app.github.user%/%app.repo.name%.git"
-call :SetGitRemote "upstream" "%app.repo.original.url%"
+set "cfr_fork=https://github.com/%bootstrap.state.github.user%/%bootstrap.state.repo.name%.git"
+call :SetGitRemote "upstream" "%bootstrap.state.repo.original.url%"
 set "cfr_rc=%errorlevel%"
 if not "%cfr_rc%"=="0" (call :PrintError "FAIL: upstream remote could not be configured." & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
 call :SetGitRemote "origin" "%cfr_fork%"
 set "cfr_rc=%errorlevel%"
 if not "%cfr_rc%"=="0" (call :PrintError "FAIL: origin remote could not be configured." & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
-"%app.git%" -C "%app.folder%" fetch upstream --prune >>"%app.log%" 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" fetch upstream --prune >>"%bootstrap.state.log%" 2>&1
 set "cfr_rc=%errorlevel%"
-if not "%cfr_rc%"=="0" (call :PrintError "FAIL: upstream fetch failed." & call :PrintWarning "LOG: %app.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
-"%app.git%" -C "%app.folder%" fetch origin --prune >>"%app.log%" 2>&1
+if not "%cfr_rc%"=="0" (call :PrintError "FAIL: upstream fetch failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" fetch origin --prune >>"%bootstrap.state.log%" 2>&1
 set "cfr_rc=%errorlevel%"
-if not "%cfr_rc%"=="0" (call :PrintError "FAIL: origin fetch failed." & call :PrintWarning "LOG: %app.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
-set "app.repo.sync.remote=upstream"
+if not "%cfr_rc%"=="0" (call :PrintError "FAIL: origin fetch failed." & call :PrintWarning "LOG: %bootstrap.state.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
+set "bootstrap.state.repo.sync.remote=upstream"
 set "cfr_fork="
 set "cfr_rc="
 call :PrintSuccess "OK: fork remotes configured."
@@ -2107,12 +2125,12 @@ exit /b 0
 ::   PrintWarning PrintInfo PrintError
 :: ============================================================
 :QuarantineNonGitFolder
-set "qngf_target=%app.folder%.notgit.%app.timestamp%-%RANDOM%"
+set "qngf_target=%bootstrap.state.folder%.notgit.%bootstrap.state.timestamp%-%RANDOM%"
 call :PrintWarning "WARN: target exists but is not a Git checkout."
 call :PrintInfo "DO: Moving it to %qngf_target%."
-move "%app.folder%" "%qngf_target%" >>"%app.log%" 2>&1
+move "%bootstrap.state.folder%" "%qngf_target%" >>"%bootstrap.state.log%" 2>&1
 set "qngf_rc=%errorlevel%"
-if not "%qngf_rc%"=="0" if not exist "%app.folder%\" (set "qngf_target=" & set "qngf_rc=" & exit /b 0)
+if not "%qngf_rc%"=="0" if not exist "%bootstrap.state.folder%\" (set "qngf_target=" & set "qngf_rc=" & exit /b 0)
 if not "%qngf_rc%"=="0" (call :PrintError "FAIL: existing target could not be moved." & set "qngf_target=" & set "qngf_rc=" & exit /b 5)
 set "qngf_target="
 set "qngf_rc="
@@ -2128,13 +2146,13 @@ exit /b 0
 ::   IsPathWithin PrintWarning
 :: ============================================================
 :WarnIfTemporaryRepository
-if not defined app.repo.ready exit /b 0
-if not exist "%app.folder%\.git" exit /b 0
-call :IsPathWithin "%app.folder%" "%TEMP%"
+if not defined bootstrap.state.repo.ready exit /b 0
+if not exist "%bootstrap.state.folder%\.git" exit /b 0
+call :IsPathWithin "%bootstrap.state.folder%" "%TEMP%"
 if errorlevel 1 exit /b 0
 echo(
 call :PrintWarning "WARNING: The repository is inside the Windows temporary folder."
-call :PrintWarning "  %app.folder%"
+call :PrintWarning "  %bootstrap.state.folder%"
 call :PrintWarning "Move this repository to a permanent folder before relying on it."
 exit /b 0
 
@@ -2184,14 +2202,14 @@ set "sgr_name=%~1"
 set "sgr_url=%~2"
 if not defined sgr_name (set "sgr_url=" & exit /b 6)
 if not defined sgr_url (set "sgr_name=" & exit /b 6)
-"%app.git%" -C "%app.folder%" remote get-url "%sgr_name%" >nul 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" remote get-url "%sgr_name%" >nul 2>&1
 set "sgr_rc=%errorlevel%"
 if "%sgr_rc%"=="0" goto :SetGitRemoteUpdate
-"%app.git%" -C "%app.folder%" remote add "%sgr_name%" "%sgr_url%" >>"%app.log%" 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" remote add "%sgr_name%" "%sgr_url%" >>"%bootstrap.state.log%" 2>&1
 set "sgr_rc=%errorlevel%"
 goto :SetGitRemoteDone
 :SetGitRemoteUpdate
-"%app.git%" -C "%app.folder%" remote set-url "%sgr_name%" "%sgr_url%" >>"%app.log%" 2>&1
+"%bootstrap.state.git%" -C "%bootstrap.state.folder%" remote set-url "%sgr_name%" "%sgr_url%" >>"%bootstrap.state.log%" 2>&1
 set "sgr_rc=%errorlevel%"
 :SetGitRemoteDone
 set "sgr_name="
@@ -2216,9 +2234,9 @@ exit /b 0
 set "rrl_script=%~1"
 set "rrl_action=%~2"
 set "rrl_arguments=%~3"
-if not exist "%app.folder%\%rrl_script%" (call :PrintWarning "SKIP: %rrl_script% not found." & set "rrl_script=" & set "rrl_action=" & set "rrl_arguments=" & exit /b 0)
+if not exist "%bootstrap.state.folder%\%rrl_script%" (call :PrintWarning "SKIP: %rrl_script% not found." & set "rrl_script=" & set "rrl_action=" & set "rrl_arguments=" & exit /b 0)
 call :PrintInfo "DO: %rrl_action%."
-pushd "%app.folder%" >nul 2>&1
+pushd "%bootstrap.state.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for %rrl_action%." & set "rrl_script=" & set "rrl_action=" & set "rrl_arguments=" & exit /b 8)
 if defined rrl_arguments call "%rrl_script%" %rrl_arguments%
 if defined rrl_arguments set "rrl_rc=%errorlevel%"
@@ -2238,7 +2256,7 @@ exit /b 0
 :: Purpose
 ::   Create a sortable local timestamp for log and quarantine names.
 :: Outputs
-::   app.timestamp
+::   bootstrap.state.timestamp
 :: Return codes
 ::   0 Timestamp created
 ::   1 Timestamp unavailable
@@ -2246,9 +2264,9 @@ exit /b 0
 ::   none
 :: ============================================================
 :MakeTimestamp
-set "app.timestamp="
-for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Date -Format yyyy-MM-dd.HHmmss" 2^>nul') do set "app.timestamp=%%A"
-if not defined app.timestamp exit /b 1
+set "bootstrap.state.timestamp="
+for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Date -Format yyyy-MM-dd.HHmmss" 2^>nul') do set "bootstrap.state.timestamp=%%A"
+if not defined bootstrap.state.timestamp exit /b 1
 exit /b 0
 
 :: ============================================================
@@ -2368,7 +2386,7 @@ if "%rpfs_input:~1,1%"==":" goto :ResolvePathFromStartAbsolute
 if "%rpfs_input:~0,2%"=="\\" goto :ResolvePathFromStartAbsolute
 if "%rpfs_input:~0,1%"=="\" goto :ResolvePathFromStartAbsolute
 if "%rpfs_input:~0,1%"=="/" goto :ResolvePathFromStartAbsolute
-for %%A in ("%app.start.dir%\%rpfs_input%") do set "%rpfs_output%=%%~fA"
+for %%A in ("%bootstrap.state.start.dir%\%rpfs_input%") do set "%rpfs_output%=%%~fA"
 goto :ResolvePathFromStartDone
 :ResolvePathFromStartAbsolute
 for %%A in ("%rpfs_input%") do set "%rpfs_output%=%%~fA"
@@ -2416,7 +2434,7 @@ if exist "%df_temp%" del /q "%df_temp%" >nul 2>&1
 if exist "%df_file%" del /q "%df_file%" >nul 2>&1
 where curl.exe >nul 2>nul
 if errorlevel 1 goto :DownloadFilePowerShell
-curl.exe -sSfL --retry 3 "%df_url%" -o "%df_temp%" >>"%app.log%" 2>&1
+curl.exe -sSfL --retry 3 "%df_url%" -o "%df_temp%" >>"%bootstrap.state.log%" 2>&1
 set "df_rc=%errorlevel%"
 if not "%df_rc%"=="0" goto :DownloadFileCurlFailed
 call :IsFileNonEmpty "%df_temp%"
@@ -2425,7 +2443,7 @@ if "%df_rc%"=="0" goto :DownloadFileCommit
 :DownloadFileCurlFailed
 if exist "%df_temp%" del /q "%df_temp%" >nul 2>&1
 :DownloadFilePowerShell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:df_url -OutFile $env:df_temp" >>"%app.log%" 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:df_url -OutFile $env:df_temp" >>"%bootstrap.state.log%" 2>&1
 set "df_rc=%errorlevel%"
 if not "%df_rc%"=="0" goto :DownloadFileFailed
 call :IsFileNonEmpty "%df_temp%"
@@ -2485,7 +2503,7 @@ exit /b 0
 ::   PrintColor
 :: ============================================================
 :PrintSuccess
-call :PrintColor "%app.color.green%" "%~1"
+call :PrintColor "%bootstrap.state.color.green%" "%~1"
 exit /b 0
 
 :: ============================================================
@@ -2500,7 +2518,7 @@ exit /b 0
 ::   PrintColor
 :: ============================================================
 :PrintInfo
-call :PrintColor "%app.color.cyan%" "%~1"
+call :PrintColor "%bootstrap.state.color.cyan%" "%~1"
 exit /b 0
 
 :: ============================================================
@@ -2515,7 +2533,7 @@ exit /b 0
 ::   PrintColor
 :: ============================================================
 :PrintWarning
-call :PrintColor "%app.color.yellow%" "%~1"
+call :PrintColor "%bootstrap.state.color.yellow%" "%~1"
 exit /b 0
 
 :: ============================================================
@@ -2530,7 +2548,7 @@ exit /b 0
 ::   PrintColor
 :: ============================================================
 :PrintError
-call :PrintColor "%app.color.red%" "%~1"
+call :PrintColor "%bootstrap.state.color.red%" "%~1"
 exit /b 0
 
 :: ============================================================
@@ -2547,17 +2565,17 @@ exit /b 0
 :PrintColor
 set "pc_color=%~1"
 set "pc_message=%~2"
-if not defined app.esc goto :PrintColorPlain
-<nul set /p "=%app.esc%[%pc_color%%pc_message%%app.esc%[%app.color.reset%"
+if not defined bootstrap.state.esc goto :PrintColorPlain
+<nul set /p "=%bootstrap.state.esc%[%pc_color%%pc_message%%bootstrap.state.esc%[%bootstrap.state.color.reset%"
 echo(
 goto :PrintColorLog
 :PrintColorPlain
 <nul set /p "=%pc_message%"
 echo(
 :PrintColorLog
-if not defined app.log goto :PrintColorDone
->>"%app.log%" <nul set /p "=%pc_message%"
->>"%app.log%" echo(
+if not defined bootstrap.state.log goto :PrintColorDone
+>>"%bootstrap.state.log%" <nul set /p "=%pc_message%"
+>>"%bootstrap.state.log%" echo(
 :PrintColorDone
 set "pc_color="
 set "pc_message="
