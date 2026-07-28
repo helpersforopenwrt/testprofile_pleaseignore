@@ -242,7 +242,8 @@ echo Local branch:
 echo   %app.git_login.current.branch%
 echo.
 echo Local Git author:
-echo   "%app.git_login.git.name% ^<%app.git_login.git.email%^>"
+echo   Name: %app.git_login.git.name%
+echo   Email: %app.git_login.git.email%
 echo.
 git status --short --branch
 echo.
@@ -784,7 +785,8 @@ echo Branch:
 echo   %app.git_login.branch%
 echo.
 echo Git author:
-echo   "%app.git_login.git.name% ^<%app.git_login.git.email%^>"
+echo   Name: %app.git_login.git.name%
+echo   Email: %app.git_login.git.email%
 echo.
 if defined app.git_login.use.fork goto :_ShowPlan_fork
 echo origin:

@@ -26,7 +26,7 @@ set "app.start.dir=%CD%"
 :: ============================================================
 cd /d "%~dp0"
 set "app.rc=0"
-set "app.version=bootstrap-integrated-29"
+set "app.version=bootstrap-integrated-30"
 set "app.root=%CD%"
 set "app.start.writable="
 set "app.repo.parent="
@@ -146,7 +146,19 @@ call :ShowMenu
 set "app.rc=%errorlevel%"
 goto :end
 :end
-if exist "%app.folder%\.git\" call :WarnIfRepositoryInTemp
+set "wit_folder=%app.folder%"
+set "wit_temp=%TEMP%"
+if not defined wit_folder goto :end_temp_warning_done
+if not exist "%wit_folder%\.git\" goto :end_temp_warning_done
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=[IO.Path]::GetFullPath($env:wit_folder).TrimEnd(''\''); $t=[IO.Path]::GetFullPath($env:wit_temp).TrimEnd(''\''); if($f.Equals($t,[StringComparison]::OrdinalIgnoreCase) -or $f.StartsWith($t+''\'',[StringComparison]::OrdinalIgnoreCase)){exit 0}; exit 1" >nul 2>&1
+if errorlevel 1 goto :end_temp_warning_done
+echo.
+call :Yellow WARNING: The repository is currently inside the Windows temporary folder:
+call :Yellow   %app.folder%
+call :Yellow Move this repository to a permanent folder before relying on it.
+:end_temp_warning_done
+set "wit_folder="
+set "wit_temp="
 if defined app.final.cd cd /d "%app.final.cd%" >nul 2>&1
 exit /b %app.rc%
 :: ============================================================
@@ -726,32 +738,6 @@ if not exist "%idw_file%" (set "idw_dir=" & set "idw_file=" & exit /b 1)
 del /q "%idw_file%" >nul 2>&1
 set "idw_dir="
 set "idw_file="
-exit /b 0
-:: ============================================================
-:: Function: WarnIfRepositoryInTemp
-:: Usage: call :WarnIfRepositoryInTemp
-:: Purpose: warns only when the actual checkout remains inside TEMP.
-:: Returns:
-::   0 always
-:: Requires:
-::   PowerShell
-:: ============================================================
-:WarnIfRepositoryInTemp
-set "wit_folder=%app.folder%"
-set "wit_temp=%TEMP%"
-set "wit_inside="
-if not defined wit_folder exit /b 0
-if not exist "%wit_folder%\.git\" exit /b 0
-for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=[IO.Path]::GetFullPath($env:wit_folder).TrimEnd(''\''); $t=[IO.Path]::GetFullPath($env:wit_temp).TrimEnd(''\''); if($f.Equals($t,[StringComparison]::OrdinalIgnoreCase) -or $f.StartsWith($t+''\'',[StringComparison]::OrdinalIgnoreCase)){''1''}" 2^>nul') do set "wit_inside=%%A"
-if not "%wit_inside%"=="1" goto :WarnIfRepositoryInTempDone
-echo.
-call :Yellow WARNING: The repository is currently inside the Windows temporary folder:
-call :Yellow   %app.folder%
-call :Yellow Move this repository to a permanent folder before relying on it.
-:WarnIfRepositoryInTempDone
-set "wit_folder="
-set "wit_temp="
-set "wit_inside="
 exit /b 0
 :: ============================================================
 :: Function: EnsureGit
