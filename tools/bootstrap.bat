@@ -1,32 +1,34 @@
 @echo off
 set "app.start.dir=%CD%"
+goto :setup
+rem ============================================================
+rem bootstrap.bat
+rem Integrated self-contained local bootstrapper for Git repositories.
+rem.
+rem Batch style:
+rem   - no delayed expansion
+rem   - no setlocal
+rem   - documented functions
+rem   - one empty line between documented functions
+rem   - no empty lines inside functions
+rem.
+rem Typical loader:
+rem   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" & call curl.exe -sSfL "%bootstrap%" -o "%TEMP%\bootstrap.bat" && call "%TEMP%\bootstrap.bat" auto
+rem.
+rem Purpose:
+rem   - infer repo URL from the bootstrap URL
+rem   - get local Git before cloning
+rem   - clone/update repo
+rem   - optionally login/fork/move/build/install
+rem   - auto mode bypasses menu and runs end-to-end
+rem   - prefers cloned repository launchers such as prepare.bat repository
+rem     and just_login.bat when available
+rem ============================================================
+
 :setup
-:: ============================================================
-:: bootstrap.bat
-:: Integrated self-contained local bootstrapper for Git repositories.
-::
-:: Batch style:
-::   - no delayed expansion
-::   - no setlocal
-::   - documented functions
-::   - one empty line between documented functions
-::   - no empty lines inside functions
-::
-:: Typical loader:
-::   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" & call curl.exe -sSfL "%bootstrap%" -o "%TEMP%\bootstrap.bat" && call "%TEMP%\bootstrap.bat" auto
-::
-:: Purpose:
-::   - infer repo URL from the bootstrap URL
-::   - get local Git before cloning
-::   - clone/update repo
-::   - optionally login/fork/move/build/install
-::   - auto mode bypasses menu and runs end-to-end
-::   - prefers cloned repository launchers such as prepare.bat repository
-::     and just_login.bat when available
-:: ============================================================
 cd /d "%~dp0"
 set "app.rc=0"
-set "app.version=bootstrap-integrated-33"
+set "app.version=bootstrap-integrated-35"
 set "app.root=%CD%"
 set "app.start.writable="
 set "app.repo.parent="
@@ -163,14 +165,14 @@ set "wit_temp="
 if defined app.final.cd cd /d "%app.final.cd%" >nul 2>&1
 exit /b %app.rc%
 
-:: ============================================================
-:: Function: RunCheck
-:: Usage: call :RunCheck
-:: Purpose: performs essential context checks without cloning, installing, moving, or building.
-:: Returns:
-::   0 check passed
-::   3 essential context missing
-:: ============================================================
+rem ============================================================
+rem Function: RunCheck
+rem Usage: call :RunCheck
+rem Purpose: performs essential context checks without cloning, installing, moving, or building.
+rem Returns:
+rem   0 check passed
+rem   3 essential context missing
+rem ============================================================
 :RunCheck
 call :Green CHECK: essential bootstrap context
 call :Cyan Version: %app.version%
@@ -186,14 +188,14 @@ if not defined app.getgit.url (call :Red FAIL: GetGit URL missing. & exit /b 3)
 call :Green OK: essential check passed.
 exit /b 0
 
-:: ============================================================
-:: Function: RunDoctor
-:: Usage: call :RunDoctor
-:: Purpose: performs comprehensive diagnostics without cloning, installing, moving, or building.
-:: Returns:
-::   0 diagnostics completed
-::   nonzero essential check failure
-:: ============================================================
+rem ============================================================
+rem Function: RunDoctor
+rem Usage: call :RunDoctor
+rem Purpose: performs comprehensive diagnostics without cloning, installing, moving, or building.
+rem Returns:
+rem   0 diagnostics completed
+rem   nonzero essential check failure
+rem ============================================================
 :RunDoctor
 call :RunCheck
 set "rd_rc=%errorlevel%"
@@ -232,13 +234,13 @@ call :Green OK: doctor completed.
 set "rd_rc="
 exit /b 0
 
-:: ============================================================
-:: Function: RunDryRun
-:: Usage: call :RunDryRun
-:: Purpose: prints planned actions without cloning, installing, moving, or building.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: RunDryRun
+rem Usage: call :RunDryRun
+rem Purpose: prints planned actions without cloning, installing, moving, or building.
+rem Returns:
+rem   0 always
+rem ============================================================
 :RunDryRun
 call :Green DRYRUN: planned bootstrap actions
 call :FindGitExe
@@ -257,14 +259,14 @@ if defined app.do.install call :Cyan Would run install.bat after build.
 call :Green OK: dryrun complete; no changes made.
 exit /b 0
 
-:: ============================================================
-:: Function: RunAutoWorkflow
-:: Usage: call :RunAutoWorkflow
-:: Purpose: runs the fully automatic workflow.
-:: Returns:
-::   0 success
-::   nonzero failure
-:: ============================================================
+rem ============================================================
+rem Function: RunAutoWorkflow
+rem Usage: call :RunAutoWorkflow
+rem Purpose: runs the fully automatic workflow.
+rem Returns:
+rem   0 success
+rem   nonzero failure
+rem ============================================================
 :RunAutoWorkflow
 set "app.auto=1"
 set "app.mode=auto"
@@ -318,18 +320,18 @@ call :Green OK: Auto bootstrap complete.
 call :Green DIR: %app.folder%
 exit /b 0
 
-:: ============================================================
-:: Function: RunBootstrapWorkflow
-:: Usage: call :RunBootstrapWorkflow
-:: Purpose: runs the default clone/update, repository preparation,
-::          optional login/fork, and optional move workflow.
-:: Returns:
-::   0 success
-::   nonzero first failed workflow step
-:: Requires:
-::   :EnsureGit, :CloneOrUpdateRepo, :PrepareRepositoryDependencies,
-::   :MaybeLoginAndFork, :MaybeMoveProject
-:: ============================================================
+rem ============================================================
+rem Function: RunBootstrapWorkflow
+rem Usage: call :RunBootstrapWorkflow
+rem Purpose: runs the default clone/update, repository preparation,
+rem          optional login/fork, and optional move workflow.
+rem Returns:
+rem   0 success
+rem   nonzero first failed workflow step
+rem Requires:
+rem   :EnsureGit, :CloneOrUpdateRepo, :PrepareRepositoryDependencies,
+rem   :MaybeLoginAndFork, :MaybeMoveProject
+rem ============================================================
 :RunBootstrapWorkflow
 call :EnsureGit
 set "rbw_rc=%errorlevel%"
@@ -352,14 +354,14 @@ call :Green OK: Bootstrap complete.
 call :Green DIR: %app.folder%
 exit /b 0
 
-:: ============================================================
-:: Function: InitializeBootstrap
-:: Usage: call :InitializeBootstrap
-:: Purpose: initializes timestamp, log file, and colors.
-:: Returns:
-::   0 success
-::   1 initialization failed
-:: ============================================================
+rem ============================================================
+rem Function: InitializeBootstrap
+rem Usage: call :InitializeBootstrap
+rem Purpose: initializes timestamp, log file, and colors.
+rem Returns:
+rem   0 success
+rem   1 initialization failed
+rem ============================================================
 :InitializeBootstrap
 call :SetESC app.esc
 if errorlevel 1 set "app.esc="
@@ -372,39 +374,39 @@ break > "%app.log%"
 call :Cyan LOG: %app.log%
 exit /b 0
 
-:: ============================================================
-:: Function: MakeTimestamp
-:: Usage: call :MakeTimestamp
-:: Purpose: creates app.timestamp in YYYY-MM-DD.HHhmm.ss format.
-:: Returns:
-::   0 timestamp created
-::   1 timestamp failed
-:: ============================================================
+rem ============================================================
+rem Function: MakeTimestamp
+rem Usage: call :MakeTimestamp
+rem Purpose: creates app.timestamp in YYYY-MM-DD.HHhmm.ss format.
+rem Returns:
+rem   0 timestamp created
+rem   1 timestamp failed
+rem ============================================================
 :MakeTimestamp
 set "app.timestamp="
 for /f %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Date -Format yyyy-MM-dd.HH\hmm.ss"') do set "app.timestamp=%%A"
 if defined app.timestamp exit /b 0
 exit /b 1
 
-:: ============================================================
-:: Function: ParseArgs
-:: Usage: call :ParseArgs %*
-:: Purpose: parses bootstrap command-line arguments.
-:: Accepted:
-::   auto
-::   menu
-::   nologin
-::   login [ask|1|2|3|4]
-::   repo URL
-::   branch NAME
-::   dir PATH
-::   fork ask|yes|no
-::   move ask|no
-::   help
-:: Returns:
-::   0 success
-::   2 invalid argument
-:: ============================================================
+rem ============================================================
+rem Function: ParseArgs
+rem Usage: call :ParseArgs %*
+rem Purpose: parses bootstrap command-line arguments.
+rem Accepted:
+rem   auto
+rem   menu
+rem   nologin
+rem   login [ask|1|2|3|4]
+rem   repo URL
+rem   branch NAME
+rem   dir PATH
+rem   fork ask|yes|no
+rem   move ask|no
+rem   help
+rem Returns:
+rem   0 success
+rem   2 invalid argument
+rem ============================================================
 :ParseArgs
 if "%~1"=="" exit /b 0
 echo %~1| findstr /B /I "http:// https://" >nul 2>nul
@@ -496,13 +498,13 @@ if /I "%~2"=="no" (set "app.move.mode=no" & shift & shift & goto :ParseArgs)
 call :Red FAIL: move requires ask, documents, or no.
 exit /b 2
 
-:: ============================================================
-:: Function: ShowHelp
-:: Usage: call :ShowHelp
-:: Purpose: prints usage.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ShowHelp
+rem Usage: call :ShowHelp
+rem Purpose: prints usage.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ShowHelp
 call :Green Generic bootstrap.bat
 echo.
@@ -566,17 +568,17 @@ echo   tools:     %app.raw.tools.url%
 echo   log:       %app.log%
 exit /b 0
 
-:: ============================================================
-:: Function: ResolveBootstrapContext
-:: Usage: call :ResolveBootstrapContext
-:: Purpose: infers repository, provider, branch, and raw tool URLs
-::          from explicit arguments or the bootstrap source URL.
-:: Returns:
-::   0 context resolved
-::   3 required context could not be resolved
-:: Requires:
-::   :InferFromBootstrapUrl, :InferFromRepoUrl
-:: ============================================================
+rem ============================================================
+rem Function: ResolveBootstrapContext
+rem Usage: call :ResolveBootstrapContext
+rem Purpose: infers repository, provider, branch, and raw tool URLs
+rem          from explicit arguments or the bootstrap source URL.
+rem Returns:
+rem   0 context resolved
+rem   3 required context could not be resolved
+rem Requires:
+rem   :InferFromBootstrapUrl, :InferFromRepoUrl
+rem ============================================================
 :ResolveBootstrapContext
 if not defined app.repo.url if not defined app.bootstrap.url (call :Red FAIL: no repo URL and no bootstrap variable was provided. & call :Yellow TRY: bootstrap repo https://github.com/user/repo.git & exit /b 3)
 if defined app.bootstrap.url call :InferFromBootstrapUrl
@@ -591,15 +593,15 @@ call :Green OK: Provider: %app.provider%
 call :Green OK: Repo: %app.repo.url%
 exit /b 0
 
-:: ============================================================
-:: Function: ConfigureProviderAdapter
-:: Usage: call :ConfigureProviderAdapter
-:: Purpose: configures provider capability flags and adapter identity.
-:: Returns:
-::   0 always
-:: Contract:
-::   Provider adapters expose capability flags for login, fork, write check, raw tools, and credential-helper options.
-:: ============================================================
+rem ============================================================
+rem Function: ConfigureProviderAdapter
+rem Usage: call :ConfigureProviderAdapter
+rem Purpose: configures provider capability flags and adapter identity.
+rem Returns:
+rem   0 always
+rem Contract:
+rem   Provider adapters expose capability flags for login, fork, write check, raw tools, and credential-helper options.
+rem ============================================================
 :ConfigureProviderAdapter
 call :ProviderAdapterDefaults
 if /I "%app.provider%"=="github" call :ProviderAdapterGitHub
@@ -610,13 +612,13 @@ if /I "%app.provider%"=="git" call :ProviderAdapterGenericGit
 if defined app.raw.tools.url set "app.provider.can.rawtools=1"
 exit /b 0
 
-:: ============================================================
-:: Function: ProviderAdapterDefaults
-:: Usage: call :ProviderAdapterDefaults
-:: Purpose: sets conservative generic provider capabilities.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ProviderAdapterDefaults
+rem Usage: call :ProviderAdapterDefaults
+rem Purpose: sets conservative generic provider capabilities.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ProviderAdapterDefaults
 if not defined app.provider set "app.provider=git"
 set "app.provider.adapter=generic"
@@ -631,13 +633,13 @@ set "app.provider.login.command="
 set "app.provider.fork.command="
 exit /b 0
 
-:: ============================================================
-:: Function: ProviderAdapterGitHub
-:: Usage: call :ProviderAdapterGitHub
-:: Purpose: configures GitHub provider capabilities.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ProviderAdapterGitHub
+rem Usage: call :ProviderAdapterGitHub
+rem Purpose: configures GitHub provider capabilities.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ProviderAdapterGitHub
 set "app.provider.adapter=github"
 set "app.provider.display=GitHub"
@@ -650,119 +652,119 @@ set "app.provider.login.command=gh auth login"
 set "app.provider.fork.command=gh repo fork"
 exit /b 0
 
-:: ============================================================
-:: Function: ProviderAdapterGitLab
-:: Usage: call :ProviderAdapterGitLab
-:: Purpose: configures GitLab provider capabilities.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ProviderAdapterGitLab
+rem Usage: call :ProviderAdapterGitLab
+rem Purpose: configures GitLab provider capabilities.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ProviderAdapterGitLab
 set "app.provider.adapter=gitlab"
 set "app.provider.display=GitLab"
 set "app.provider.helper="
 exit /b 0
 
-:: ============================================================
-:: Function: ProviderAdapterBitbucket
-:: Usage: call :ProviderAdapterBitbucket
-:: Purpose: configures Bitbucket provider capabilities.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ProviderAdapterBitbucket
+rem Usage: call :ProviderAdapterBitbucket
+rem Purpose: configures Bitbucket provider capabilities.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ProviderAdapterBitbucket
 set "app.provider.adapter=bitbucket"
 set "app.provider.display=Bitbucket"
 set "app.provider.helper="
 exit /b 0
 
-:: ============================================================
-:: Function: ProviderAdapterGitea
-:: Usage: call :ProviderAdapterGitea
-:: Purpose: configures Gitea/Forgejo provider capabilities.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ProviderAdapterGitea
+rem Usage: call :ProviderAdapterGitea
+rem Purpose: configures Gitea/Forgejo provider capabilities.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ProviderAdapterGitea
 set "app.provider.adapter=gitea"
 set "app.provider.display=Gitea/Forgejo"
 set "app.provider.helper="
 exit /b 0
 
-:: ============================================================
-:: Function: ProviderAdapterGenericGit
-:: Usage: call :ProviderAdapterGenericGit
-:: Purpose: configures plain Git provider capabilities.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ProviderAdapterGenericGit
+rem Usage: call :ProviderAdapterGenericGit
+rem Purpose: configures plain Git provider capabilities.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ProviderAdapterGenericGit
 set "app.provider.adapter=git"
 set "app.provider.display=Generic Git"
 set "app.provider.helper="
 exit /b 0
 
-:: ============================================================
-:: Function: InferFromBootstrapUrl
-:: Usage: call :InferFromBootstrapUrl
-:: Purpose: parses app.bootstrap.url and derives repository and raw
-::          tool metadata for supported hosting providers.
-:: Output:
-::   app.provider, app.repo.*, app.raw.tools.url
-:: Returns:
-::   0 always
-:: Requires:
-::   PowerShell, :SetAppValue
-:: ============================================================
+rem ============================================================
+rem Function: InferFromBootstrapUrl
+rem Usage: call :InferFromBootstrapUrl
+rem Purpose: parses app.bootstrap.url and derives repository and raw
+rem          tool metadata for supported hosting providers.
+rem Output:
+rem   app.provider, app.repo.*, app.raw.tools.url
+rem Returns:
+rem   0 always
+rem Requires:
+rem   PowerShell, :SetAppValue
+rem ============================================================
 :InferFromBootstrapUrl
 for /f "tokens=1,* delims==" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$u=${env:app.bootstrap.url}; if(!$u){$u=$env:bootstrap}; if(!$u){exit 0}; $b=${env:app.repo.branch}; if(!$b){$b='main'}; $uri=[uri]$u; $s=$uri.Scheme; $h=$uri.Host.ToLowerInvariant(); $a=$uri.Authority; $p=$uri.AbsolutePath.Trim('/') -split '/'; $provider='git'; $owner=''; $repo=''; $branch=$b; $repoUrl=''; $raw=''; $repoPath=''; $gh='0'; if($h -eq 'raw.githubusercontent.com' -and $p.Length -ge 4){$provider='github';$owner=$p[0];$repo=$p[1];$branch=$p[2];$repoPath=$owner+'/'+$repo;$repoUrl='https://github.com/'+$repoPath+'.git';$raw='https://raw.githubusercontent.com/'+$repoPath+'/'+$branch+'/tools';$gh='1'} elseif($h -eq 'github.com' -and $p.Length -ge 4 -and $p[2] -eq 'blob'){$provider='github';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl='https://github.com/'+$repoPath+'.git';$raw='https://raw.githubusercontent.com/'+$repoPath+'/'+$branch+'/tools';$gh='1'} elseif($h -like '*gitlab*' -and ($p -contains '-')){$provider='gitlab';$i=[array]::IndexOf($p,'-'); if($i -gt 0){$repo=$p[$i-1];$owner=($p[0..($i-2)] -join '/');$repoPath=($p[0..($i-1)] -join '/');$repoUrl=$s+'://'+$a+'/'+$repoPath+'.git';$j=$i+1; if($p.Length -gt ($j+1) -and ($p[$j] -eq 'raw' -or $p[$j] -eq 'blob')){$branch=$p[$j+1]};$raw=$s+'://'+$a+'/'+$repoPath+'/-/raw/'+$branch+'/tools'}} elseif($h -eq 'bitbucket.org' -and $p.Length -ge 4 -and ($p[2] -eq 'raw' -or $p[2] -eq 'src')){$provider='bitbucket';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl='https://bitbucket.org/'+$repoPath+'.git';$raw='https://bitbucket.org/'+$repoPath+'/raw/'+$branch+'/tools'} elseif($p.Length -ge 4 -and ($p[2] -eq 'raw' -or $p[2] -eq 'src')){$provider='gitea';$owner=$p[0];$repo=$p[1];$branch=$p[3];$repoPath=$owner+'/'+$repo;$repoUrl=$s+'://'+$a+'/'+$repoPath+'.git';$raw=$s+'://'+$a+'/'+$repoPath+'/raw/'+$branch+'/tools'} else {if($p.Length -ge 1){$owner=$p[0]}; if($p.Length -ge 2){$repo=$p[1] -replace '\.git$','';$repoPath=$owner+'/'+$repo;$repoUrl=$s+'://'+$a+'/'+$repoPath+'.git'}; $left=$uri.GetLeftPart([System.UriPartial]::Path); if($left.LastIndexOf('/') -gt 0){$raw=$left.Substring(0,$left.LastIndexOf('/'))}}; if($provider){'provider='+$provider}; if($h){'repo.host='+$h}; if($repoPath){'repo.path='+$repoPath}; if($repoUrl){'repo.url='+$repoUrl}; if($owner){'repo.owner='+$owner}; if($repo){'repo.name='+$repo}; if($branch){'repo.branch='+$branch}; if($raw){'raw.tools.url='+$raw}; 'repo.github='+$gh"') do call :SetAppValue "%%A" "%%B"
 exit /b 0
 
-:: ============================================================
-:: Function: InferFromRepoUrl
-:: Usage: call :InferFromRepoUrl
-:: Purpose: normalizes app.repo.url and derives provider, owner,
-::          repository name, and raw tool URL metadata.
-:: Output:
-::   app.provider, app.repo.*, app.raw.tools.url,
-::   app.getgit.url, app.getgh.url
-:: Returns:
-::   0 always
-:: Requires:
-::   PowerShell, :SetAppValue
-:: ============================================================
+rem ============================================================
+rem Function: InferFromRepoUrl
+rem Usage: call :InferFromRepoUrl
+rem Purpose: normalizes app.repo.url and derives provider, owner,
+rem          repository name, and raw tool URL metadata.
+rem Output:
+rem   app.provider, app.repo.*, app.raw.tools.url,
+rem   app.getgit.url, app.getgh.url
+rem Returns:
+rem   0 always
+rem Requires:
+rem   PowerShell, :SetAppValue
+rem ============================================================
 :InferFromRepoUrl
 for /f "tokens=1,* delims==" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$orig=${env:app.repo.url}; if(!$orig){exit 0}; $b=${env:app.repo.branch}; if(!$b){$b='main'}; $parse=$orig -replace '^git@([^:]+):','https://$1/'; $parse=$parse -replace '^ssh://git@','https://'; $uri=[uri]$parse; $s=$uri.Scheme; $h=$uri.Host.ToLowerInvariant(); $a=$uri.Authority; $path=$uri.AbsolutePath.Trim('/') -replace '\.git$',''; $p=$path -split '/'; $provider='git';$owner='';$repo='';$repoPath=$path;$raw='';$gh='0'; if($p.Length -ge 1){$repo=$p[$p.Length-1]}; if($p.Length -ge 2){$owner=($p[0..($p.Length-2)] -join '/')}; if($h -eq 'github.com'){$provider='github';$gh='1'; if($p.Length -ge 2){$raw='https://raw.githubusercontent.com/'+$path+'/'+$b+'/tools'}} elseif($h -like '*gitlab*'){$provider='gitlab'; if($p.Length -ge 2){$raw=$s+'://'+$a+'/'+$path+'/-/raw/'+$b+'/tools'}} elseif($h -eq 'bitbucket.org'){$provider='bitbucket'; if($p.Length -ge 2){$raw='https://bitbucket.org/'+$path+'/raw/'+$b+'/tools'}} elseif($h -like '*codeberg.org' -or $h -like '*gitea*' -or $h -like '*forgejo*'){$provider='gitea'; if($p.Length -ge 2){$raw=$s+'://'+$a+'/'+$path+'/raw/'+$b+'/tools'}}; if($provider){'provider='+$provider}; if($h){'repo.host='+$h}; if($repoPath){'repo.path='+$repoPath}; if($owner){'repo.owner='+$owner}; if($repo){'repo.name='+$repo}; if($raw){'raw.tools.url='+$raw}; 'repo.github='+$gh"') do call :SetAppValue "%%A" "%%B"
 if defined app.raw.tools.url if not defined app.getgit.url set "app.getgit.url=%app.raw.tools.url%/GetGit.bat"
 if defined app.raw.tools.url if not defined app.getgh.url set "app.getgh.url=%app.raw.tools.url%/GetGithubCLI.bat"
 exit /b 0
 
-:: ============================================================
-:: Function: SetAppValue
-:: Usage: call :SetAppValue "name" "value"
-:: Purpose: writes a parsed metadata value to app.name.
-:: Returns:
-::   0 always
-:: Requires:
-::   none
-:: ============================================================
+rem ============================================================
+rem Function: SetAppValue
+rem Usage: call :SetAppValue "name" "value"
+rem Purpose: writes a parsed metadata value to app.name.
+rem Returns:
+rem   0 always
+rem Requires:
+rem   none
+rem ============================================================
 :SetAppValue
 if "%~1"=="" exit /b 0
 set "app.%~1=%~2"
 exit /b 0
 
-:: ============================================================
-:: Function: ResolveRepoFolder
-:: Usage: call :ResolveRepoFolder
-:: Purpose: resolves the project folder. An explicit dir argument
-::          wins; otherwise the writable caller directory is used,
-::          with TEMP as the fallback.
-:: Returns:
-::   0 success
-::   3 repo name or writable fallback missing
-:: Requires:
-::   :SelectDefaultRepoParent
-:: ============================================================
+rem ============================================================
+rem Function: ResolveRepoFolder
+rem Usage: call :ResolveRepoFolder
+rem Purpose: resolves the project folder. An explicit dir argument
+rem          wins; otherwise the writable caller directory is used,
+rem          with TEMP as the fallback.
+rem Returns:
+rem   0 success
+rem   3 repo name or writable fallback missing
+rem Requires:
+rem   :SelectDefaultRepoParent
+rem ============================================================
 :ResolveRepoFolder
 if not defined app.repo.name (call :Red FAIL: could not determine repo name. & exit /b 3)
 if defined app.folder goto :ResolveRepoFolderNormalize
@@ -776,20 +778,20 @@ for %%A in ("%app.folder%") do set "app.folder=%%~fA"
 call :Green OK: Folder: %app.folder%
 exit /b 0
 
-:: ============================================================
-:: Function: SelectDefaultRepoParent
-:: Usage: call :SelectDefaultRepoParent
-:: Purpose: chooses the caller's current directory when writable;
-::          otherwise chooses TEMP.
-:: Output:
-::   app.repo.parent
-::   app.start.writable
-:: Returns:
-::   0 writable parent selected
-::   3 neither caller directory nor TEMP is writable
-:: Requires:
-::   :IsDirectoryWritable
-:: ============================================================
+rem ============================================================
+rem Function: SelectDefaultRepoParent
+rem Usage: call :SelectDefaultRepoParent
+rem Purpose: chooses the caller's current directory when writable;
+rem          otherwise chooses TEMP.
+rem Output:
+rem   app.repo.parent
+rem   app.start.writable
+rem Returns:
+rem   0 writable parent selected
+rem   3 neither caller directory nor TEMP is writable
+rem Requires:
+rem   :IsDirectoryWritable
+rem ============================================================
 :SelectDefaultRepoParent
 set "app.repo.parent="
 set "app.start.writable="
@@ -815,15 +817,15 @@ call :Red FAIL: neither the current folder nor TEMP is writable.
 set "sdrp_rc="
 exit /b 3
 
-:: ============================================================
-:: Function: IsDirectoryWritable
-:: Usage: call :IsDirectoryWritable "directory"
-:: Purpose: tests write access by creating and deleting a unique
-::          temporary probe file in the requested directory.
-:: Returns:
-::   0 writable
-::   1 missing or not writable
-:: ============================================================
+rem ============================================================
+rem Function: IsDirectoryWritable
+rem Usage: call :IsDirectoryWritable "directory"
+rem Purpose: tests write access by creating and deleting a unique
+rem          temporary probe file in the requested directory.
+rem Returns:
+rem   0 writable
+rem   1 missing or not writable
+rem ============================================================
 :IsDirectoryWritable
 set "idw_dir=%~1"
 set "idw_file="
@@ -837,14 +839,14 @@ set "idw_dir="
 set "idw_file="
 exit /b 0
 
-:: ============================================================
-:: Function: EnsureGit
-:: Usage: call :EnsureGit
-:: Purpose: finds Git or downloads/runs tools\GetGit.bat before cloning.
-:: Returns:
-::   0 Git ready
-::   4 Git install failed
-:: ============================================================
+rem ============================================================
+rem Function: EnsureGit
+rem Usage: call :EnsureGit
+rem Purpose: finds Git or downloads/runs tools\GetGit.bat before cloning.
+rem Returns:
+rem   0 Git ready
+rem   4 Git install failed
+rem ============================================================
 :EnsureGit
 call :FindGitExe
 if defined app.git (call :AddGitToPath & call :Green OK: Found Git: %app.git% & exit /b 0)
@@ -863,24 +865,24 @@ call :AddGitToPath
 call :Green OK: Git ready: %app.git%
 exit /b 0
 
-:: ============================================================
-:: Function: ResolveGit
-:: Usage: call :ResolveGit
-:: Purpose: resolves local or PATH git.exe.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ResolveGit
+rem Usage: call :ResolveGit
+rem Purpose: resolves local or PATH git.exe.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ResolveGit
 call :FindGitExe
 exit /b 0
 
-:: ============================================================
-:: Function: FindGitExe
-:: Usage: call :FindGitExe
-:: Purpose: resolves local or PATH git.exe into app.git.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: FindGitExe
+rem Usage: call :FindGitExe
+rem Purpose: resolves local or PATH git.exe into app.git.
+rem Returns:
+rem   0 always
+rem ============================================================
 :FindGitExe
 set "app.git="
 if exist "%app.tools%\git\cmd\git.exe" for %%A in ("%app.tools%\git\cmd\git.exe") do set "app.git=%%~fA"
@@ -888,13 +890,13 @@ if not defined app.git if exist "%app.folder%\tools\git\cmd\git.exe" for %%A in 
 if not defined app.git for %%P in (git.exe) do set "app.git=%%~$PATH:P"
 exit /b 0
 
-:: ============================================================
-:: Function: AddGitToPath
-:: Usage: call :AddGitToPath
-:: Purpose: prepends resolved git.exe folder to PATH so gh can find Git.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: AddGitToPath
+rem Usage: call :AddGitToPath
+rem Purpose: prepends resolved git.exe folder to PATH so gh can find Git.
+rem Returns:
+rem   0 always
+rem ============================================================
 :AddGitToPath
 if not defined app.git exit /b 0
 for %%A in ("%app.git%") do set "agtp_dir=%%~dpA"
@@ -904,14 +906,14 @@ if errorlevel 1 set "PATH=%agtp_dir%;%PATH%"
 set "agtp_dir="
 exit /b 0
 
-:: ============================================================
-:: Function: EnsureGetGitHelper
-:: Usage: call :EnsureGetGitHelper
-:: Purpose: downloads tools\GetGit.bat from the inferred tools URL.
-:: Returns:
-::   0 helper ready
-::   4 helper missing/download failed
-:: ============================================================
+rem ============================================================
+rem Function: EnsureGetGitHelper
+rem Usage: call :EnsureGetGitHelper
+rem Purpose: downloads tools\GetGit.bat from the inferred tools URL.
+rem Returns:
+rem   0 helper ready
+rem   4 helper missing/download failed
+rem ============================================================
 :EnsureGetGitHelper
 if exist "%app.tools%\GetGit.bat" exit /b 0
 if not exist "%app.tools%\" mkdir "%app.tools%" >nul 2>&1
@@ -926,14 +928,14 @@ if exist "%app.tools%\GetGit.bat" exit /b 0
 call :Red FAIL: GetGit.bat was not downloaded.
 exit /b 4
 
-:: ============================================================
-:: Function: CloneOrUpdateRepo
-:: Usage: call :CloneOrUpdateRepo
-:: Purpose: clones the repo or updates an existing checkout.
-:: Returns:
-::   0 cloned/updated
-::   5 git operation failed
-:: ============================================================
+rem ============================================================
+rem Function: CloneOrUpdateRepo
+rem Usage: call :CloneOrUpdateRepo
+rem Purpose: clones the repo or updates an existing checkout.
+rem Returns:
+rem   0 cloned/updated
+rem   5 git operation failed
+rem ============================================================
 :CloneOrUpdateRepo
 if not defined app.git call :EnsureGit
 if not defined app.git (call :Red FAIL: git.exe is not ready. & exit /b 5)
@@ -966,15 +968,15 @@ set "app.final.cd=%app.folder%"
 call :Green OK: Repo ready.
 exit /b 0
 
-:: ============================================================
-:: Function: NormalizeRepoUrl
-:: Usage: call :NormalizeRepoUrl "url" outputVariable
-:: Purpose: normalizes HTTPS and SSH Git URLs for safe comparison.
-:: Returns:
-::   0 always
-:: Requires:
-::   PowerShell
-:: ============================================================
+rem ============================================================
+rem Function: NormalizeRepoUrl
+rem Usage: call :NormalizeRepoUrl "url" outputVariable
+rem Purpose: normalizes HTTPS and SSH Git URLs for safe comparison.
+rem Returns:
+rem   0 always
+rem Requires:
+rem   PowerShell
+rem ============================================================
 :NormalizeRepoUrl
 set "nru_url=%~1"
 set "nru_out=%~2"
@@ -987,16 +989,16 @@ set "nru_url="
 set "nru_out="
 exit /b 0
 
-:: ============================================================
-:: Function: VerifyExistingRepoOrigin
-:: Usage: call :VerifyExistingRepoOrigin
-:: Purpose: refuses to update an existing checkout with a different origin.
-:: Returns:
-::   0 origin matches
-::   5 origin is missing or different
-:: Requires:
-::   Git, :NormalizeRepoUrl
-:: ============================================================
+rem ============================================================
+rem Function: VerifyExistingRepoOrigin
+rem Usage: call :VerifyExistingRepoOrigin
+rem Purpose: refuses to update an existing checkout with a different origin.
+rem Returns:
+rem   0 origin matches
+rem   5 origin is missing or different
+rem Requires:
+rem   Git, :NormalizeRepoUrl
+rem ============================================================
 :VerifyExistingRepoOrigin
 set "app.folder.origin="
 for /f "delims=" %%A in ('"%app.git%" -C "%app.folder%" remote get-url origin 2^>nul') do if not defined app.folder.origin set "app.folder.origin=%%A"
@@ -1009,17 +1011,17 @@ call :Yellow EXPECTED: %app.repo.url%
 call :Yellow EXISTING: %app.folder.origin%
 exit /b 5
 
-:: ============================================================
-:: Function: QuarantineNonGitFolder
-:: Usage: call :QuarantineNonGitFolder
-:: Purpose: moves an existing non-Git target folder aside before
-::          cloning into the requested checkout path.
-:: Returns:
-::   0 moved or no longer present
-::   5 folder could not be moved
-:: Requires:
-::   move
-:: ============================================================
+rem ============================================================
+rem Function: QuarantineNonGitFolder
+rem Usage: call :QuarantineNonGitFolder
+rem Purpose: moves an existing non-Git target folder aside before
+rem          cloning into the requested checkout path.
+rem Returns:
+rem   0 moved or no longer present
+rem   5 folder could not be moved
+rem Requires:
+rem   move
+rem ============================================================
 :QuarantineNonGitFolder
 set "qngf_old=%app.folder%.notgit.%app.timestamp%"
 call :Yellow WARN: target folder exists but is not a Git checkout: %app.folder%
@@ -1030,13 +1032,13 @@ if errorlevel 1 (call :Red FAIL: could not move stale folder. & call :Yellow LOG
 set "qngf_old="
 exit /b 0
 
-:: ============================================================
-:: Function: PromptAutoProviderLogin
-:: Usage: call :PromptAutoProviderLogin
-:: Purpose: asks whether auto mode should login to the configured provider; Enter skips login and fork.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: PromptAutoProviderLogin
+rem Usage: call :PromptAutoProviderLogin
+rem Purpose: asks whether auto mode should login to the configured provider; Enter skips login and fork.
+rem Returns:
+rem   0 always
+rem ============================================================
 :PromptAutoProviderLogin
 if /I not "%app.provider.can.login%"=="1" (call :Yellow SKIP: %app.provider% provider has no login/fork plugin. & set "app.login.mode=none" & set "app.fork.mode=no" & exit /b 0)
 if /I "%app.login.mode%"=="none" (call :Yellow SKIP: provider login and fork steps skipped. & set "app.fork.mode=no" & exit /b 0)
@@ -1048,33 +1050,27 @@ if defined app.log >>"%app.log%" echo %app.provider.display% login is optional.
 echo Press Enter to skip provider login and fork, or type y to login.
 if defined app.log >>"%app.log%" echo Press Enter to skip provider login and fork, or type y to login.
 set /p "paghl_choice=%app.provider.display% login? [y/N]: "
-if /I "%paghl_choice%"=="y" goto :PromptAutoProviderLoginYes
-if /I "%paghl_choice%"=="yes" goto :PromptAutoProviderLoginYes
-if /I "%paghl_choice%"=="n" goto :PromptAutoProviderLoginNo
-if /I "%paghl_choice%"=="no" goto :PromptAutoProviderLoginNo
+if /I "%paghl_choice%"=="y" (set "app.login.mode=login" & set "app.fork.mode=yes" & set "paghl_choice=" & exit /b 0)
+if /I "%paghl_choice%"=="yes" (set "app.login.mode=login" & set "app.fork.mode=yes" & set "paghl_choice=" & exit /b 0)
+if /I "%paghl_choice%"=="n" set "paghl_choice="
+if /I "%paghl_choice%"=="no" set "paghl_choice="
 if defined paghl_choice echo NOTE: unrecognized input; skipping provider login and fork.
 if defined paghl_choice if defined app.log >>"%app.log%" echo NOTE: unrecognized input; skipping provider login and fork.
-:PromptAutoProviderLoginNo
 set "app.login.mode=none"
 set "app.fork.mode=no"
 set "paghl_choice="
 exit /b 0
-:PromptAutoProviderLoginYes
-set "app.login.mode=login"
-set "app.fork.mode=yes"
-set "paghl_choice="
-exit /b 0
 
-:: ============================================================
-:: Function: ProviderLoginAndFork
-:: Usage: call :ProviderLoginAndFork
-:: Purpose: dispatches login/fork behavior through the configured provider adapter.
-:: Returns:
-::   0 success/skipped
-::   6 provider login/fork failed
-:: Contract:
-::   Providers with app.provider.can.login=0 must skip login/fork without prompting.
-:: ============================================================
+rem ============================================================
+rem Function: ProviderLoginAndFork
+rem Usage: call :ProviderLoginAndFork
+rem Purpose: dispatches login/fork behavior through the configured provider adapter.
+rem Returns:
+rem   0 success/skipped
+rem   6 provider login/fork failed
+rem Contract:
+rem   Providers with app.provider.can.login=0 must skip login/fork without prompting.
+rem ============================================================
 :ProviderLoginAndFork
 if /I "%app.provider.can.login%"=="0" (call :Yellow SKIP: %app.provider% provider has no login plugin. & exit /b 0)
 if /I "%app.provider%"=="github" goto :ProviderLoginAndForkGitHub
@@ -1085,14 +1081,14 @@ call :MaybeLoginAndFork
 set "plaf_rc=%errorlevel%"
 exit /b %plaf_rc%
 
-:: ============================================================
-:: Function: MaybeLoginAndFork
-:: Usage: call :MaybeLoginAndFork
-:: Purpose: for GitHub repos, logs in and forks only when the user lacks write access.
-:: Returns:
-::   0 success/skipped
-::   6 GitHub CLI operation failed
-:: ============================================================
+rem ============================================================
+rem Function: MaybeLoginAndFork
+rem Usage: call :MaybeLoginAndFork
+rem Purpose: for GitHub repos, logs in and forks only when the user lacks write access.
+rem Returns:
+rem   0 success/skipped
+rem   6 GitHub CLI operation failed
+rem ============================================================
 :MaybeLoginAndFork
 if /I "%app.provider%"=="github" goto :MaybeLoginAndForkGitHub
 if /I "%app.login.mode%"=="none" exit /b 0
@@ -1123,50 +1119,44 @@ if not "%mlaf_rc%"=="0" exit /b %mlaf_rc%
 set "mlaf_rc="
 exit /b 0
 
-:: ============================================================
-:: Function: MaybePromptLoginSkip
-:: Usage: call :MaybePromptLoginSkip
-:: Purpose: asks whether the default workflow should perform GitHub
-::          login and fork handling.
-:: Output:
-::   app.login.mode
-:: Returns:
-::   0 always
-:: Requires:
-::   set /p
-:: ============================================================
+rem ============================================================
+rem Function: MaybePromptLoginSkip
+rem Usage: call :MaybePromptLoginSkip
+rem Purpose: asks whether the default workflow should perform GitHub
+rem          login and fork handling.
+rem Output:
+rem   app.login.mode
+rem Returns:
+rem   0 always
+rem Requires:
+rem   set /p
+rem ============================================================
 :MaybePromptLoginSkip
 call :Yellow GitHub login is optional.
 call :Yellow Press Enter to skip GitHub login and fork, or type y to login.
 set "mpls_choice="
 set /p "mpls_choice=GitHub login? [y/N]: "
-if not defined mpls_choice goto :MaybePromptLoginSkipNo
-if /I "%mpls_choice%"=="n" goto :MaybePromptLoginSkipNo
-if /I "%mpls_choice%"=="no" goto :MaybePromptLoginSkipNo
-if /I "%mpls_choice%"=="nologin" goto :MaybePromptLoginSkipNo
-if /I "%mpls_choice%"=="y" goto :MaybePromptLoginSkipYes
-if /I "%mpls_choice%"=="yes" goto :MaybePromptLoginSkipYes
+if /I "%mpls_choice%"=="y" (set "app.login.mode=ask" & set "mpls_choice=" & exit /b 0)
+if /I "%mpls_choice%"=="yes" (set "app.login.mode=ask" & set "mpls_choice=" & exit /b 0)
+if not defined mpls_choice (set "app.login.mode=none" & exit /b 0)
+if /I "%mpls_choice%"=="n" (set "app.login.mode=none" & set "mpls_choice=" & exit /b 0)
+if /I "%mpls_choice%"=="no" (set "app.login.mode=none" & set "mpls_choice=" & exit /b 0)
+if /I "%mpls_choice%"=="nologin" (set "app.login.mode=none" & set "mpls_choice=" & exit /b 0)
 call :Yellow NOTE: input ignored; skipping GitHub login and fork.
-goto :MaybePromptLoginSkipNo
-:MaybePromptLoginSkipYes
-set "app.login.mode=ask"
-set "mpls_choice="
-exit /b 0
-:MaybePromptLoginSkipNo
 set "app.login.mode=none"
 set "mpls_choice="
 exit /b 0
 
-:: ============================================================
-:: Function: PrepareRepositoryDependencies
-:: Usage: call :PrepareRepositoryDependencies
-:: Purpose: lets the cloned repository prepare Git/GitHub CLI and PATH.
-:: Returns:
-::   0 prepared or skipped
-::   8 prepare failed
-:: Requires:
-::   prepare.bat when present
-:: ============================================================
+rem ============================================================
+rem Function: PrepareRepositoryDependencies
+rem Usage: call :PrepareRepositoryDependencies
+rem Purpose: lets the cloned repository prepare Git/GitHub CLI and PATH.
+rem Returns:
+rem   0 prepared or skipped
+rem   8 prepare failed
+rem Requires:
+rem   prepare.bat when present
+rem ============================================================
 :PrepareRepositoryDependencies
 if defined app.prepare.repository.done exit /b 0
 if not exist "%app.folder%\prepare.bat" (set "app.prepare.repository.done=1" & exit /b 0)
@@ -1184,14 +1174,14 @@ call :FindGitHubCliExe
 if defined app.gh call :AddGitHubCliToPath
 exit /b 0
 
-:: ============================================================
-:: Function: EnsureGitHubCLI
-:: Usage: call :EnsureGitHubCLI
-:: Purpose: finds or installs gh.exe using tools\GetGithubCLI.bat from the repo.
-:: Returns:
-::   0 gh ready
-::   6 gh install failed
-:: ============================================================
+rem ============================================================
+rem Function: EnsureGitHubCLI
+rem Usage: call :EnsureGitHubCLI
+rem Purpose: finds or installs gh.exe using tools\GetGithubCLI.bat from the repo.
+rem Returns:
+rem   0 gh ready
+rem   6 gh install failed
+rem ============================================================
 :EnsureGitHubCLI
 call :PrepareRepositoryDependencies
 if errorlevel 1 exit /b 6
@@ -1215,24 +1205,24 @@ if not exist "%app.gh%" (call :Red FAIL: gh.exe path is invalid: %app.gh% & set 
 call :Green OK: GitHub CLI ready: %app.gh%
 exit /b 0
 
-:: ============================================================
-:: Function: ResolveGitHubCLI
-:: Usage: call :ResolveGitHubCLI
-:: Purpose: resolves local or PATH gh.exe.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ResolveGitHubCLI
+rem Usage: call :ResolveGitHubCLI
+rem Purpose: resolves local or PATH gh.exe.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ResolveGitHubCLI
 call :FindGitHubCliExe
 exit /b 0
 
-:: ============================================================
-:: Function: FindGitHubCliExe
-:: Usage: call :FindGitHubCliExe
-:: Purpose: resolves local or PATH gh.exe into app.gh.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: FindGitHubCliExe
+rem Usage: call :FindGitHubCliExe
+rem Purpose: resolves local or PATH gh.exe into app.gh.
+rem Returns:
+rem   0 always
+rem ============================================================
 :FindGitHubCliExe
 set "app.gh="
 if exist "%app.folder%\tools\gh\bin\gh.exe" for %%A in ("%app.folder%\tools\gh\bin\gh.exe") do set "app.gh=%%~fA"
@@ -1241,13 +1231,13 @@ if not defined app.gh for %%P in (gh.exe) do set "app.gh=%%~$PATH:P"
 if defined app.gh if not exist "%app.gh%" set "app.gh="
 exit /b 0
 
-:: ============================================================
-:: Function: AddGitHubCliToPath
-:: Usage: call :AddGitHubCliToPath
-:: Purpose: prepends gh.exe's folder to PATH for child commands.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: AddGitHubCliToPath
+rem Usage: call :AddGitHubCliToPath
+rem Purpose: prepends gh.exe's folder to PATH for child commands.
+rem Returns:
+rem   0 always
+rem ============================================================
 :AddGitHubCliToPath
 if not defined app.gh exit /b 0
 for %%A in ("%app.gh%") do set "agctp_dir=%%~dpA"
@@ -1257,13 +1247,13 @@ if errorlevel 1 set "PATH=%agctp_dir%;%PATH%"
 set "agctp_dir="
 exit /b 0
 
-:: ============================================================
-:: Function: DownloadRepoGetGithubCLI
-:: Usage: call :DownloadRepoGetGithubCLI
-:: Purpose: downloads GetGithubCLI.bat into the cloned repo if missing.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: DownloadRepoGetGithubCLI
+rem Usage: call :DownloadRepoGetGithubCLI
+rem Purpose: downloads GetGithubCLI.bat into the cloned repo if missing.
+rem Returns:
+rem   0 always
+rem ============================================================
 :DownloadRepoGetGithubCLI
 if not defined app.getgh.url exit /b 0
 if not exist "%app.folder%\tools\" mkdir "%app.folder%\tools" >nul 2>&1
@@ -1275,14 +1265,14 @@ if exist "%app.folder%\tools\GetGithubCLI.bat" exit /b 0
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%app.getgh.url%' -OutFile '%app.folder%\tools\GetGithubCLI.bat'" >> "%app.log%" 2>&1
 exit /b 0
 
-:: ============================================================
-:: Function: EnsureGitHubLogin
-:: Usage: call :EnsureGitHubLogin
-:: Purpose: runs gh auth login if needed and verifies the GitHub username.
-:: Returns:
-::   0 logged in and user verified
-::   6 login failed
-:: ============================================================
+rem ============================================================
+rem Function: EnsureGitHubLogin
+rem Usage: call :EnsureGitHubLogin
+rem Purpose: runs gh auth login if needed and verifies the GitHub username.
+rem Returns:
+rem   0 logged in and user verified
+rem   6 login failed
+rem ============================================================
 :EnsureGitHubLogin
 set "app.login.used.just="
 if exist "%app.folder%\just_login.bat" goto :EnsureGitHubLoginRepository
@@ -1292,18 +1282,18 @@ exit /b %errorlevel%
 call :RunRepositoryJustLogin
 exit /b %errorlevel%
 
-:: ============================================================
-:: Function: RunRepositoryJustLogin
-:: Usage: call :RunRepositoryJustLogin
-:: Purpose: delegates login/setup to the cloned repository's just_login.bat.
-::          Interactive mode lets just_login.bat ask for browser method 1-4.
-::          A command-line login method is forwarded as browser METHOD.
-:: Returns:
-::   0 login/setup completed
-::   6 login/setup failed
-:: Requires:
-::   just_login.bat, gh when login is needed
-:: ============================================================
+rem ============================================================
+rem Function: RunRepositoryJustLogin
+rem Usage: call :RunRepositoryJustLogin
+rem Purpose: delegates login/setup to the cloned repository's just_login.bat.
+rem          Interactive mode lets just_login.bat ask for browser method 1-4.
+rem          A command-line login method is forwarded as browser METHOD.
+rem Returns:
+rem   0 login/setup completed
+rem   6 login/setup failed
+rem Requires:
+rem   just_login.bat, gh when login is needed
+rem ============================================================
 :RunRepositoryJustLogin
 call :EnsureGitHubCLI
 if errorlevel 1 exit /b 6
@@ -1324,16 +1314,16 @@ call :GetGitHubUser
 call :Green OK: Repository login/setup complete.
 exit /b 0
 
-:: ============================================================
-:: Function: EnsureGitHubLoginLegacy
-:: Usage: call :EnsureGitHubLoginLegacy
-:: Purpose: fallback GitHub CLI login when just_login.bat is unavailable.
-:: Returns:
-::   0 logged in and user verified
-::   6 login failed
-:: Requires:
-::   gh
-:: ============================================================
+rem ============================================================
+rem Function: EnsureGitHubLoginLegacy
+rem Usage: call :EnsureGitHubLoginLegacy
+rem Purpose: fallback GitHub CLI login when just_login.bat is unavailable.
+rem Returns:
+rem   0 logged in and user verified
+rem   6 login failed
+rem Requires:
+rem   gh
+rem ============================================================
 :EnsureGitHubLoginLegacy
 call :FindGitHubCliExe
 if not defined app.gh call :EnsureGitHubCLI
@@ -1362,19 +1352,19 @@ if errorlevel 1 (call :Red FAIL: GitHub login was not confirmed. & call :Yellow 
 call :Green OK: GitHub login ready: %app.github.user%
 exit /b 0
 
-:: ============================================================
-:: Function: GetGitHubUser
-:: Usage: call :GetGitHubUser
-:: Purpose: resolves the authenticated GitHub username through the
-::          API and falls back to gh auth status parsing.
-:: Output:
-::   app.github.user
-:: Returns:
-::   0 user resolved
-::   6 user could not be resolved
-:: Requires:
-::   gh, :GetGitHubUserFromStatus
-:: ============================================================
+rem ============================================================
+rem Function: GetGitHubUser
+rem Usage: call :GetGitHubUser
+rem Purpose: resolves the authenticated GitHub username through the
+rem          API and falls back to gh auth status parsing.
+rem Output:
+rem   app.github.user
+rem Returns:
+rem   0 user resolved
+rem   6 user could not be resolved
+rem Requires:
+rem   gh, :GetGitHubUserFromStatus
+rem ============================================================
 :GetGitHubUser
 set "app.github.user="
 if not defined app.gh exit /b 6
@@ -1384,14 +1374,14 @@ call :GetGitHubUserFromStatus
 if defined app.github.user exit /b 0
 exit /b 6
 
-:: ============================================================
-:: Function: IsGitHubLoggedIn
-:: Usage: call :IsGitHubLoggedIn
-:: Purpose: checks whether gh has an authenticated GitHub account and captures the user.
-:: Returns:
-::   0 logged in
-::   6 not logged in or user unknown
-:: ============================================================
+rem ============================================================
+rem Function: IsGitHubLoggedIn
+rem Usage: call :IsGitHubLoggedIn
+rem Purpose: checks whether gh has an authenticated GitHub account and captures the user.
+rem Returns:
+rem   0 logged in
+rem   6 not logged in or user unknown
+rem ============================================================
 :IsGitHubLoggedIn
 if not defined app.gh exit /b 6
 call :AddGitToPath
@@ -1401,14 +1391,14 @@ call :GetGitHubUser
 if errorlevel 1 exit /b 6
 exit /b 0
 
-:: ============================================================
-:: Function: GetGitHubUserFromStatus
-:: Usage: call :GetGitHubUserFromStatus
-:: Purpose: parses gh auth status output as a fallback username source.
-:: Returns:
-::   0 user captured
-::   6 user could not be captured
-:: ============================================================
+rem ============================================================
+rem Function: GetGitHubUserFromStatus
+rem Usage: call :GetGitHubUserFromStatus
+rem Purpose: parses gh auth status output as a fallback username source.
+rem Returns:
+rem   0 user captured
+rem   6 user could not be captured
+rem ============================================================
 :GetGitHubUserFromStatus
 set "ggufs_file=%app.log.dir%\gh.auth.%app.timestamp%.txt"
 "%app.gh%" auth status -h github.com > "%ggufs_file%" 2>&1
@@ -1418,29 +1408,29 @@ set "ggufs_file="
 if defined app.github.user exit /b 0
 exit /b 6
 
-:: ============================================================
-:: Function: ConfigureGitCredentialHelper
-:: Usage: call :ConfigureGitCredentialHelper
-:: Purpose: preselects Git Credential Manager to avoid Git's credential helper selector dialog.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: ConfigureGitCredentialHelper
+rem Usage: call :ConfigureGitCredentialHelper
+rem Purpose: preselects Git Credential Manager to avoid Git's credential helper selector dialog.
+rem Returns:
+rem   0 always
+rem ============================================================
 :ConfigureGitCredentialHelper
 call :Yellow SKIP: global Git credential-helper settings are not changed by bootstrap.
 exit /b 0
 
-:: ============================================================
-:: Function: MaybeForkRepo
-:: Usage: call :MaybeForkRepo
-:: Purpose: verifies direct push access or creates and configures a
-::          personal GitHub fork when required.
-:: Returns:
-::   0 direct push or fork workflow ready
-::   6 fork or permission setup failed
-:: Requires:
-::   gh, :GetGitHubUser, :CanPushToOrigin, :AskForkChoice,
-::   :CreateAndConfigureFork
-:: ============================================================
+rem ============================================================
+rem Function: MaybeForkRepo
+rem Usage: call :MaybeForkRepo
+rem Purpose: verifies direct push access or creates and configures a
+rem          personal GitHub fork when required.
+rem Returns:
+rem   0 direct push or fork workflow ready
+rem   6 fork or permission setup failed
+rem Requires:
+rem   gh, :GetGitHubUser, :CanPushToOrigin, :AskForkChoice,
+rem   :CreateAndConfigureFork
+rem ============================================================
 :MaybeForkRepo
 if defined app.login.used.just (call :Green OK: repository just_login.bat handled GitHub setup. & exit /b 0)
 if /I not "%app.provider%"=="github" exit /b 0
@@ -1468,14 +1458,14 @@ set "mfr_rc=%errorlevel%"
 set "mfr_perm="
 exit /b %mfr_rc%
 
-:: ============================================================
-:: Function: CanPushToOrigin
-:: Usage: call :CanPushToOrigin
-:: Purpose: tests whether the current user can push to origin using git dry-run.
-:: Returns:
-::   0 push likely allowed
-::   1 push not confirmed
-:: ============================================================
+rem ============================================================
+rem Function: CanPushToOrigin
+rem Usage: call :CanPushToOrigin
+rem Purpose: tests whether the current user can push to origin using git dry-run.
+rem Returns:
+rem   0 push likely allowed
+rem   1 push not confirmed
+rem ============================================================
 :CanPushToOrigin
 if not exist "%app.folder%\.git\" exit /b 1
 pushd "%app.folder%" >nul
@@ -1488,13 +1478,13 @@ if "%cpto_rc%"=="0" (set "cpto_rc=" & exit /b 0)
 set "cpto_rc="
 exit /b 1
 
-:: ============================================================
-:: Function: AskForkChoice
-:: Usage: call :AskForkChoice
-:: Purpose: asks whether to create/use a GitHub fork.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: AskForkChoice
+rem Usage: call :AskForkChoice
+rem Purpose: asks whether to create/use a GitHub fork.
+rem Returns:
+rem   0 always
+rem ============================================================
 :AskForkChoice
 set "afc_choice="
 set /p "afc_choice=Create/use a fork? [y/N]: "
@@ -1504,14 +1494,14 @@ if /I not "%app.fork.mode%"=="yes" set "app.fork.mode=no"
 set "afc_choice="
 exit /b 0
 
-:: ============================================================
-:: Function: CreateAndConfigureFork
-:: Usage: call :CreateAndConfigureFork
-:: Purpose: creates GitHub fork and sets origin/upstream remotes.
-:: Returns:
-::   0 fork configured
-::   6 fork failed
-:: ============================================================
+rem ============================================================
+rem Function: CreateAndConfigureFork
+rem Usage: call :CreateAndConfigureFork
+rem Purpose: creates GitHub fork and sets origin/upstream remotes.
+rem Returns:
+rem   0 fork configured
+rem   6 fork failed
+rem ============================================================
 :CreateAndConfigureFork
 if not defined app.gh (call :Red FAIL: gh.exe is not ready; fork cannot continue. & exit /b 6)
 if not exist "%app.gh%" (call :Red FAIL: gh.exe path is invalid: %app.gh% & exit /b 6)
@@ -1540,27 +1530,27 @@ cd /d "%app.root%" >nul 2>&1
 call :Green OK: Fork remote configured.
 exit /b 0
 
-:: ============================================================
-:: Function: MoveOriginToUpstream
-:: Usage: call :MoveOriginToUpstream
-:: Purpose: renames origin to upstream only when origin exists.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: MoveOriginToUpstream
+rem Usage: call :MoveOriginToUpstream
+rem Purpose: renames origin to upstream only when origin exists.
+rem Returns:
+rem   0 always
+rem ============================================================
 :MoveOriginToUpstream
 "%app.git%" remote get-url origin >nul 2>&1
 if errorlevel 1 exit /b 0
 "%app.git%" remote rename origin upstream >> "%app.log%" 2>&1
 exit /b 0
 
-:: ============================================================
-:: Function: MaybeMoveProject
-:: Usage: call :MaybeMoveProject
-:: Purpose: optionally moves the project folder.
-:: Returns:
-::   0 moved/skipped
-::   7 move failed
-:: ============================================================
+rem ============================================================
+rem Function: MaybeMoveProject
+rem Usage: call :MaybeMoveProject
+rem Purpose: optionally moves the project folder.
+rem Returns:
+rem   0 moved/skipped
+rem   7 move failed
+rem ============================================================
 :MaybeMoveProject
 if /I "%app.move.mode%"=="no" exit /b 0
 if /I "%app.move.mode%"=="documents" goto :MoveProjectToDocuments
@@ -1578,14 +1568,14 @@ if /I "%app.choice%"=="yes" goto :MoveProjectWithFolderPicker
 call :MoveProjectToChosenFolder "%app.choice%"
 exit /b %errorlevel%
 
-:: ============================================================
-:: Function: MoveProjectToDocuments
-:: Usage: call :MoveProjectToDocuments
-:: Purpose: moves project into the Windows Documents special folder.
-:: Returns:
-::   0 moved/skipped
-::   7 move failed
-:: ============================================================
+rem ============================================================
+rem Function: MoveProjectToDocuments
+rem Usage: call :MoveProjectToDocuments
+rem Purpose: moves project into the Windows Documents special folder.
+rem Returns:
+rem   0 moved/skipped
+rem   7 move failed
+rem ============================================================
 :MoveProjectToDocuments
 set "mptd_base="
 for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "[Environment]::GetFolderPath([Environment+SpecialFolder]::MyDocuments)"') do set "mptd_base=%%A"
@@ -1596,14 +1586,14 @@ set "mptd_rc=%errorlevel%"
 set "mptd_base="
 exit /b %mptd_rc%
 
-:: ============================================================
-:: Function: MoveProjectWithFolderPicker
-:: Usage: call :MoveProjectWithFolderPicker
-:: Purpose: opens a Windows folder picker and moves project into chosen folder.
-:: Returns:
-::   0 moved/skipped
-::   7 move failed
-:: ============================================================
+rem ============================================================
+rem Function: MoveProjectWithFolderPicker
+rem Usage: call :MoveProjectWithFolderPicker
+rem Purpose: opens a Windows folder picker and moves project into chosen folder.
+rem Returns:
+rem   0 moved/skipped
+rem   7 move failed
+rem ============================================================
 :MoveProjectWithFolderPicker
 set "mpwfp_base="
 for /f "delims=" %%A in ('powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description='Choose destination folder for project'; if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$d.SelectedPath}"') do set "mpwfp_base=%%A"
@@ -1613,14 +1603,14 @@ set "mpwfp_rc=%errorlevel%"
 set "mpwfp_base="
 exit /b %mpwfp_rc%
 
-:: ============================================================
-:: Function: MoveProjectToChosenFolder
-:: Usage: call :MoveProjectToChosenFolder "destinationParent"
-:: Purpose: moves app.folder into destinationParent\repoName.
-:: Returns:
-::   0 moved/skipped
-::   7 move failed
-:: ============================================================
+rem ============================================================
+rem Function: MoveProjectToChosenFolder
+rem Usage: call :MoveProjectToChosenFolder "destinationParent"
+rem Purpose: moves app.folder into destinationParent\repoName.
+rem Returns:
+rem   0 moved/skipped
+rem   7 move failed
+rem ============================================================
 :MoveProjectToChosenFolder
 set "mptcf_parent=%~1"
 if not defined mptcf_parent exit /b 0
@@ -1650,16 +1640,16 @@ call :Green OK: Project moved to %app.folder%.
 set "mptcf_parent="
 exit /b 0
 
-:: ============================================================
-:: Function: RunBuildStep
-:: Usage: call :RunBuildStep
-:: Purpose: runs the cloned repository's build.bat when present.
-:: Returns:
-::   0 built or skipped
-::   8 build failed
-:: Requires:
-::   optional build.bat
-:: ============================================================
+rem ============================================================
+rem Function: RunBuildStep
+rem Usage: call :RunBuildStep
+rem Purpose: runs the cloned repository's build.bat when present.
+rem Returns:
+rem   0 built or skipped
+rem   8 build failed
+rem Requires:
+rem   optional build.bat
+rem ============================================================
 :RunBuildStep
 if not exist "%app.folder%\build.bat" (call :Yellow SKIP: build.bat not found. & exit /b 0)
 call :Yellow DO: Running build.bat.
@@ -1672,17 +1662,17 @@ set "rbs_rc="
 call :Green OK: Build complete.
 exit /b 0
 
-:: ============================================================
-:: Function: RunPrepareStep
-:: Usage: call :RunPrepareStep
-:: Purpose: runs the cloned repository's general prepare.bat.
-:: Returns:
-::   0 preparation succeeded
-::   8 prepare.bat missing
-::   nonzero prepare.bat result
-:: Requires:
-::   prepare.bat
-:: ============================================================
+rem ============================================================
+rem Function: RunPrepareStep
+rem Usage: call :RunPrepareStep
+rem Purpose: runs the cloned repository's general prepare.bat.
+rem Returns:
+rem   0 preparation succeeded
+rem   8 prepare.bat missing
+rem   nonzero prepare.bat result
+rem Requires:
+rem   prepare.bat
+rem ============================================================
 :RunPrepareStep
 if not exist "%app.folder%\prepare.bat" (call :Red FAIL: prepare.bat not found in %app.folder% & exit /b 8)
 pushd "%app.folder%" >nul
@@ -1691,17 +1681,17 @@ set "rps_rc=%errorlevel%"
 popd >nul
 exit /b %rps_rc%
 
-:: ============================================================
-:: Function: RunInstallStep
-:: Usage: call :RunInstallStep
-:: Purpose: runs the cloned repository's install.bat.
-:: Returns:
-::   0 installation succeeded
-::   8 install.bat missing
-::   nonzero install.bat result
-:: Requires:
-::   install.bat
-:: ============================================================
+rem ============================================================
+rem Function: RunInstallStep
+rem Usage: call :RunInstallStep
+rem Purpose: runs the cloned repository's install.bat.
+rem Returns:
+rem   0 installation succeeded
+rem   8 install.bat missing
+rem   nonzero install.bat result
+rem Requires:
+rem   install.bat
+rem ============================================================
 :RunInstallStep
 if not exist "%app.folder%\install.bat" (call :Red FAIL: install.bat not found in %app.folder% & exit /b 8)
 pushd "%app.folder%" >nul
@@ -1710,26 +1700,26 @@ set "ris_rc=%errorlevel%"
 popd >nul
 exit /b %ris_rc%
 
-:: ============================================================
-:: Function: ShowMenu
-:: Usage: call :ShowMenu
-:: Purpose: enters the interactive bootstrap menu.
-:: Returns:
-::   0 user exited
-:: Requires:
-::   :MenuLoop
-:: ============================================================
+rem ============================================================
+rem Function: ShowMenu
+rem Usage: call :ShowMenu
+rem Purpose: enters the interactive bootstrap menu.
+rem Returns:
+rem   0 user exited
+rem Requires:
+rem   :MenuLoop
+rem ============================================================
 :ShowMenu
 call :MenuLoop
 exit /b 0
 
-:: ============================================================
-:: Function: MenuLoop
-:: Usage: call :MenuLoop
-:: Purpose: interactive menu loop.
-:: Returns:
-::   0 user exited
-:: ============================================================
+rem ============================================================
+rem Function: MenuLoop
+rem Usage: call :MenuLoop
+rem Purpose: interactive menu loop.
+rem Returns:
+rem   0 user exited
+rem ============================================================
 :MenuLoop
 cls
 call :DrawMenu
@@ -1793,13 +1783,13 @@ call :RunBootstrapWorkflow
 pause
 goto :MenuLoop
 
-:: ============================================================
-:: Function: DrawMenu
-:: Usage: call :DrawMenu
-:: Purpose: draws the DOS-style menu without passing pipe characters through CALL.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: DrawMenu
+rem Usage: call :DrawMenu
+rem Purpose: draws the DOS-style menu without passing pipe characters through CALL.
+rem Returns:
+rem   0 always
+rem ============================================================
 :DrawMenu
 if defined app.esc goto :DrawMenuColor
 echo +------------------------------------------------------------+
@@ -1834,14 +1824,14 @@ echo %app.esc%[%app.color.cyan%^|  0  Exit                                      
 echo %app.esc%[%app.color.cyan%+------------------------------------------------------------+%app.esc%[%app.color.reset%
 exit /b 0
 
-:: ============================================================
-:: Function: DownloadFile
-:: Usage: call :DownloadFile "url" "file"
-:: Purpose: downloads a file using curl, then PowerShell fallback.
-:: Returns:
-::   0 downloaded
-::   4 download failed
-:: ============================================================
+rem ============================================================
+rem Function: DownloadFile
+rem Usage: call :DownloadFile "url" "file"
+rem Purpose: downloads a file using curl, then PowerShell fallback.
+rem Returns:
+rem   0 downloaded
+rem   4 download failed
+rem ============================================================
 :DownloadFile
 set "df_url=%~1"
 set "df_file=%~2"
@@ -1861,14 +1851,14 @@ set "df_url="
 set "df_file="
 exit /b 0
 
-:: ============================================================
-:: Function: SetESC
-:: Usage: call :SetESC outputVariable
-:: Purpose: captures ANSI escape character.
-:: Returns:
-::   0 success
-::   2 missing output variable
-:: ============================================================
+rem ============================================================
+rem Function: SetESC
+rem Usage: call :SetESC outputVariable
+rem Purpose: captures ANSI escape character.
+rem Returns:
+rem   0 success
+rem   2 missing output variable
+rem ============================================================
 :SetESC
 set "se_out=%~1"
 if not defined se_out exit /b 2
@@ -1876,49 +1866,49 @@ for /f %%a in ('echo prompt $E^| cmd') do set "%se_out%=%%a"
 set "se_out="
 exit /b 0
 
-:: ============================================================
-:: Function: Green
-:: Usage: call :Green message
-:: Purpose: prints/logs green status.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: Green
+rem Usage: call :Green message
+rem Purpose: prints/logs green status.
+rem Returns:
+rem   0 always
+rem ============================================================
 :Green
 if defined app.esc (echo %app.esc%[%app.color.green%%*%app.esc%[%app.color.reset%) else (echo %*)
 if defined app.log >>"%app.log%" echo %*
 exit /b 0
 
-:: ============================================================
-:: Function: Yellow
-:: Usage: call :Yellow message
-:: Purpose: prints/logs yellow status.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: Yellow
+rem Usage: call :Yellow message
+rem Purpose: prints/logs yellow status.
+rem Returns:
+rem   0 always
+rem ============================================================
 :Yellow
 if defined app.esc (echo %app.esc%[%app.color.yellow%%*%app.esc%[%app.color.reset%) else (echo %*)
 if defined app.log >>"%app.log%" echo %*
 exit /b 0
 
-:: ============================================================
-:: Function: Red
-:: Usage: call :Red message
-:: Purpose: prints/logs red status.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: Red
+rem Usage: call :Red message
+rem Purpose: prints/logs red status.
+rem Returns:
+rem   0 always
+rem ============================================================
 :Red
 if defined app.esc (echo %app.esc%[%app.color.red%%*%app.esc%[%app.color.reset%) else (echo %*)
 if defined app.log >>"%app.log%" echo %*
 exit /b 0
 
-:: ============================================================
-:: Function: Cyan
-:: Usage: call :Cyan message
-:: Purpose: prints/logs cyan status.
-:: Returns:
-::   0 always
-:: ============================================================
+rem ============================================================
+rem Function: Cyan
+rem Usage: call :Cyan message
+rem Purpose: prints/logs cyan status.
+rem Returns:
+rem   0 always
+rem ============================================================
 :Cyan
 if defined app.esc (echo %app.esc%[%app.color.cyan%%*%app.esc%[%app.color.reset%) else (echo %*)
 if defined app.log >>"%app.log%" echo %*
