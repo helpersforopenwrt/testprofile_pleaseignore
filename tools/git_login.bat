@@ -22,18 +22,18 @@ set "APP_GH_DEVICE_URL="
 ::   call tools\git_login.bat
 ::   call tools\git_login.bat repo OWNER/REPO
 ::   call tools\git_login.bat repo URL branch main
-::   call tools\git_login.bat browser 4
+::   call tools\git_login.bat browser 4 fork yes identity defaults push yes
 ::   call tools\git_login.bat help
 ::
 :: Returns: 0 on successful setup, successful no-commit setup, or help
 ::          1 on dependency, authentication, repository, permission,
 ::            initialization, identity, remote, or push failure
 ::          2 on invalid arguments
-:: Requires: _common.bat, prepare.bat, git, gh, :Main, :Authenticate,
-::           :ResolveRepository, :ResolveIdentity, :ConfigureFork,
-::           :EnsureFork, :WaitForFork, :ShowPlan, :CaptureRemotes,
-::           :ConfigureRemotes, :RestoreRemotes, :ParseArgs, :ShowHelp,
-::           :PauseIfNeeded, :IsConsole
+:: Requires: _common.bat, prepare.bat, git, gh, main, authenticate,
+::           resolverepository, resolveidentity, configurefork,
+::           ensurefork, waitforfork, showplan, captureremotes,
+::           configureremotes, restoreremotes, parseargs, showhelp,
+::           pauseifneeded, isconsole
 :: ============================================================
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
@@ -48,6 +48,7 @@ set "app.git_login.branch="
 set "app.git_login.login="
 set "app.git_login.can.push="
 set "app.git_login.use.fork="
+set "app.git_login.read.only="
 set "app.git_login.fork.slug="
 set "app.git_login.fork.url="
 set "app.git_login.fork.create="
@@ -61,8 +62,12 @@ set "app.git_login.git.email="
 set "app.git_login.input="
 set "app.git_login.prepare.log="
 set "app.git_login.prepare.rc=0"
+set "app.git_login.prepared.request=no"
 set "app.git_login.browser.choice="
 set "app.git_login.browser.request=ask"
+set "app.git_login.fork.request=ask"
+set "app.git_login.identity.request=ask"
+set "app.git_login.push.request=yes"
 set "app.git_login.browser.preopened="
 set "app.git_login.browser.noop="
 set "app.git_login.browser.url=https://github.com/login/device"
@@ -86,20 +91,22 @@ call :CleanupTemp
 call :PauseIfNeeded
 exit /b %app.git_login.rc%
 :: ============================================================
-:: :Main
+:: Function Main
 :: Coordinates authentication, repository and fork resolution,
 :: local Git setup, remote configuration, and optional push.
 ::
-:: Usage: call :Main [repo REPO] [branch BRANCH] [help]
+:: Usage: call main [repo REPO] [branch BRANCH] [browser METHOD] [fork MODE] [identity MODE] [push MODE] [prepared MODE] [help]
 ::
 :: Returns: 0 on successful setup, successful no-commit setup, or help
 ::          1 on dependency, authentication, repository, permission,
 ::            initialization, identity, remote, or push failure
 ::          2 on invalid arguments
-:: Requires: :Authenticate, :ResolveRepository, :ResolveIdentity,
-::           :ConfigureFork, :EnsureFork, :ShowPlan, :CaptureRemotes,
-::           :ConfigureRemotes, :RestoreRemotes, :ParseArgs, :ShowHelp,
+:: Requires: authenticate, resolverepository, resolveidentity,
+::           configurefork, ensurefork, showplan, captureremotes,
+::           configureremotes, restoreremotes, parseargs, showhelp,
 ::           prepare.bat, git, gh
+:: Dependencies
+::   ParseArgs CleanupTemp Authenticate ResolveRepository ConfigureFork ResolveIdentity ShowPlan EnsureFork CaptureRemotes ConfigureRemotes RestoreRemotes ShowHelp
 :: ============================================================
 :Main
 for /f "tokens=1 delims==" %%v in ('set glm_ 2^>nul') do set "%%v="
@@ -119,6 +126,7 @@ echo.
 echo Folder:
 echo   %CD%
 echo.
+if /I "%app.git_login.prepared.request%"=="yes" goto :_Main_prepare_ready
 if exist "%CD%\prepare.bat" goto :_Main_prepare
 echo ERROR: prepare.bat was not found in the project root:
 echo   %CD%
@@ -222,9 +230,17 @@ echo.
 echo Repository:
 echo   %app.git_login.repo.slug%
 echo.
+if defined app.git_login.read.only goto :_Main_summary_read_only
 if defined app.git_login.use.fork goto :_Main_summary_fork
 echo Permission mode:
 echo   direct push
+echo.
+echo origin:
+echo   %app.git_login.target.origin%
+goto :_Main_summary_common
+:_Main_summary_read_only
+echo Permission mode:
+echo   read-only original repository
 echo.
 echo origin:
 echo   %app.git_login.target.origin%
@@ -251,6 +267,7 @@ git status --short --branch
 echo.
 git remote -v
 echo.
+if /I "%app.git_login.push.request%"=="no" goto :_Main_no_push
 git rev-parse --verify HEAD >nul 2>nul
 if errorlevel 1 goto :_Main_no_head
 echo Pushing current branch and configuring upstream tracking...
@@ -264,6 +281,10 @@ echo.
 echo Inspect the repository with:
 echo   just_status.bat
 set "_glm_rc=1" & goto :Main
+:_Main_no_push
+echo GitHub login and repository setup are complete.
+echo Push was disabled by the command line.
+set "_glm_rc=0" & goto :Main
 :_Main_no_head
 echo Login and repository setup are complete.
 echo No commits exist yet, so there is nothing to push.
@@ -280,18 +301,20 @@ set "_glm_rc=0" & goto :Main
 call :ShowHelp
 set "_glm_rc=%errorlevel%" & goto :Main
 :: ============================================================
-:: :Authenticate
+:: Function Authenticate
 :: Authenticates GitHub CLI when necessary, determines the login,
 :: and configures Git credential integration.
 ::
-:: Usage: call :Authenticate
+:: Usage: call authenticate
 ::
 :: Output:
 ::   app.git_login.login  authenticated GitHub account
 ::
 :: Returns: 0 when authenticated
 ::          1 on login, account, or credential-setup failure
-:: Requires: gh, :ChooseLoginBrowser, :RunDeviceLogin
+:: Requires: gh, chooseloginbrowser, rundevicelogin
+:: Dependencies
+::   ChooseLoginBrowser RunDeviceLogin
 :: ============================================================
 :Authenticate
 for /f "tokens=1 delims==" %%v in ('set gla_ 2^>nul') do set "%%v="
@@ -325,15 +348,17 @@ echo   %app.git_login.login%
 echo.
 set "_gla_rc=0" & goto :Authenticate
 :: ============================================================
-:: :ChooseLoginBrowser
+:: Function ChooseLoginBrowser
 :: Chooses how the GitHub device-login page is opened before gh
 :: displays the one-time code. gh still owns code generation,
 :: browser confirmation, authorization polling, and completion.
 ::
-:: Usage: call :ChooseLoginBrowser
+:: Usage: call chooseloginbrowser
 ::
 :: Returns: 0
-:: Requires: :OpenPrivateBrowser, start
+:: Requires: openprivatebrowser, start
+:: Dependencies
+::   OpenPrivateBrowser
 :: ============================================================
 :ChooseLoginBrowser
 for /f "tokens=1 delims==" %%v in ('set glb_ 2^>nul') do set "%%v="
@@ -402,17 +427,19 @@ echo GitHub CLI will poll without opening another tab.
 echo.
 set "_glb_rc=0" & goto :ChooseLoginBrowser
 :: ============================================================
-:: :RunDeviceLogin
+:: Function RunDeviceLogin
 :: Runs gh's normal web-device flow. When the page was already
 :: opened by the wrapper or user, automatically supplies the Enter
 :: requested by gh and gives gh a temporary no-op browser command.
 :: gh still generates the code, copies it when supported, polls
 :: GitHub, and determines authentication completion.
 ::
-:: Usage: call :RunDeviceLogin [gh auth login options]
+:: Usage: call rundevicelogin [gh auth login options]
 ::
 :: Returns: gh auth login exit code
 :: Requires: gh
+:: Dependencies
+::   none
 :: ============================================================
 :RunDeviceLogin
 for /f "tokens=1 delims==" %%v in ('set glr_ 2^>nul') do set "%%v="
@@ -440,15 +467,17 @@ set "_glr_rc=%glr_login_rc%" & goto :RunDeviceLogin
 gh auth login --hostname github.com --git-protocol https --web %*
 set "_glr_rc=%errorlevel%" & goto :RunDeviceLogin
 :: ============================================================
-:: :OpenPrivateBrowser
+:: Function OpenPrivateBrowser
 :: Opens the GitHub device page in a private window. It prefers
 :: the configured default browser when its ProgId identifies Edge,
 :: Chrome, Brave, or Firefox, then falls back to any installed one.
 ::
-:: Usage: call :OpenPrivateBrowser
+:: Usage: call openprivatebrowser
 ::
 :: Returns: 0 when launched, 1 when no supported browser is found
 :: Requires: reg.exe, start
+:: Dependencies
+::   FindPrivateEdge FindPrivateChrome FindPrivateBrave FindPrivateFirefox
 :: ============================================================
 :OpenPrivateBrowser
 set "glp_prog="
@@ -492,14 +521,16 @@ start "" "%glp_exe%" %glp_arg% "%app.git_login.browser.url%"
 if errorlevel 1 exit /b 1
 exit /b 0
 :: ============================================================
-:: :FindPrivateEdge
+:: Function FindPrivateEdge
 :: Selects an installed Microsoft Edge executable.
 ::
-:: Usage: call :FindPrivateEdge
+:: Usage: call findprivateedge
 ::
 :: Output: glp_exe, glp_arg
 :: Returns: 0
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :FindPrivateEdge
 if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "glp_exe=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
@@ -508,14 +539,16 @@ if not defined glp_exe if exist "%LocalAppData%\Microsoft\Edge\Application\msedg
 if defined glp_exe set "glp_arg=--inprivate"
 exit /b 0
 :: ============================================================
-:: :FindPrivateChrome
+:: Function FindPrivateChrome
 :: Selects an installed Google Chrome executable.
 ::
-:: Usage: call :FindPrivateChrome
+:: Usage: call findprivatechrome
 ::
 :: Output: glp_exe, glp_arg
 :: Returns: 0
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :FindPrivateChrome
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "glp_exe=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
@@ -524,14 +557,16 @@ if not defined glp_exe if exist "%LocalAppData%\Google\Chrome\Application\chrome
 if defined glp_exe set "glp_arg=--incognito"
 exit /b 0
 :: ============================================================
-:: :FindPrivateBrave
+:: Function FindPrivateBrave
 :: Selects an installed Brave executable.
 ::
-:: Usage: call :FindPrivateBrave
+:: Usage: call findprivatebrave
 ::
 :: Output: glp_exe, glp_arg
 :: Returns: 0
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :FindPrivateBrave
 if exist "%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe" set "glp_exe=%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe"
@@ -540,14 +575,16 @@ if not defined glp_exe if exist "%LocalAppData%\BraveSoftware\Brave-Browser\Appl
 if defined glp_exe set "glp_arg=--incognito"
 exit /b 0
 :: ============================================================
-:: :FindPrivateFirefox
+:: Function FindPrivateFirefox
 :: Selects an installed Mozilla Firefox executable.
 ::
-:: Usage: call :FindPrivateFirefox
+:: Usage: call findprivatefirefox
 ::
 :: Output: glp_exe, glp_arg
 :: Returns: 0
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :FindPrivateFirefox
 if exist "%ProgramFiles%\Mozilla Firefox\firefox.exe" set "glp_exe=%ProgramFiles%\Mozilla Firefox\firefox.exe"
@@ -556,15 +593,17 @@ if not defined glp_exe if exist "%LocalAppData%\Mozilla Firefox\firefox.exe" set
 if defined glp_exe set "glp_arg=-private-window"
 exit /b 0
 :: ============================================================
-:: :ResolveRepository
+:: Function ResolveRepository
 :: Resolves the configured repository, canonical HTTPS URL, owner,
 :: name, and push permission for the authenticated account.
 ::
-:: Usage: call :ResolveRepository
+:: Usage: call resolverepository
 ::
 :: Returns: 0 when resolved and visible
 ::          1 when missing, invisible, or permission data is unavailable
 :: Requires: gh
+:: Dependencies
+::   none
 :: ============================================================
 :ResolveRepository
 for /f "tokens=1 delims==" %%v in ('set glr_ 2^>nul') do set "%%v="
@@ -593,7 +632,7 @@ echo For a repository that does not exist yet, use:
 echo   tools\git_create_repository.bat
 set "_glr_rc=1" & goto :ResolveRepository
 :: ============================================================
-:: :ResolveIdentity
+:: Function ResolveIdentity
 :: Resolves Git author name and email from repository-local values,
 :: explicit project values, global Git values, and the authenticated
 :: GitHub account. Missing GitHub email falls back to a noreply address.
@@ -601,7 +640,7 @@ set "_glr_rc=1" & goto :ResolveRepository
 :: Pressing Enter at either prompt accepts the displayed default.
 :: The selected values are later written only to this repository.
 ::
-:: Usage: call :ResolveIdentity
+:: Usage: call resolveidentity
 ::
 :: Output:
 ::   app.git_login.git.name
@@ -610,6 +649,8 @@ set "_glr_rc=1" & goto :ResolveRepository
 :: Returns: 0 when both values are present
 ::          1 when either remains missing
 :: Requires: git, authenticated gh for GitHub-derived defaults
+:: Dependencies
+::   none
 :: ============================================================
 :ResolveIdentity
 for /f "tokens=1 delims==" %%v in ('set gli_ 2^>nul') do set "%%v="
@@ -637,39 +678,64 @@ if defined gli_github_id if defined app.git_login.login set "app.git_login.git.e
 if not defined app.git_login.git.email if defined app.git_login.login set "app.git_login.git.email=%app.git_login.login%@users.noreply.github.com"
 :_ResolveIdentity_prompt
 echo Git author identity:
+if /I "%app.git_login.identity.request%"=="defaults" goto :_ResolveIdentity_validate
 set "app.git_login.input="
 set /p "app.git_login.input=Git name [%app.git_login.git.name%]: "
 if defined app.git_login.input set "app.git_login.git.name=%app.git_login.input%"
 set "app.git_login.input="
 set /p "app.git_login.input=Git email [%app.git_login.git.email%]: "
 if defined app.git_login.input set "app.git_login.git.email=%app.git_login.input%"
+:_ResolveIdentity_validate
 if not defined app.git_login.git.name (echo ERROR: Git name is required. & set "_gli_rc=1" & goto :ResolveIdentity)
 if not defined app.git_login.git.email (echo ERROR: Git email is required. & set "_gli_rc=1" & goto :ResolveIdentity)
+echo   Name: %app.git_login.git.name%
+echo   Email: %app.git_login.git.email%
 set "_gli_rc=0" & goto :ResolveIdentity
 :: ============================================================
-:: :ConfigureFork
+:: Function ConfigureFork
 :: Creates or reuses the authenticated user's personal fork when
-:: direct push permission is unavailable.
+:: direct push permission is unavailable, or configures read-only mode
+:: when fork creation is declined.
 ::
-:: Usage: call :ConfigureFork
+:: Usage: call configurefork
 ::
 :: Output:
 ::   app.git_login.use.fork
+::   app.git_login.read.only
 ::   app.git_login.fork.slug
 ::   app.git_login.fork.url
 ::   app.git_login.target.origin
 ::
-:: Returns: 0 when a writable fork is ready
-::          1 on cancellation, collision, creation, wait, or permission failure
-:: Requires: :WaitForFork, gh
+:: Returns: 0 when direct read-only or writable fork mode is ready
+::          1 on collision, creation, wait, or permission failure
+:: Requires: waitforfork, gh
+:: Dependencies
+::   none
 :: ============================================================
 :ConfigureFork
 for /f "tokens=1 delims==" %%v in ('set glf_ 2^>nul') do set "%%v="
 if defined _glf_rc (set "_glf_rc=" & exit /b %_glf_rc%)
 echo Direct push permission is unavailable.
 set "glf_confirm="
+if /I "%app.git_login.fork.request%"=="no" goto :_ConfigureFork_declined
+if /I "%app.git_login.fork.request%"=="yes" goto :_ConfigureFork_confirmed
 set /p "glf_confirm=Create or use a personal fork under %app.git_login.login%? [Y/n]: "
-if /I "%glf_confirm%"=="n" (echo Cancelled. This account cannot push directly. & set "_glf_rc=1" & goto :ConfigureFork)
+if not defined glf_confirm goto :_ConfigureFork_confirmed
+if /I "%glf_confirm%"=="y" goto :_ConfigureFork_confirmed
+if /I "%glf_confirm%"=="yes" goto :_ConfigureFork_confirmed
+if /I "%glf_confirm%"=="n" goto :_ConfigureFork_declined
+if /I "%glf_confirm%"=="no" goto :_ConfigureFork_declined
+echo Enter y or n.
+goto :ConfigureFork
+:_ConfigureFork_declined
+set "app.git_login.target.origin=%app.git_login.repo.url%"
+set "app.git_login.read.only=1"
+set "app.git_login.push.request=no"
+echo Fork skipped. origin will remain the original repository.
+echo Push was disabled because this account cannot push directly.
+echo.
+set "_glf_rc=0" & goto :ConfigureFork
+:_ConfigureFork_confirmed
 set "app.git_login.use.fork=1"
 set "app.git_login.fork.slug=%app.git_login.login%/%app.git_login.repo.name%"
 set "app.git_login.fork.url=https://github.com/%app.git_login.fork.slug%.git"
@@ -709,16 +775,18 @@ echo   %app.git_login.fork.slug%
 echo.
 set "_glf_rc=0" & goto :ConfigureFork
 :: ============================================================
-:: :EnsureFork
+:: Function EnsureFork
 :: Creates the planned personal fork through the GitHub API only
 :: after LOGIN confirmation, waits for visibility, and verifies
 :: push permission. It does not clone or modify Git remotes.
 ::
-:: Usage: call :EnsureFork
+:: Usage: call ensurefork
 ::
 :: Returns: 0 when the writable fork is ready
 ::          1 on creation, wait, or permission failure
-:: Requires: :WaitForFork, gh
+:: Requires: waitforfork, gh
+:: Dependencies
+::   WaitForFork
 :: ============================================================
 :EnsureFork
 for /f "tokens=1 delims==" %%v in ('set gle_ 2^>nul') do set "%%v="
@@ -738,15 +806,17 @@ if /I not "%gle_can_push%"=="true" (echo ERROR: The account cannot push to the s
 set "app.git_login.target.origin=%app.git_login.fork.url%"
 set "_gle_rc=0" & goto :EnsureFork
 :: ============================================================
-:: :WaitForFork
+:: Function WaitForFork
 :: Polls GitHub until the requested personal fork is visible, up to
 :: approximately thirty seconds.
 ::
-:: Usage: call :WaitForFork
+:: Usage: call waitforfork
 ::
 :: Returns: 0 when visible
 ::          1 after timeout
 :: Requires: gh, timeout
+:: Dependencies
+::   none
 :: ============================================================
 :WaitForFork
 for /f "tokens=1 delims==" %%v in ('set glw_ 2^>nul') do set "%%v="
@@ -764,14 +834,16 @@ echo ERROR: The fork was requested but did not become available:
 echo   %app.git_login.fork.slug%
 set "_glw_rc=1" & goto :WaitForFork
 :: ============================================================
-:: :ShowPlan
+:: Function ShowPlan
 :: Displays the local initialization, identity, remote, branch, and
 :: push actions that confirmation will authorize.
 ::
-:: Usage: call :ShowPlan
+:: Usage: call showplan
 ::
 :: Returns: 0
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :ShowPlan
 echo.
@@ -794,7 +866,18 @@ echo Git author:
 echo   Name: %app.git_login.git.name%
 echo   Email: %app.git_login.git.email%
 echo.
+if defined app.git_login.read.only goto :_ShowPlan_read_only
 if defined app.git_login.use.fork goto :_ShowPlan_fork
+echo Permission mode:
+echo   direct push
+echo.
+echo origin:
+echo   %app.git_login.target.origin%
+goto :_ShowPlan_push
+:_ShowPlan_read_only
+echo Permission mode:
+echo   read-only original repository
+echo.
 echo origin:
 echo   %app.git_login.target.origin%
 goto :_ShowPlan_push
@@ -808,17 +891,20 @@ echo upstream:
 echo   %app.git_login.repo.url%
 :_ShowPlan_push
 echo.
-echo Existing commits will be pushed to origin with upstream tracking.
+if /I "%app.git_login.push.request%"=="yes" echo Existing commits will be pushed to origin with upstream tracking.
+if /I "%app.git_login.push.request%"=="no" echo Existing commits will not be pushed.
 echo.
 exit /b 0
 :: ============================================================
-:: :CaptureRemotes
+:: Function CaptureRemotes
 :: Records original origin and upstream URLs before configuration.
 ::
-:: Usage: call :CaptureRemotes
+:: Usage: call captureremotes
 ::
 :: Returns: 0
 :: Requires: git
+:: Dependencies
+::   none
 :: ============================================================
 :CaptureRemotes
 set "app.git_login.original.origin.exists="
@@ -831,15 +917,17 @@ for /f "delims=" %%A in ('git remote get-url upstream 2^>nul') do set "app.git_l
 if defined app.git_login.original.upstream.url set "app.git_login.original.upstream.exists=1"
 exit /b 0
 :: ============================================================
-:: :ConfigureRemotes
+:: Function ConfigureRemotes
 :: Sets origin to the writable target and, for a fork workflow,
 :: upstream to the source repository.
 ::
-:: Usage: call :ConfigureRemotes
+:: Usage: call configureremotes
 ::
 :: Returns: 0 when configured
 ::          1 on a Git remote failure
 :: Requires: git
+:: Dependencies
+::   none
 :: ============================================================
 :ConfigureRemotes
 if not defined app.git_login.use.fork goto :_ConfigureRemotes_origin
@@ -862,15 +950,17 @@ git remote add origin "%app.git_login.target.origin%"
 if errorlevel 1 exit /b 1
 exit /b 0
 :: ============================================================
-:: :RestoreRemotes
+:: Function RestoreRemotes
 :: Restores original remote URLs or removes remotes newly added by a
 :: failed configuration attempt.
 ::
-:: Usage: call :RestoreRemotes
+:: Usage: call restoreremotes
 ::
 :: Returns: 0 when restoration succeeds
 ::          1 when one or more restoration commands fail
 :: Requires: git
+:: Dependencies
+::   none
 :: ============================================================
 :RestoreRemotes
 for /f "tokens=1 delims==" %%v in ('set glx_ 2^>nul') do set "%%v="
@@ -899,14 +989,16 @@ if errorlevel 1 set "glx_failed=1"
 if defined glx_failed (set "_glx_rc=1" & goto :RestoreRemotes)
 set "_glx_rc=0" & goto :RestoreRemotes
 :: ============================================================
-:: :ParseArgs
-:: Parses repository, branch, and help arguments.
+:: Function ParseArgs
+:: Parses repository, branch, browser, fork, identity, push, and help arguments.
 ::
-:: Usage: call :ParseArgs [repo REPO] [branch BRANCH] [help]
+:: Usage: call parseargs [repo REPO] [branch BRANCH] [browser METHOD] [fork MODE] [identity MODE] [push MODE] [prepared MODE] [help]
 ::
 :: Returns: 0 on success
 ::          2 on invalid arguments
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :ParseArgs
 if "%~1"=="" exit /b 0
@@ -914,15 +1006,34 @@ if /I "%~1"=="repo" goto :_ParseArgs_repo
 if /I "%~1"=="url" goto :_ParseArgs_repo
 if /I "%~1"=="branch" goto :_ParseArgs_branch
 if /I "%~1"=="browser" goto :_ParseArgs_browser
+if /I "%~1"=="fork" goto :_ParseArgs_fork
+if /I "%~1"=="identity" goto :_ParseArgs_identity
+if /I "%~1"=="gitname" goto :_ParseArgs_gitname
+if /I "%~1"=="gitemail" goto :_ParseArgs_gitemail
+if /I "%~1"=="push" goto :_ParseArgs_push
+if /I "%~1"=="prepared" goto :_ParseArgs_prepared
 if /I "%~1"=="help" goto :_ParseArgs_help
 if /I "%~1"=="/help" goto :_ParseArgs_help
+if /I "%~1"=="-help" goto :_ParseArgs_help
 if /I "%~1"=="--help" goto :_ParseArgs_help
+if /I "%~1"=="/h" goto :_ParseArgs_help
+if /I "%~1"=="-h" goto :_ParseArgs_help
+if /I "%~1"=="--h" goto :_ParseArgs_help
 if /I "%~1"=="/?" goto :_ParseArgs_help
+if /I "%~1"=="-?" goto :_ParseArgs_help
+if /I "%~1"=="--?" goto :_ParseArgs_help
+if /I "%~1"=="?" goto :_ParseArgs_help
 echo ERROR: Unrecognized argument: %~1
 exit /b 2
 :_ParseArgs_repo
 if "%~2"=="" (echo ERROR: repo requires OWNER/REPO or a URL. & exit /b 2)
 set "app.git_login.repo.input=%~2"
+shift
+shift
+goto :ParseArgs
+:_ParseArgs_branch
+if "%~2"=="" (echo ERROR: branch requires a name. & exit /b 2)
+set "app.git_login.branch=%~2"
 shift
 shift
 goto :ParseArgs
@@ -944,56 +1055,132 @@ exit /b 2
 shift
 shift
 goto :ParseArgs
-:_ParseArgs_branch
-if "%~2"=="" (echo ERROR: branch requires a name. & exit /b 2)
-set "app.git_login.branch=%~2"
+:_ParseArgs_fork
+if "%~2"=="" (echo ERROR: fork requires ask, yes, or no. & exit /b 2)
+if /I "%~2"=="ask" set "app.git_login.fork.request=ask"
+if /I "%~2"=="yes" set "app.git_login.fork.request=yes"
+if /I "%~2"=="no" set "app.git_login.fork.request=no"
+if /I "%~2"=="ask" goto :_ParseArgs_fork_ready
+if /I "%~2"=="yes" goto :_ParseArgs_fork_ready
+if /I "%~2"=="no" goto :_ParseArgs_fork_ready
+echo ERROR: fork requires ask, yes, or no.
+exit /b 2
+:_ParseArgs_fork_ready
+shift
+shift
+goto :ParseArgs
+:_ParseArgs_identity
+if "%~2"=="" (echo ERROR: identity requires ask or defaults. & exit /b 2)
+if /I "%~2"=="ask" set "app.git_login.identity.request=ask"
+if /I "%~2"=="defaults" set "app.git_login.identity.request=defaults"
+if /I "%~2"=="ask" goto :_ParseArgs_identity_ready
+if /I "%~2"=="defaults" goto :_ParseArgs_identity_ready
+echo ERROR: identity requires ask or defaults.
+exit /b 2
+:_ParseArgs_identity_ready
+shift
+shift
+goto :ParseArgs
+:_ParseArgs_gitname
+if "%~2"=="" (echo ERROR: gitname requires a value. & exit /b 2)
+set "app.git_name=%~2"
+shift
+shift
+goto :ParseArgs
+:_ParseArgs_gitemail
+if "%~2"=="" (echo ERROR: gitemail requires a value. & exit /b 2)
+set "app.git_email=%~2"
+shift
+shift
+goto :ParseArgs
+:_ParseArgs_push
+if "%~2"=="" (echo ERROR: push requires yes or no. & exit /b 2)
+if /I "%~2"=="yes" set "app.git_login.push.request=yes"
+if /I "%~2"=="no" set "app.git_login.push.request=no"
+if /I "%~2"=="yes" goto :_ParseArgs_push_ready
+if /I "%~2"=="no" goto :_ParseArgs_push_ready
+echo ERROR: push requires yes or no.
+exit /b 2
+:_ParseArgs_push_ready
+shift
+shift
+goto :ParseArgs
+:_ParseArgs_prepared
+if "%~2"=="" (echo ERROR: prepared requires yes or no. & exit /b 2)
+if /I "%~2"=="yes" set "app.git_login.prepared.request=yes"
+if /I "%~2"=="no" set "app.git_login.prepared.request=no"
+if /I "%~2"=="yes" goto :_ParseArgs_prepared_ready
+if /I "%~2"=="no" goto :_ParseArgs_prepared_ready
+echo ERROR: prepared requires yes or no.
+exit /b 2
+:_ParseArgs_prepared_ready
 shift
 shift
 goto :ParseArgs
 :_ParseArgs_help
 set "app.git_login.help=1"
-shift
-goto :ParseArgs
+exit /b 0
 :: ============================================================
-:: :ShowHelp
-:: Displays login, repository, branch, fork, and push behavior.
+:: Function ShowHelp
+:: Displays login, repository, branch, browser, fork, identity, and push behavior.
 ::
-:: Usage: call :ShowHelp
+:: Usage: call showhelp
 ::
 :: Returns: 0
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :ShowHelp
 echo.
 echo git_login.bat
 echo.
 echo Usage:
-echo   git_login.bat
-echo   git_login.bat repo OWNER/REPO
-echo   git_login.bat repo URL branch main
-echo   git_login.bat browser 1
-echo   git_login.bat browser 2
-echo   git_login.bat browser 3
-echo   git_login.bat browser 4
+echo   git_login.bat [OPTIONS]
 echo.
-echo The helper authenticates GitHub CLI and confirms a LOGIN plan.
-echo Direct push is used when permitted; otherwise a personal fork
-echo can be created or reused. Existing commits are then pushed.
+echo Options:
+echo   repo OWNER/REPO
+echo   repo URL
+echo   branch NAME
+echo   browser ask^|1^|2^|3^|4
+echo   fork ask^|yes^|no
+echo   identity ask^|defaults
+echo   gitname NAME
+echo   gitemail EMAIL
+echo                        Supplying both values pre-fills local identity
+echo   push yes^|no
+echo   prepared yes^|no     Skip dependency preparation when already ready
 echo.
-echo browser 1 lets GitHub CLI open the default browser.
-echo browser 2 opens the default browser before device login.
-echo browser 3 opens the default browser in private mode.
-echo browser 4 does not open a local browser.
+echo Help aliases:
+echo   help  /help  -help  --help  /h  -h  --h  /?  -?  --?  ?
+echo.
+echo Browser methods:
+echo   1  Let GitHub CLI open the default browser
+echo   2  Open the device page in the default browser first
+echo   3  Open the device page in a private browser first
+echo   4  Do not open a browser on this computer
+echo.
+echo The helper authenticates GitHub CLI and configures local Git identity
+echo and repository remotes. Direct push is used when permitted; otherwise
+echo a matching personal fork can be created or reused. fork no keeps a
+echo read-only origin and disables push when direct permission is unavailable.
+echo.
+echo identity defaults accepts the derived GitHub identity without prompts.
+echo push no configures login, identity, and remotes without pushing.
+echo GitHub device authorization still requires browser interaction when login
+echo is not already available.
 echo.
 exit /b 0
 :: ============================================================
-:: :CleanupTemp
+:: Function CleanupTemp
 :: Removes temporary preparation logs.
 ::
-:: Usage: call :CleanupTemp
+:: Usage: call cleanuptemp
 ::
 :: Returns: 0
 :: Requires: none
+:: Dependencies
+::   none
 :: ============================================================
 :CleanupTemp
 for /f "tokens=1 delims==" %%v in ('set glc_ 2^>nul') do set "%%v="
@@ -1005,13 +1192,15 @@ set "app.git_login.browser.noop="
 set "APP_GH_DEVICE_URL="
 set "_glc_rc=0" & goto :CleanupTemp
 :: ============================================================
-:: :PauseIfNeeded
+:: Function PauseIfNeeded
 :: Pauses only when the outermost launcher is the cmd.exe /c target.
 ::
-:: Usage: call :PauseIfNeeded
+:: Usage: call pauseifneeded
 ::
 :: Returns: 0
-:: Requires: :IsConsole
+:: Requires: isconsole
+:: Dependencies
+::   IsConsole
 :: ============================================================
 :PauseIfNeeded
 for /f "tokens=1 delims==" %%v in ('set pif_ 2^>nul') do set "%%v="
@@ -1022,15 +1211,17 @@ echo.
 pause
 set "_pif_rc=0" & goto :PauseIfNeeded
 :: ============================================================
-:: :IsConsole
+:: Function IsConsole
 :: Detects whether the outermost launcher is running in an existing
 :: interactive console.
 ::
-:: Usage: call :IsConsole
+:: Usage: call isconsole
 ::
 :: Returns: 0 when running in an existing console
 ::          1 when the outermost launcher is the cmd.exe /c target
 :: Requires: find.exe
+:: Dependencies
+::   none
 :: ============================================================
 :IsConsole
 setlocal EnableDelayedExpansion
