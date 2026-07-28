@@ -705,8 +705,9 @@ echo.
 set "_glf_rc=0" & goto :ConfigureFork
 :: ============================================================
 :: :EnsureFork
-:: Creates the planned personal fork only after LOGIN confirmation,
-:: waits for visibility, and verifies push permission.
+:: Creates the planned personal fork through the GitHub API only
+:: after LOGIN confirmation, waits for visibility, and verifies
+:: push permission. It does not clone or modify Git remotes.
 ::
 :: Usage: call :EnsureFork
 ::
@@ -720,7 +721,7 @@ if defined _gle_rc (set "_gle_rc=" & exit /b %_gle_rc%)
 if not defined app.git_login.fork.create goto :_EnsureFork_permission
 echo Creating personal fork:
 echo   %app.git_login.fork.slug%
-gh repo fork "%app.git_login.repo.slug%" --clone=false --remote=false
+gh api --method POST "repos/%app.git_login.repo.slug%/forks" >nul
 if errorlevel 1 (echo ERROR: GitHub could not create the fork. & set "_gle_rc=1" & goto :EnsureFork)
 call :WaitForFork
 if errorlevel 1 (set "_gle_rc=%errorlevel%" & goto :EnsureFork)
