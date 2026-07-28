@@ -13,7 +13,7 @@ rem   - one empty line between documented functions
 rem   - no empty lines inside functions
 rem.
 rem Typical loader:
-rem   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" & call curl.exe -sSfL "%bootstrap%" -o "%TEMP%\bootstrap.bat" && call "%TEMP%\bootstrap.bat" auto
+rem   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" & call curl.exe -sSfL -H "Cache-Control: no-cache" "%bootstrap%?cache=%RANDOM%" -o "%TEMP%\bootstrap.bat" && call "%TEMP%\bootstrap.bat" auto
 rem.
 rem Purpose:
 rem   - infer repo URL from the bootstrap URL
@@ -28,7 +28,7 @@ rem ============================================================
 :setup
 cd /d "%~dp0"
 set "app.rc=0"
-set "app.version=bootstrap-integrated-35"
+set "app.version=bootstrap-integrated-36"
 set "app.root=%CD%"
 set "app.start.writable="
 set "app.repo.parent="
@@ -153,7 +153,7 @@ set "wit_folder=%app.folder%"
 set "wit_temp=%TEMP%"
 if not defined wit_folder goto :end_temp_warning_done
 if not exist "%wit_folder%\.git\" goto :end_temp_warning_done
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=[IO.Path]::GetFullPath($env:wit_folder).TrimEnd(''\''); $t=[IO.Path]::GetFullPath($env:wit_temp).TrimEnd(''\''); if($f.Equals($t,[StringComparison]::OrdinalIgnoreCase) -or $f.StartsWith($t+''\'',[StringComparison]::OrdinalIgnoreCase)){exit 0}; exit 1" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=[IO.Path]::GetFullPath($env:wit_folder).TrimEnd([char]92); $t=[IO.Path]::GetFullPath($env:wit_temp).TrimEnd([char]92); if($f.Equals($t,[StringComparison]::OrdinalIgnoreCase) -or $f.StartsWith($t+[char]92,[StringComparison]::OrdinalIgnoreCase)){exit 0}; exit 1" >nul 2>&1
 if errorlevel 1 goto :end_temp_warning_done
 echo.
 call :Yellow WARNING: The repository is currently inside the Windows temporary folder:
@@ -757,25 +757,51 @@ rem ============================================================
 rem Function: ResolveRepoFolder
 rem Usage: call :ResolveRepoFolder
 rem Purpose: resolves the project folder. An explicit dir argument
-rem          wins; otherwise the writable caller directory is used,
-rem          with TEMP as the fallback.
+rem          wins. A matching current checkout is reused. Otherwise
+rem          the writable caller directory is used, with TEMP as fallback.
 rem Returns:
 rem   0 success
 rem   3 repo name or writable fallback missing
 rem Requires:
-rem   :SelectDefaultRepoParent
+rem   :UseCurrentRepoFolder, :SelectDefaultRepoParent
 rem ============================================================
 :ResolveRepoFolder
 if not defined app.repo.name (call :Red FAIL: could not determine repo name. & exit /b 3)
 if defined app.folder goto :ResolveRepoFolderNormalize
+call :UseCurrentRepoFolder
+set "rrf_rc=%errorlevel%"
+if "%rrf_rc%"=="0" goto :ResolveRepoFolderNormalize
 call :SelectDefaultRepoParent
 set "rrf_rc=%errorlevel%"
 if not "%rrf_rc%"=="0" (set "rrf_rc=" & exit /b 3)
 set "app.folder=%app.repo.parent%\%app.repo.name%"
-set "rrf_rc="
 :ResolveRepoFolderNormalize
 for %%A in ("%app.folder%") do set "app.folder=%%~fA"
+set "rrf_rc="
 call :Green OK: Folder: %app.folder%
+exit /b 0
+
+rem ============================================================
+rem Function: UseCurrentRepoFolder
+rem Usage: call :UseCurrentRepoFolder
+rem Purpose: reuses the caller directory when it is already a Git
+rem          checkout whose folder name matches the repository name.
+rem Output:
+rem   app.folder
+rem Returns:
+rem   0 matching current checkout selected
+rem   1 caller directory is not the matching checkout
+rem Requires:
+rem   none
+rem ============================================================
+:UseCurrentRepoFolder
+set "ucrf_name="
+if not exist "%app.start.dir%\.git" exit /b 1
+for %%A in ("%app.start.dir%") do set "ucrf_name=%%~nxA"
+if /I not "%ucrf_name%"=="%app.repo.name%" (set "ucrf_name=" & exit /b 1)
+for %%A in ("%app.start.dir%") do set "app.folder=%%~fA"
+set "ucrf_name="
+call :Cyan INFO: Reusing the current repository folder.
 exit /b 0
 
 rem ============================================================
