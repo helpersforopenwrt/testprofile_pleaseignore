@@ -26,7 +26,7 @@ set "app.start.dir=%CD%"
 :: ============================================================
 cd /d "%~dp0"
 set "app.rc=0"
-set "app.version=bootstrap-integrated-30"
+set "app.version=bootstrap-integrated-31"
 set "app.root=%CD%"
 set "app.start.writable="
 set "app.repo.parent="
@@ -81,6 +81,7 @@ set "app.no.move="
 set "app.no.build="
 set "app.do.install="
 set "app.login.mode=ask"
+set "app.login.method=ask"
 set "app.fork.mode=ask"
 set "app.move.mode=no"
 set "app.choice="
@@ -373,6 +374,7 @@ exit /b 1
 ::   auto
 ::   menu
 ::   nologin
+::   login [ask|1|2|3|4]
 ::   repo URL
 ::   branch NAME
 ::   dir PATH
@@ -395,8 +397,8 @@ if /I "%~1"=="dryrun" (set "app.dryrun=1" & shift & goto :ParseArgs)
 if /I "%~1"=="nomove" (set "app.no.move=1" & set "app.move.mode=no" & shift & goto :ParseArgs)
 if /I "%~1"=="nobuild" (set "app.no.build=1" & shift & goto :ParseArgs)
 if /I "%~1"=="install" (set "app.do.install=1" & shift & goto :ParseArgs)
-if /I "%~1"=="nologin" (set "app.login.mode=none" & shift & goto :ParseArgs)
-if /I "%~1"=="login" (set "app.login.mode=login" & shift & goto :ParseArgs)
+if /I "%~1"=="nologin" (set "app.login.mode=none" & set "app.login.method=ask" & shift & goto :ParseArgs)
+if /I "%~1"=="login" goto :ParseArgsLogin
 if /I "%~1"=="repo" goto :ParseArgsRepo
 if /I "%~1"=="provider" goto :ParseArgsProvider
 if /I "%~1"=="toolsurl" goto :ParseArgsToolsUrl
@@ -412,6 +414,17 @@ if /I "%~1"=="--help" (set "app.help=1" & shift & goto :ParseArgs)
 if /I "%~1"=="/?" (set "app.help=1" & shift & goto :ParseArgs)
 call :Red FAIL: unknown argument: %~1
 exit /b 2
+:ParseArgsLogin
+set "app.login.mode=login"
+set "app.login.method=ask"
+if "%~2"=="" (shift & goto :ParseArgs)
+if /I "%~2"=="ask" (set "app.login.method=ask" & shift & shift & goto :ParseArgs)
+if "%~2"=="1" (set "app.login.method=1" & shift & shift & goto :ParseArgs)
+if "%~2"=="2" (set "app.login.method=2" & shift & shift & goto :ParseArgs)
+if "%~2"=="3" (set "app.login.method=3" & shift & shift & goto :ParseArgs)
+if "%~2"=="4" (set "app.login.method=4" & shift & shift & goto :ParseArgs)
+shift
+goto :ParseArgs
 :ParseArgsRepo
 if "%~2"=="" (call :Red FAIL: repo requires a URL. & exit /b 2)
 set "app.repo.url=%~2"
@@ -490,6 +503,10 @@ echo   bootstrap doctor
 echo   bootstrap menu
 echo   bootstrap nologin
 echo   bootstrap auto login
+echo   bootstrap auto login 1
+echo   bootstrap auto login 2
+echo   bootstrap auto login 3
+echo   bootstrap auto login 4
 echo   bootstrap repo https://host/user/repo.git
 echo   bootstrap provider github^|gitlab^|bitbucket^|gitea^|git
 echo   bootstrap toolsurl https://host/user/repo/raw/main/tools
@@ -509,6 +526,12 @@ echo   dryrun    show intended actions; no changes
 echo   nomove    do not move the project folder
 echo   nobuild   skip prepare.bat and build.bat in auto mode
 echo   install   run install.bat after build in auto mode
+echo   login     login and ask for browser method 1, 2, 3, or 4
+echo   login 1   let GitHub CLI open the default browser
+echo   login 2   open the default browser before device login
+echo   login 3   open the default browser in private mode
+echo   login 4   do not open a local browser
+echo   nologin   skip provider login and fork handling
 echo.
 call :Yellow Providers:
 echo   github     clone/update, optional login, write check, fork
@@ -932,8 +955,11 @@ if defined app.log >>"%app.log%" echo Press Enter to skip provider login and for
 set /p "paghl_choice=%app.provider.display% login? [y/N]: "
 if /I "%paghl_choice%"=="y" goto :PromptAutoProviderLoginYes
 if /I "%paghl_choice%"=="yes" goto :PromptAutoProviderLoginYes
-if defined paghl_choice echo NOTE: input ignored; skipping provider login and fork.
-if defined paghl_choice if defined app.log >>"%app.log%" echo NOTE: input ignored; skipping provider login and fork.
+if /I "%paghl_choice%"=="n" goto :PromptAutoProviderLoginNo
+if /I "%paghl_choice%"=="no" goto :PromptAutoProviderLoginNo
+if defined paghl_choice echo NOTE: unrecognized input; skipping provider login and fork.
+if defined paghl_choice if defined app.log >>"%app.log%" echo NOTE: unrecognized input; skipping provider login and fork.
+:PromptAutoProviderLoginNo
 set "app.login.mode=none"
 set "app.fork.mode=no"
 set "paghl_choice="
@@ -1162,23 +1188,16 @@ exit /b %errorlevel%
 :RunRepositoryJustLogin
 call :EnsureGitHubCLI
 if errorlevel 1 exit /b 6
-set "app.login.input=%TEMP%\bootstrap-login-%RANDOM%-%RANDOM%.txt"
-call :IsGitHubLoggedIn
-if errorlevel 1 goto :RunRepositoryJustLoginPrivate
-> "%app.login.input%" echo.
->>"%app.login.input%" echo.
-goto :RunRepositoryJustLoginCall
-:RunRepositoryJustLoginPrivate
-> "%app.login.input%" echo 3
->>"%app.login.input%" echo.
->>"%app.login.input%" echo.
-:RunRepositoryJustLoginCall
 pushd "%app.folder%" >nul
-call just_login.bat < "%app.login.input%"
+if /I "%app.login.method%"=="ask" goto :RunRepositoryJustLoginInteractive
+call just_login.bat browser %app.login.method%
 set "rrjl_rc=%errorlevel%"
+goto :RunRepositoryJustLoginPop
+:RunRepositoryJustLoginInteractive
+call just_login.bat
+set "rrjl_rc=%errorlevel%"
+:RunRepositoryJustLoginPop
 popd >nul
-del /q "%app.login.input%" >nul 2>&1
-set "app.login.input="
 if not "%rrjl_rc%"=="0" (call :Red FAIL: just_login.bat failed. & set "rrjl_rc=" & exit /b 6)
 set "rrjl_rc="
 set "app.login.used.just=1"

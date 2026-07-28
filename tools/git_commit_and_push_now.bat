@@ -8,10 +8,13 @@
 ::   call tools\git_commit_and_push_now.bat
 ::   call tools\git_commit_and_push_now.bat message "Refactor helpers"
 ::   call tools\git_commit_and_push_now.bat message "Refactor helpers" fulldiff yes
+::   call tools\git_commit_and_push_now.bat message "Refactor helpers" PUBLISH COMMIT
 ::
 :: Arguments:
 ::   message   Commit message.
 ::   fulldiff  yes or no. Default: no.
+::   PUBLISH   supplies the staging confirmation.
+::   COMMIT    supplies the commit-and-push confirmation.
 ::
 :: Workflow:
 ::   - show short status
@@ -43,6 +46,8 @@ set "app.git_commit_push.staged="
 set "app.git_commit_push.branch="
 set "app.git_commit_push.pushed.by.login="
 set "app.git_commit_push.confirm="
+set "app.git_commit_push.confirm.publish="
+set "app.git_commit_push.confirm.commit="
 set "app.git_commit_push.help="
 set "app.git_commit_push.rc=0"
 call "%~dp0_common.bat" init
@@ -151,6 +156,10 @@ if not "%_gcam_diff_rc%"=="0" (echo ERROR: Staged name-status failed. & set "_gc
 echo.
 echo Untracked files are listed in the short status above.
 echo.
+if defined app.git_commit_push.confirm.publish (
+echo Command-line confirmation: PUBLISH
+goto :_Main_stage
+)
 set "app.git_commit_push.confirm="
 set /p "app.git_commit_push.confirm=Type PUBLISH to stage all changes: "
 if "%app.git_commit_push.confirm%"=="PUBLISH" goto :_Main_stage
@@ -212,6 +221,10 @@ echo.
 call :GetCommitMessage
 set "_gcam_message_rc=%errorlevel%"
 if not "%_gcam_message_rc%"=="0" (set "_gcam_rc=%_gcam_message_rc%" & goto :Main)
+if defined app.git_commit_push.confirm.commit (
+echo Command-line confirmation: COMMIT
+goto :_Main_commit
+)
 set "app.git_commit_push.confirm="
 set /p "app.git_commit_push.confirm=Type COMMIT to commit and push these staged changes: "
 if "%app.git_commit_push.confirm%"=="COMMIT" goto :_Main_commit
@@ -378,6 +391,8 @@ set "_gcauth_rc=0" & goto :EnsureGitHubPushReady
 if "%~1"=="" exit /b 0
 if /I "%~1"=="message" goto :_ParseArgs_message
 if /I "%~1"=="fulldiff" goto :_ParseArgs_fulldiff
+if "%~1"=="PUBLISH" (set "app.git_commit_push.confirm.publish=1" & shift & goto :ParseArgs)
+if "%~1"=="COMMIT" (set "app.git_commit_push.confirm.commit=1" & shift & goto :ParseArgs)
 if /I "%~1"=="help" goto :_ParseArgs_help
 if /I "%~1"=="/help" goto :_ParseArgs_help
 if /I "%~1"=="--help" goto :_ParseArgs_help
@@ -445,6 +460,7 @@ echo Usage:
 echo   git_commit_and_push_now.bat
 echo   git_commit_and_push_now.bat message "Refactor helpers"
 echo   git_commit_and_push_now.bat message "Refactor helpers" fulldiff yes
+echo   git_commit_and_push_now.bat message "Refactor helpers" PUBLISH COMMIT
 echo.
 echo The helper reviews changes, stages everything, validates the
 echo final staged result, commits after confirmation, pushes, and
@@ -452,6 +468,9 @@ echo displays final branch status.
 echo.
 echo The complete patch is skipped by default to avoid paging or
 echo flooding the console. fulldiff yes prints it without a pager.
+echo.
+echo Exact uppercase PUBLISH and COMMIT tokens may supply the two
+echo confirmations directly from the command line.
 echo.
 exit /b 0
 :: ============================================================

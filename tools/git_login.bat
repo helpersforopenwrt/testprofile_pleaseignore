@@ -22,6 +22,7 @@ set "APP_GH_DEVICE_URL="
 ::   call tools\git_login.bat
 ::   call tools\git_login.bat repo OWNER/REPO
 ::   call tools\git_login.bat repo URL branch main
+::   call tools\git_login.bat browser 4
 ::   call tools\git_login.bat help
 ::
 :: Returns: 0 on successful setup, successful no-commit setup, or help
@@ -61,6 +62,7 @@ set "app.git_login.input="
 set "app.git_login.prepare.log="
 set "app.git_login.prepare.rc=0"
 set "app.git_login.browser.choice="
+set "app.git_login.browser.request=ask"
 set "app.git_login.browser.preopened="
 set "app.git_login.browser.noop="
 set "app.git_login.browser.url=https://github.com/login/device"
@@ -345,8 +347,11 @@ echo   4. I will open the page myself
 echo.
 set "app.git_login.browser.choice="
 set "app.git_login.browser.preopened="
+if /I not "%app.git_login.browser.request%"=="ask" set "app.git_login.browser.choice=%app.git_login.browser.request%"
+if defined app.git_login.browser.choice goto :_ChooseLoginBrowser_dispatch
 set /p "app.git_login.browser.choice=Choice [1]: "
 if not defined app.git_login.browser.choice set "app.git_login.browser.choice=1"
+:_ChooseLoginBrowser_dispatch
 if "%app.git_login.browser.choice%"=="1" goto :_ChooseLoginBrowser_cli
 if "%app.git_login.browser.choice%"=="2" goto :_ChooseLoginBrowser_default
 if "%app.git_login.browser.choice%"=="3" goto :_ChooseLoginBrowser_private
@@ -908,6 +913,7 @@ if "%~1"=="" exit /b 0
 if /I "%~1"=="repo" goto :_ParseArgs_repo
 if /I "%~1"=="url" goto :_ParseArgs_repo
 if /I "%~1"=="branch" goto :_ParseArgs_branch
+if /I "%~1"=="browser" goto :_ParseArgs_browser
 if /I "%~1"=="help" goto :_ParseArgs_help
 if /I "%~1"=="/help" goto :_ParseArgs_help
 if /I "%~1"=="--help" goto :_ParseArgs_help
@@ -917,6 +923,24 @@ exit /b 2
 :_ParseArgs_repo
 if "%~2"=="" (echo ERROR: repo requires OWNER/REPO or a URL. & exit /b 2)
 set "app.git_login.repo.input=%~2"
+shift
+shift
+goto :ParseArgs
+:_ParseArgs_browser
+if "%~2"=="" (echo ERROR: browser requires ask, 1, 2, 3, or 4. & exit /b 2)
+if /I "%~2"=="ask" set "app.git_login.browser.request=ask"
+if "%~2"=="1" set "app.git_login.browser.request=1"
+if "%~2"=="2" set "app.git_login.browser.request=2"
+if "%~2"=="3" set "app.git_login.browser.request=3"
+if "%~2"=="4" set "app.git_login.browser.request=4"
+if /I "%~2"=="ask" goto :_ParseArgs_browser_ready
+if "%~2"=="1" goto :_ParseArgs_browser_ready
+if "%~2"=="2" goto :_ParseArgs_browser_ready
+if "%~2"=="3" goto :_ParseArgs_browser_ready
+if "%~2"=="4" goto :_ParseArgs_browser_ready
+echo ERROR: browser requires ask, 1, 2, 3, or 4.
+exit /b 2
+:_ParseArgs_browser_ready
 shift
 shift
 goto :ParseArgs
@@ -947,10 +971,19 @@ echo Usage:
 echo   git_login.bat
 echo   git_login.bat repo OWNER/REPO
 echo   git_login.bat repo URL branch main
+echo   git_login.bat browser 1
+echo   git_login.bat browser 2
+echo   git_login.bat browser 3
+echo   git_login.bat browser 4
 echo.
 echo The helper authenticates GitHub CLI and confirms a LOGIN plan.
 echo Direct push is used when permitted; otherwise a personal fork
 echo can be created or reused. Existing commits are then pushed.
+echo.
+echo browser 1 lets GitHub CLI open the default browser.
+echo browser 2 opens the default browser before device login.
+echo browser 3 opens the default browser in private mode.
+echo browser 4 does not open a local browser.
 echo.
 exit /b 0
 :: ============================================================
