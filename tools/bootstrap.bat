@@ -5,7 +5,7 @@ if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
 cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39.1"
+set "app.version=bootstrap-integrated-39.2"
 set "app.rc=0"
 set "app.timestamp="
 set "app.log.dir=%TEMP%\bootstrap_logs"
@@ -1310,7 +1310,7 @@ exit /b %rglw_rc%
 set "rrl_rc=0"
 pushd "%app.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for login." & exit /b 6)
-call just_login.bat repo "%app.repo.original.url%" branch "%app.repo.branch%" browser %app.login.method% fork %app.fork.mode% identity %app.identity.mode% push %app.push.mode% prepared yes
+cmd.exe /D /C call just_login.bat repo "%app.repo.original.url%" branch "%app.repo.branch%" browser %app.login.method% fork %app.fork.mode% identity %app.identity.mode% push %app.push.mode% prepared yes
 set "rrl_rc=%errorlevel%"
 popd >nul
 if not "%rrl_rc%"=="0" (call :PrintError "FAIL: just_login.bat failed." & set "rrl_rc=" & exit /b 6)
@@ -2222,9 +2222,9 @@ if not exist "%app.folder%\%rrl_script%" (call :PrintWarning "SKIP: %rrl_script%
 call :PrintInfo "DO: %rrl_action%."
 pushd "%app.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for %rrl_action%." & set "rrl_script=" & set "rrl_action=" & set "rrl_arguments=" & exit /b 8)
-if defined rrl_arguments call "%rrl_script%" %rrl_arguments%
+if defined rrl_arguments cmd.exe /D /C call "%rrl_script%" %rrl_arguments%
 if defined rrl_arguments set "rrl_rc=%errorlevel%"
-if not defined rrl_arguments call "%rrl_script%"
+if not defined rrl_arguments cmd.exe /D /C call "%rrl_script%"
 if not defined rrl_arguments set "rrl_rc=%errorlevel%"
 popd >nul
 if not "%rrl_rc%"=="0" (call :PrintError "FAIL: %rrl_action% failed." & set "rrl_script=" & set "rrl_action=" & set "rrl_arguments=" & set "rrl_rc=" & exit /b 8)
