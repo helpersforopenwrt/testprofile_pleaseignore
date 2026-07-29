@@ -1,11 +1,29 @@
 @echo off
 :setup
+if defined bootstrap_crlf_ready goto :setup_crlf_ready
+set "bootstrap_crlf_source=%~f0"
+set "bootstrap_crlf_file=%TEMP%\bootstrap.%RANDOM%.%RANDOM%.crlf.bat"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$source=[Environment]::GetEnvironmentVariable('bootstrap_crlf_source');$target=[Environment]::GetEnvironmentVariable('bootstrap_crlf_file');$bytes=[IO.File]::ReadAllBytes($source);$text=[IO.File]::ReadAllText($source);$normalized=[Text.RegularExpressions.Regex]::Replace($text,'\r\n|\r|\n',[Environment]::NewLine);$bom=$bytes.Length -ge 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191;if(-not $bom -and $text -ceq $normalized){exit 10};[IO.File]::WriteAllText($target,$normalized,[Text.UTF8Encoding]::new($false));exit 20" >nul 2>&1
+set "bootstrap_crlf_rc=%errorlevel%"
+if "%bootstrap_crlf_rc%"=="10" goto :setup_crlf_ready
+if not "%bootstrap_crlf_rc%"=="20" echo FAIL: bootstrap.bat line-ending normalization failed.
+if not "%bootstrap_crlf_rc%"=="20" exit /b 2
+echo INFO: Normalizing bootstrap.bat to CRLF before execution.
+set "bootstrap_crlf_ready=1"
+call "%bootstrap_crlf_file%" %*
+set "bootstrap_crlf_rc=%errorlevel%"
+del /q "%bootstrap_crlf_file%" >nul 2>&1
+set "bootstrap_crlf_ready="
+set "bootstrap_crlf_source="
+set "bootstrap_crlf_file="
+exit /b %bootstrap_crlf_rc%
+:setup_crlf_ready
 set "app.start.dir=%CD%"
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
 cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39.5-shift-context-fix"
+set "app.version=bootstrap-integrated-39.6-crlf-entry-fix"
 set "app.rc=0"
 set "app.timestamp="
 set "app.log.dir=%TEMP%\bootstrap_logs"
@@ -488,34 +506,34 @@ exit /b 0
 :ParseArguments
 if "%~1"=="" exit /b 0
 set "pa_arg=%~1"
-if /I "%pa_arg:~0,7%"=="http://" (set "app.repo.url=%~1" & set "app.explicit.repo=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg:~0,8%"=="https://" (set "app.repo.url=%~1" & set "app.explicit.repo=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="auto" (set "app.mode=auto" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="bootstrap" (set "app.mode=default" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="default" (set "app.mode=default" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="menu" (set "app.mode=menu" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="check" (set "app.mode=check" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="doctor" (set "app.mode=doctor" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="dryrun" (set "app.dryrun=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="version" (set "app.mode=version" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--version" (set "app.mode=version" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="/version" (set "app.mode=version" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="unattended" (set "app.unattended=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--unattended" (set "app.unattended=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="noninteractive" (set "app.unattended=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--noninteractive" (set "app.unattended=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="nobuild" (set "app.project.build=no" & set "app.explicit.build=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-build" (set "app.project.build=no" & set "app.explicit.build=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="noprepare" (set "app.project.prepare=no" & set "app.explicit.prepare=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-prepare" (set "app.project.prepare=no" & set "app.explicit.prepare=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="noinstall" (set "app.project.install=no" & set "app.explicit.install=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-install" (set "app.project.install=no" & set "app.explicit.install=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="noupdate" (set "app.update.mode=no" & set "app.explicit.update=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-update" (set "app.update.mode=no" & set "app.explicit.update=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="nomove" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-move" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="nologin" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift /1 & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-login" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift /1 & goto :ParseArguments)
+if /I "%pa_arg:~0,7%"=="http://" (set "app.repo.url=%~1" & set "app.explicit.repo=1" & shift & goto :ParseArguments)
+if /I "%pa_arg:~0,8%"=="https://" (set "app.repo.url=%~1" & set "app.explicit.repo=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="auto" (set "app.mode=auto" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="bootstrap" (set "app.mode=default" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="default" (set "app.mode=default" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="menu" (set "app.mode=menu" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="check" (set "app.mode=check" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="doctor" (set "app.mode=doctor" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="dryrun" (set "app.dryrun=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="version" (set "app.mode=version" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--version" (set "app.mode=version" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="/version" (set "app.mode=version" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="unattended" (set "app.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--unattended" (set "app.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noninteractive" (set "app.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--noninteractive" (set "app.unattended=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="nobuild" (set "app.project.build=no" & set "app.explicit.build=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-build" (set "app.project.build=no" & set "app.explicit.build=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noprepare" (set "app.project.prepare=no" & set "app.explicit.prepare=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-prepare" (set "app.project.prepare=no" & set "app.explicit.prepare=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noinstall" (set "app.project.install=no" & set "app.explicit.install=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-install" (set "app.project.install=no" & set "app.explicit.install=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="noupdate" (set "app.update.mode=no" & set "app.explicit.update=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-update" (set "app.update.mode=no" & set "app.explicit.update=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="nomove" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-move" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="nologin" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-login" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="login" goto :ParseArgumentsLogin
 if /I "%pa_arg%"=="repo" goto :ParseArgumentsRepo
 if /I "%pa_arg%"=="provider" goto :ParseArgumentsProvider
@@ -557,99 +575,99 @@ exit /b 0
 set "app.login.mode=login"
 set "app.login.method=ask"
 set "app.explicit.login=1"
-if /I "%~2"=="no" (set "app.login.mode=none" & shift /1 & shift /1 & goto :ParseArguments)
-if /I "%~2"=="ask" (set "app.login.method=ask" & shift /1 & shift /1 & goto :ParseArguments)
-if "%~2"=="1" (set "app.login.method=1" & shift /1 & shift /1 & goto :ParseArguments)
-if "%~2"=="2" (set "app.login.method=2" & shift /1 & shift /1 & goto :ParseArguments)
-if "%~2"=="3" (set "app.login.method=3" & shift /1 & shift /1 & goto :ParseArguments)
-if "%~2"=="4" (set "app.login.method=4" & shift /1 & shift /1 & goto :ParseArguments)
-shift /1
+if /I "%~2"=="no" (set "app.login.mode=none" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="ask" (set "app.login.method=ask" & shift & shift & goto :ParseArguments)
+if "%~2"=="1" (set "app.login.method=1" & shift & shift & goto :ParseArguments)
+if "%~2"=="2" (set "app.login.method=2" & shift & shift & goto :ParseArguments)
+if "%~2"=="3" (set "app.login.method=3" & shift & shift & goto :ParseArguments)
+if "%~2"=="4" (set "app.login.method=4" & shift & shift & goto :ParseArguments)
+shift
 goto :ParseArguments
 :ParseArgumentsRepo
 if "%~2"=="" (call :PrintError "FAIL: repo requires a URL." & exit /b 2)
 set "app.repo.url=%~2"
 set "app.explicit.repo=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsProvider
 if "%~2"=="" (call :PrintError "FAIL: provider requires a name." & exit /b 2)
 set "app.provider.requested=%~2"
 set "app.explicit.provider=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsToolsUrl
 if "%~2"=="" (call :PrintError "FAIL: toolsurl requires a URL." & exit /b 2)
 set "app.raw.tools.url=%~2"
 set "app.explicit.toolsurl=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsGetGit
 if "%~2"=="" (call :PrintError "FAIL: getgit requires a URL." & exit /b 2)
 set "app.getgit.url=%~2"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsGetGitHubCli
 if "%~2"=="" (call :PrintError "FAIL: getgithubcli requires a URL." & exit /b 2)
 set "app.getgh.url=%~2"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsBranch
 if "%~2"=="" (call :PrintError "FAIL: branch requires a name." & exit /b 2)
 set "app.repo.branch=%~2"
 set "app.explicit.branch=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsDir
 if "%~2"=="" (call :PrintError "FAIL: dir requires a path." & exit /b 2)
 call :ResolvePathFromStart "%~2" app.folder
 if errorlevel 1 (call :PrintError "FAIL: dir path could not be resolved." & exit /b 2)
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsFork
 if "%~2"=="" (call :PrintError "FAIL: fork requires ask, yes, or no." & exit /b 2)
-if /I "%~2"=="ask" (set "app.fork.mode=ask" & set "app.explicit.fork=1" & shift /1 & shift /1 & goto :ParseArguments)
-if /I "%~2"=="yes" (set "app.fork.mode=yes" & set "app.explicit.fork=1" & shift /1 & shift /1 & goto :ParseArguments)
-if /I "%~2"=="no" (set "app.fork.mode=no" & set "app.explicit.fork=1" & shift /1 & shift /1 & goto :ParseArguments)
+if /I "%~2"=="ask" (set "app.fork.mode=ask" & set "app.explicit.fork=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="yes" (set "app.fork.mode=yes" & set "app.explicit.fork=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="no" (set "app.fork.mode=no" & set "app.explicit.fork=1" & shift & shift & goto :ParseArguments)
 call :PrintError "FAIL: fork requires ask, yes, or no."
 exit /b 2
 :ParseArgumentsIdentity
 if "%~2"=="" (call :PrintError "FAIL: identity requires ask or defaults." & exit /b 2)
-if /I "%~2"=="ask" (set "app.identity.mode=ask" & set "app.explicit.identity=1" & shift /1 & shift /1 & goto :ParseArguments)
-if /I "%~2"=="defaults" (set "app.identity.mode=defaults" & set "app.explicit.identity=1" & shift /1 & shift /1 & goto :ParseArguments)
+if /I "%~2"=="ask" (set "app.identity.mode=ask" & set "app.explicit.identity=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="defaults" (set "app.identity.mode=defaults" & set "app.explicit.identity=1" & shift & shift & goto :ParseArguments)
 call :PrintError "FAIL: identity requires ask or defaults."
 exit /b 2
 :ParseArgumentsGitName
 if "%~2"=="" (call :PrintError "FAIL: gitname requires a value." & exit /b 2)
 set "app.git_name=%~2"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsGitEmail
 if "%~2"=="" (call :PrintError "FAIL: gitemail requires a value." & exit /b 2)
 set "app.git_email=%~2"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsPush
 if "%~2"=="" (call :PrintError "FAIL: push requires yes or no." & exit /b 2)
 call :ParseYesNoValue "%~2" app.push.mode
 if errorlevel 1 (call :PrintError "FAIL: push requires yes or no." & exit /b 2)
 set "app.explicit.push=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsMove
 if "%~2"=="" (call :PrintError "FAIL: move requires no, ask, documents, or path PATH." & exit /b 2)
-if /I "%~2"=="no" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift /1 & shift /1 & goto :ParseArguments)
-if /I "%~2"=="ask" (set "app.move.mode=ask" & set "app.move.parent=" & set "app.explicit.move=1" & shift /1 & shift /1 & goto :ParseArguments)
-if /I "%~2"=="documents" (set "app.move.mode=documents" & set "app.move.parent=" & set "app.explicit.move=1" & shift /1 & shift /1 & goto :ParseArguments)
+if /I "%~2"=="no" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="ask" (set "app.move.mode=ask" & set "app.move.parent=" & set "app.explicit.move=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="documents" (set "app.move.mode=documents" & set "app.move.parent=" & set "app.explicit.move=1" & shift & shift & goto :ParseArguments)
 if /I "%~2"=="path" goto :ParseArgumentsMovePath
 call :PrintError "FAIL: move requires no, ask, documents, or path PATH."
 exit /b 2
@@ -659,46 +677,46 @@ call :ResolvePathFromStart "%~3" app.move.parent
 if errorlevel 1 (call :PrintError "FAIL: move parent path could not be resolved." & exit /b 2)
 set "app.move.mode=path"
 set "app.explicit.move=1"
-shift /1
-shift /1
-shift /1
+shift
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsPrepare
 if "%~2"=="" (call :PrintError "FAIL: prepare requires yes or no." & exit /b 2)
 call :ParseYesNoValue "%~2" app.project.prepare
 if errorlevel 1 (call :PrintError "FAIL: prepare requires yes or no." & exit /b 2)
 set "app.explicit.prepare=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsBuild
 if "%~2"=="" (call :PrintError "FAIL: build requires yes or no." & exit /b 2)
 call :ParseYesNoValue "%~2" app.project.build
 if errorlevel 1 (call :PrintError "FAIL: build requires yes or no." & exit /b 2)
 set "app.explicit.build=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsInstall
-if "%~2"=="" (set "app.project.install=yes" & set "app.explicit.install=1" & shift /1 & goto :ParseArguments)
+if "%~2"=="" (set "app.project.install=yes" & set "app.explicit.install=1" & shift & goto :ParseArguments)
 call :ParseYesNoValue "%~2" app.project.install
-if errorlevel 1 (set "app.project.install=yes" & set "app.explicit.install=1" & shift /1 & goto :ParseArguments)
+if errorlevel 1 (set "app.project.install=yes" & set "app.explicit.install=1" & shift & goto :ParseArguments)
 set "app.explicit.install=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsUpdate
 if "%~2"=="" (call :PrintError "FAIL: update requires yes or no." & exit /b 2)
 call :ParseYesNoValue "%~2" app.update.mode
 if errorlevel 1 (call :PrintError "FAIL: update requires yes or no." & exit /b 2)
 set "app.explicit.update=1"
-shift /1
-shift /1
+shift
+shift
 goto :ParseArguments
 :ParseArgumentsConflict
 if "%~2"=="" (call :PrintError "FAIL: conflict requires quarantine or fail." & exit /b 2)
-if /I "%~2"=="quarantine" (set "app.conflict.mode=quarantine" & set "app.explicit.conflict=1" & shift /1 & shift /1 & goto :ParseArguments)
-if /I "%~2"=="fail" (set "app.conflict.mode=fail" & set "app.explicit.conflict=1" & shift /1 & shift /1 & goto :ParseArguments)
+if /I "%~2"=="quarantine" (set "app.conflict.mode=quarantine" & set "app.explicit.conflict=1" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="fail" (set "app.conflict.mode=fail" & set "app.explicit.conflict=1" & shift & shift & goto :ParseArguments)
 call :PrintError "FAIL: conflict requires quarantine or fail."
 exit /b 2
 
