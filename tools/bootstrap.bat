@@ -5,7 +5,7 @@ if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
 cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39.3"
+set "app.version=bootstrap-integrated-39.4-no-comments"
 set "app.rc=0"
 set "app.timestamp="
 set "app.log.dir=%TEMP%\bootstrap_logs"
@@ -115,23 +115,7 @@ if defined app.final.cd cd /d "%app.final.cd%" >nul 2>&1
 call :SetExitCode "%app.rc%"
 goto :eof
 
-:: ============================================================
-:: HIGH LEVEL WORKFLOW FUNCTIONS
-:: ============================================================
-
 :DispatchMode
-rem ============================================================
-rem Function DispatchMode
-rem Purpose
-rem   Run exactly one selected top-level mode and return its result.
-rem Inputs
-rem   app.mode and app.dryrun
-rem Return codes
-rem   0 Selected mode completed
-rem   nonzero Selected mode failed
-rem Dependencies
-rem   RunCheck RunDoctor RunDryRun RunAutoWorkflow RunBootstrapWorkflow RunMenu
-rem ============================================================
 set "dm_mode=%app.mode%"
 set "dm_dryrun=%app.dryrun%"
 set "dm_rc=0"
@@ -155,18 +139,6 @@ set "dm_rc=%errorlevel%"
 exit /b %dm_rc%
 
 :RunAutoWorkflow
-rem ============================================================
-rem Function RunAutoWorkflow
-rem Purpose
-rem   Run repository setup and then run the project lifecycle.
-rem Outputs
-rem   app.final.cd
-rem Return codes
-rem   0 Auto workflow completed
-rem   nonzero A workflow step failed
-rem Dependencies
-rem   RunRepositoryWorkflow RunProjectLifecycle PrintInfo PrintSuccess
-rem ============================================================
 call :PrintInfo "MODE: auto [%app.version%]"
 call :PrintInfo "AUTO: Git, clone or update, repository tools, optional login and fork, optional move, prepare, build, and optional install."
 call :RunRepositoryWorkflow
@@ -182,18 +154,6 @@ set "raw_rc="
 exit /b 0
 
 :RunBootstrapWorkflow
-rem ============================================================
-rem Function RunBootstrapWorkflow
-rem Purpose
-rem   Run repository setup without automatically preparing or building the project.
-rem Outputs
-rem   app.final.cd
-rem Return codes
-rem   0 Bootstrap workflow completed
-rem   nonzero A workflow step failed
-rem Dependencies
-rem   RunRepositoryWorkflow PrintInfo PrintSuccess
-rem ============================================================
 call :PrintInfo "MODE: default [%app.version%]"
 call :RunRepositoryWorkflow
 set "rbw_rc=%errorlevel%"
@@ -205,19 +165,6 @@ set "rbw_rc="
 exit /b 0
 
 :RunRepositoryWorkflow
-rem ============================================================
-rem Function RunRepositoryWorkflow
-rem Purpose
-rem   Run the shared repository workflow used by default and auto modes.
-rem   The sequence is repository readiness, optional provider login and fork, then optional move.
-rem Outputs
-rem   app.repo.ready app.final.cd
-rem Return codes
-rem   0 Repository workflow completed
-rem   nonzero A workflow step failed
-rem Dependencies
-rem   EnsureRepositoryReady ResolveLoginDecision RunProviderLogin MaybeMoveRepository
-rem ============================================================
 call :EnsureRepositoryReady
 set "rrw_rc=%errorlevel%"
 if not "%rrw_rc%"=="0" exit /b %rrw_rc%
@@ -234,18 +181,6 @@ set "rrw_rc="
 exit /b 0
 
 :EnsureRepositoryReady
-rem ============================================================
-rem Function EnsureRepositoryReady
-rem Purpose
-rem   Ensure Git is available, clone or update the checkout, and prepare repository tools.
-rem Outputs
-rem   app.repo.ready app.repo.tools.prepared app.final.cd
-rem Return codes
-rem   0 Repository and repository tools are ready
-rem   nonzero Git, synchronization, or repository preparation failed
-rem Dependencies
-rem   EnsureGit SynchronizeRepository PrepareRepositoryTools
-rem ============================================================
 if defined app.repo.ready goto :EnsureRepositoryReadyPrepare
 call :EnsureGit
 set "err_rc=%errorlevel%"
@@ -261,16 +196,6 @@ set "err_rc="
 exit /b 0
 
 :RunProjectLifecycle
-rem ============================================================
-rem Function RunProjectLifecycle
-rem Purpose
-rem   Run project preparation, build, and installation according to independent command-line decisions.
-rem Return codes
-rem   0 Requested lifecycle steps completed
-rem   8 A requested project lifecycle step failed
-rem Dependencies
-rem   RunProjectPrepare RunProjectBuild RunProjectInstall PrintWarning PrintInfo
-rem ============================================================
 set "rpl_rc=0"
 if /I "%app.project.prepare%"=="yes" call :RunProjectPrepare
 if /I "%app.project.prepare%"=="yes" set "rpl_rc=%errorlevel%"
@@ -288,16 +213,6 @@ set "rpl_rc="
 exit /b 0
 
 :RunCheck
-rem ============================================================
-rem Function RunCheck
-rem Purpose
-rem   Validate inferred repository context without installing tools or changing repository files.
-rem Return codes
-rem   0 Required context is present
-rem   3 Required context is missing
-rem Dependencies
-rem   FindGit PrintSuccess PrintInfo PrintError PrintWarning
-rem ============================================================
 call :PrintInfo "CHECK: essential bootstrap context"
 call :PrintInfo "Version: %app.version%"
 call :PrintInfo "Provider: %app.provider% [%app.provider.display%]"
@@ -314,17 +229,6 @@ call :PrintSuccess "OK: essential check passed."
 exit /b 0
 
 :RunDoctor
-rem ============================================================
-rem Function RunDoctor
-rem Purpose
-rem   Report context, tool, checkout, provider, and lifecycle diagnostics without making changes.
-rem Return codes
-rem   0 Diagnostics completed
-rem   3 Essential context check failed
-rem   5 Existing checkout references an unexpected repository
-rem Dependencies
-rem   RunCheck FindGit FindGitHubCli VerifyRepositoryRemote PrintInfo PrintSuccess PrintWarning PrintError
-rem ============================================================
 call :RunCheck
 set "rd_rc=%errorlevel%"
 if not "%rd_rc%"=="0" exit /b %rd_rc%
@@ -366,16 +270,6 @@ set "rd_remote_rc="
 exit /b 0
 
 :RunDryRun
-rem ============================================================
-rem Function RunDryRun
-rem Purpose
-rem   Describe the selected workflow without installing, cloning, moving, authenticating, or building.
-rem Return codes
-rem   0 Plan displayed
-rem   5 Existing checkout references an unexpected repository
-rem Dependencies
-rem   FindGit VerifyRepositoryRemote PrintInfo PrintSuccess PrintError
-rem ============================================================
 call :PrintInfo "MODE: dryrun [%app.version%]"
 call :FindGit
 set "rdr_remote_rc=0"
@@ -410,17 +304,6 @@ call :PrintSuccess "OK: dryrun complete; no repository changes were made."
 exit /b 0
 
 :RunMenu
-rem ============================================================
-rem Function RunMenu
-rem Purpose
-rem   Provide an interactive menu for repository and project operations.
-rem Return codes
-rem   0 User exited the menu
-rem Dependencies
-rem   DrawMenu PrintWarning RunAutoWorkflow EnsureGit SynchronizeRepository
-rem   EnsureRepositoryReady ResolveLoginDecision RunProviderLogin RunProjectPrepare RunProjectBuild
-rem   RunProjectInstall MaybeMoveRepository RunBootstrapWorkflow
-rem ============================================================
 :RunMenuLoop
 cls
 call :DrawMenu
@@ -483,15 +366,6 @@ pause
 goto :RunMenuLoop
 
 :ShowHelp
-rem ============================================================
-rem Function ShowHelp
-rem Purpose
-rem   Display current command syntax, modes, automation decisions, aliases, and examples.
-rem Return codes
-rem   0 Help displayed
-rem Dependencies
-rem   none
-rem ============================================================
 echo(
 echo %app.launch.name% [%app.version%]
 echo(
@@ -595,35 +469,10 @@ echo   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo
 exit /b 0
 
 :ShowVersion
-rem ============================================================
-rem Function ShowVersion
-rem Purpose
-rem   Print the internal bootstrap version.
-rem Return codes
-rem   0 Version displayed
-rem Dependencies
-rem   none
-rem ============================================================
 echo %app.version%
 exit /b 0
 
-:: ============================================================
-:: LOWER LEVEL WORKFLOW FUNCTIONS
-:: ============================================================
-
 :InitializeRuntime
-rem ============================================================
-rem Function InitializeRuntime
-rem Purpose
-rem   Create the log file and initialize optional ANSI colours.
-rem Outputs
-rem   app.timestamp app.log app.esc
-rem Return codes
-rem   0 Runtime initialized
-rem   1 Timestamp or log initialization failed
-rem Dependencies
-rem   MakeTimestamp SetEscapeCharacter PrintInfo
-rem ============================================================
 call :MakeTimestamp
 if errorlevel 1 exit /b 1
 if not exist "%app.log.dir%\" mkdir "%app.log.dir%" >nul 2>&1
@@ -637,20 +486,6 @@ call :PrintInfo "LOG: %app.log%"
 exit /b 0
 
 :ParseArguments
-rem ============================================================
-rem Function ParseArguments
-rem Purpose
-rem   Parse modes and command-line decisions in any order.
-rem Inputs
-rem   All command-line arguments
-rem Outputs
-rem   app.mode and related app option variables
-rem Return codes
-rem   0 Arguments accepted
-rem   2 An argument is unknown incomplete or invalid
-rem Dependencies
-rem   ParseYesNoValue ResolvePathFromStart PrintError PrintWarning
-rem ============================================================
 if "%~1"=="" exit /b 0
 set "pa_arg=%~1"
 if /I "%pa_arg:~0,7%"=="http://" (set "app.repo.url=%~1" & set "app.explicit.repo=1" & shift & goto :ParseArguments)
@@ -868,18 +703,6 @@ call :PrintError "FAIL: conflict requires quarantine or fail."
 exit /b 2
 
 :ApplyAutomationDefaults
-rem ============================================================
-rem Function ApplyAutomationDefaults
-rem Purpose
-rem   Fill unresolved decisions for unattended execution without overriding explicit options.
-rem   Suppress identity prompts when both Git identity values were supplied.
-rem Outputs
-rem   Login fork identity push move project update and conflict decisions
-rem Return codes
-rem   0 Defaults applied
-rem Dependencies
-rem   none
-rem ============================================================
 if defined app.git_name if defined app.git_email if not defined app.explicit.identity set "app.identity.mode=defaults"
 if not defined app.unattended exit /b 0
 if not defined app.explicit.login set "app.login.mode=none"
@@ -897,19 +720,6 @@ if not defined app.explicit.conflict set "app.conflict.mode=quarantine"
 exit /b 0
 
 :ResolveBootstrapContext
-rem ============================================================
-rem Function ResolveBootstrapContext
-rem Purpose
-rem   Infer repository metadata from the loader URL or explicit repository URL.
-rem   Preserve explicit command-line overrides and derive helper download URLs.
-rem Outputs
-rem   Repository provider owner name branch and helper URLs
-rem Return codes
-rem   0 Context resolved
-rem   3 Required repository context could not be resolved
-rem Dependencies
-rem   ParseBootstrapUrl ParseRepositoryUrl PrintSuccess PrintError PrintWarning
-rem ============================================================
 if not defined app.repo.url if not defined app.bootstrap.url (call :PrintError "FAIL: no repository URL or bootstrap loader URL was provided." & exit /b 3)
 if not defined app.explicit.repo if defined app.bootstrap.url call :ParseBootstrapUrl
 if defined app.repo.url call :ParseRepositoryUrl
@@ -929,18 +739,6 @@ call :PrintSuccess "OK: Branch: %app.repo.branch%"
 exit /b 0
 
 :ResolveRepositoryFolder
-rem ============================================================
-rem Function ResolveRepositoryFolder
-rem Purpose
-rem   Choose the target checkout path using explicit path, matching current checkout, writable launch directory, then TEMP fallback.
-rem Outputs
-rem   app.folder and app.repo.parent
-rem Return codes
-rem   0 Target folder resolved
-rem   3 No writable target parent was available
-rem Dependencies
-rem   UseCurrentRepository SelectRepositoryParent PrintSuccess
-rem ============================================================
 if defined app.folder goto :ResolveRepositoryFolderNormalize
 call :UseCurrentRepository
 if not errorlevel 1 goto :ResolveRepositoryFolderNormalize
@@ -955,18 +753,6 @@ call :PrintSuccess "OK: Folder: %app.folder%"
 exit /b 0
 
 :UseCurrentRepository
-rem ============================================================
-rem Function UseCurrentRepository
-rem Purpose
-rem   Reuse the launch directory when it is already the intended repository checkout.
-rem Outputs
-rem   app.folder when a matching checkout is found
-rem Return codes
-rem   0 Current directory selected
-rem   1 Current directory is not the matching checkout
-rem Dependencies
-rem   PrintInfo
-rem ============================================================
 set "ucr_name="
 if not exist "%app.start.dir%\.git" exit /b 1
 for %%A in ("%app.start.dir%") do set "ucr_name=%%~nxA"
@@ -977,18 +763,6 @@ call :PrintInfo "INFO: Reusing the current repository folder."
 exit /b 0
 
 :SelectRepositoryParent
-rem ============================================================
-rem Function SelectRepositoryParent
-rem Purpose
-rem   Use the writable launch directory as checkout parent and use TEMP only as a fallback.
-rem Outputs
-rem   app.repo.parent
-rem Return codes
-rem   0 Writable parent selected
-rem   3 Neither launch directory nor TEMP is writable
-rem Dependencies
-rem   IsDirectoryWritable PrintWarning PrintError
-rem ============================================================
 set "app.repo.parent="
 call :IsDirectoryWritable "%app.start.dir%"
 if not errorlevel 1 goto :SelectRepositoryParentStart
@@ -1004,17 +778,6 @@ for %%A in ("%app.start.dir%") do set "app.repo.parent=%%~fA"
 exit /b 0
 
 :ConfigureProvider
-rem ============================================================
-rem Function ConfigureProvider
-rem Purpose
-rem   Set provider display name and supported login, fork, and raw-tools capabilities.
-rem Outputs
-rem   app.provider.display and provider capability flags
-rem Return codes
-rem   0 Provider configured
-rem Dependencies
-rem   none
-rem ============================================================
 set "app.provider.display=Generic Git"
 set "app.provider.can.login=0"
 set "app.provider.can.fork=0"
@@ -1027,18 +790,6 @@ if /I "%app.provider%"=="gitea" set "app.provider.display=Gitea or Forgejo"
 exit /b 0
 
 :EnsureGit
-rem ============================================================
-rem Function EnsureGit
-rem Purpose
-rem   Find Git or install it through the inferred GetGit helper.
-rem Outputs
-rem   app.git and PATH
-rem Return codes
-rem   0 Git is ready
-rem   4 Git could not be installed
-rem Dependencies
-rem   FindGit EnsureGetGitHelper PrependExecutableDirectoryToPath PrintWarning PrintError PrintSuccess
-rem ============================================================
 call :FindGit
 if defined app.git goto :EnsureGitReady
 call :PrintWarning "MISS: git.exe not found."
@@ -1058,19 +809,6 @@ call :PrintSuccess "OK: Git ready: %app.git%"
 exit /b 0
 
 :SynchronizeRepository
-rem ============================================================
-rem Function SynchronizeRepository
-rem Purpose
-rem   Clone the repository or safely fast-forward an existing matching checkout.
-rem Outputs
-rem   app.repo.ready app.final.cd
-rem Return codes
-rem   0 Checkout ready
-rem   5 Clone or update failed
-rem Dependencies
-rem   EnsureGit VerifyRepositoryRemote CloneRepository UpdateRepository QuarantineNonGitFolder PrintError
-rem   PrintInfo
-rem ============================================================
 if not defined app.git call :EnsureGit
 if errorlevel 1 exit /b 5
 if exist "%app.folder%\.git" goto :SynchronizeRepositoryExisting
@@ -1102,16 +840,6 @@ set "sr_rc="
 exit /b 0
 
 :CloneRepository
-rem ============================================================
-rem Function CloneRepository
-rem Purpose
-rem   Clone the configured branch into the resolved checkout folder.
-rem Return codes
-rem   0 Repository cloned
-rem   5 Git clone failed
-rem Dependencies
-rem   PrintInfo PrintSuccess PrintError PrintWarning
-rem ============================================================
 call :PrintInfo "DO: Cloning %app.repo.url%."
 "%app.git%" clone --branch "%app.repo.branch%" "%app.repo.url%" "%app.folder%" >>"%app.log%" 2>&1
 set "cr_rc=%errorlevel%"
@@ -1121,19 +849,6 @@ set "cr_rc="
 exit /b 0
 
 :UpdateRepository
-rem ============================================================
-rem Function UpdateRepository
-rem Purpose
-rem   Verify the expected original remote and fast-forward the configured branch from that remote.
-rem   A missing local branch may be created to track the selected remote branch.
-rem Outputs
-rem   app.repo.sync.remote
-rem Return codes
-rem   0 Repository updated
-rem   5 Remote verification or Git update failed
-rem Dependencies
-rem   VerifyRepositoryRemote PrintInfo PrintSuccess PrintError PrintWarning
-rem ============================================================
 call :VerifyRepositoryRemote
 set "ur_rc=%errorlevel%"
 if not "%ur_rc%"=="0" (set "ur_rc=" & exit /b 5)
@@ -1159,18 +874,6 @@ set "ur_rc="
 exit /b 0
 
 :VerifyRepositoryRemote
-rem ============================================================
-rem Function VerifyRepositoryRemote
-rem Purpose
-rem   Confirm that origin or upstream points to the original repository and select that remote for updates.
-rem Outputs
-rem   app.repo.sync.remote and normalized remote values
-rem Return codes
-rem   0 Expected remote found
-rem   5 Checkout is not the expected repository
-rem Dependencies
-rem   NormalizeGitUrl PrintError PrintWarning
-rem ============================================================
 "%app.git%" -C "%app.folder%" rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: target is not a Git worktree." & exit /b 5)
 set "app.folder.origin="
@@ -1192,18 +895,6 @@ if defined app.folder.upstream call :PrintWarning "UPSTREAM: %app.folder.upstrea
 exit /b 5
 
 :PrepareRepositoryTools
-rem ============================================================
-rem Function PrepareRepositoryTools
-rem Purpose
-rem   Let the cloned repository prepare Git and provider command-line tools without authenticating.
-rem Outputs
-rem   app.repo.tools.prepared and refreshed tool paths
-rem Return codes
-rem   0 Repository tools prepared or no launcher exists
-rem   8 Repository preparation failed
-rem Dependencies
-rem   RunRepositoryLauncher FindGit FindGitHubCli PrependExecutableDirectoryToPath
-rem ============================================================
 if defined app.repo.tools.prepared exit /b 0
 call :RunRepositoryLauncher "prepare.bat" "Repository preparation" "repository"
 set "prt_rc=%errorlevel%"
@@ -1217,17 +908,6 @@ if defined app.gh call :PrependExecutableDirectoryToPath "%app.gh%"
 exit /b 0
 
 :ResolveLoginDecision
-rem ============================================================
-rem Function ResolveLoginDecision
-rem Purpose
-rem   Respect explicit login settings or ask once whether provider login and fork handling should run.
-rem Outputs
-rem   app.login.mode app.fork.mode
-rem Return codes
-rem   0 Login decision resolved
-rem Dependencies
-rem   PrintInfo PrintWarning
-rem ============================================================
 if /I not "%app.provider.can.login%"=="1" (set "app.login.mode=none" & set "app.fork.mode=no" & call :PrintWarning "SKIP: provider login is not implemented for %app.provider%." & exit /b 0)
 if /I "%app.login.mode%"=="none" (set "app.fork.mode=no" & exit /b 0)
 if /I "%app.login.mode%"=="login" exit /b 0
@@ -1244,16 +924,6 @@ set "rld_choice="
 exit /b 0
 
 :RunProviderLogin
-rem ============================================================
-rem Function RunProviderLogin
-rem Purpose
-rem   Dispatch the requested provider login and fork workflow.
-rem Return codes
-rem   0 Login completed or skipped
-rem   6 Provider login or fork setup failed
-rem Dependencies
-rem   RunGitHubLoginWorkflow PrintWarning
-rem ============================================================
 if /I "%app.login.mode%"=="none" (call :PrintWarning "SKIP: provider login and fork steps skipped." & exit /b 0)
 if /I "%app.provider%"=="github" goto :RunProviderLoginGitHub
 call :PrintWarning "SKIP: provider login is not implemented for %app.provider%."
@@ -1264,16 +934,6 @@ set "rplg_rc=%errorlevel%"
 exit /b %rplg_rc%
 
 :RunGitHubLoginWorkflow
-rem ============================================================
-rem Function RunGitHubLoginWorkflow
-rem Purpose
-rem   Prefer the repository just_login launcher and use a standalone fallback only when that launcher is absent.
-rem Return codes
-rem   0 GitHub setup completed
-rem   6 GitHub setup failed
-rem Dependencies
-rem   EnsureGit EnsureGitHubCli RunRepositoryLogin RunFallbackGitHubLogin ConfigureFallbackGitHubFork ConfigureFallbackGitIdentity RunFallbackGitPush
-rem ============================================================
 call :EnsureGit
 if errorlevel 1 exit /b 6
 call :EnsureGitHubCli
@@ -1297,16 +957,6 @@ set "rglw_rc=%errorlevel%"
 exit /b %rglw_rc%
 
 :RunRepositoryLogin
-rem ============================================================
-rem Function RunRepositoryLogin
-rem Purpose
-rem   Call repository just_login with explicit repository branch browser fork identity and push decisions.
-rem Return codes
-rem   0 Repository login launcher completed
-rem   6 Repository login launcher failed
-rem Dependencies
-rem   just_login.bat PrintError PrintSuccess
-rem ============================================================
 set "rrl_rc=0"
 pushd "%app.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for login." & exit /b 6)
@@ -1319,19 +969,6 @@ call :PrintSuccess "OK: repository just_login.bat completed GitHub setup."
 exit /b 0
 
 :RunFallbackGitHubLogin
-rem ============================================================
-rem Function RunFallbackGitHubLogin
-rem Purpose
-rem   Authenticate GitHub CLI when the repository does not provide just_login.bat.
-rem Outputs
-rem   app.github.user
-rem Return codes
-rem   0 GitHub authentication confirmed
-rem   6 GitHub authentication failed
-rem Dependencies
-rem   CheckGitHubAuthentication PromptLoginMethod OpenDeviceLoginPage GetGitHubUser PrintInfo PrintError
-rem   PrintSuccess
-rem ============================================================
 call :CheckGitHubAuthentication
 set "rfgl_rc=%errorlevel%"
 if "%rfgl_rc%"=="0" (set "rfgl_rc=" & exit /b 0)
@@ -1371,17 +1008,6 @@ set "rfgl_rc="
 exit /b 0
 
 :ConfigureFallbackGitHubFork
-rem ============================================================
-rem Function ConfigureFallbackGitHubFork
-rem Purpose
-rem   Configure direct push, a verified personal fork, or read-only original-repository mode.
-rem Return codes
-rem   0 Direct push fork or read-only workflow configured
-rem   6 Remote or fork workflow failed
-rem Dependencies
-rem   GetGitHubUser CheckGitHubWritePermission PromptForkChoice CreateGitHubFork ConfigureOriginalRemote
-rem   ConfigureForkRemotes PrintSuccess PrintWarning
-rem ============================================================
 call :GetGitHubUser
 set "cfghf_rc=%errorlevel%"
 if not "%cfghf_rc%"=="0" (set "cfghf_rc=" & exit /b 6)
@@ -1416,18 +1042,6 @@ set "cfghf_rc="
 exit /b 0
 
 :ConfigureFallbackGitIdentity
-rem ============================================================
-rem Function ConfigureFallbackGitIdentity
-rem Purpose
-rem   Resolve and write repository-local Git identity when just_login.bat is unavailable.
-rem Outputs
-rem   Local Git user name and email
-rem Return codes
-rem   0 Local identity configured
-rem   6 Identity could not be resolved or written
-rem Dependencies
-rem   GetGitHubUser PrintError PrintSuccess
-rem ============================================================
 set "cfgi_name="
 set "cfgi_email="
 set "cfgi_input="
@@ -1465,16 +1079,6 @@ set "cfgi_id="
 exit /b 0
 
 :RunFallbackGitPush
-rem ============================================================
-rem Function RunFallbackGitPush
-rem Purpose
-rem   Push the current branch after standalone GitHub login setup when requested.
-rem Return codes
-rem   0 Push completed skipped or no commits exist
-rem   6 Push failed
-rem Dependencies
-rem   PrintInfo PrintSuccess PrintWarning PrintError
-rem ============================================================
 if /I "%app.push.mode%"=="no" (call :PrintWarning "SKIP: Git push disabled." & exit /b 0)
 "%app.git%" -C "%app.folder%" rev-parse --verify HEAD >nul 2>&1
 if errorlevel 1 (call :PrintInfo "INFO: No commits exist yet; nothing to push." & exit /b 0)
@@ -1489,19 +1093,6 @@ set "rfgp_branch="
 exit /b 0
 
 :MaybeMoveRepository
-rem ============================================================
-rem Function MaybeMoveRepository
-rem Purpose
-rem   Move the repository only when explicitly requested.
-rem Outputs
-rem   app.folder app.final.cd
-rem Return codes
-rem   0 Repository moved or move skipped
-rem   7 Move failed
-rem Dependencies
-rem   MoveRepositoryToDocuments MoveRepositoryWithPicker MoveRepositoryToParent PrintInfo ResolvePathFromStart
-rem   PrintError
-rem ============================================================
 if /I "%app.move.mode%"=="no" exit /b 0
 if /I "%app.move.mode%"=="documents" call :MoveRepositoryToDocuments
 if /I "%app.move.mode%"=="documents" exit /b %errorlevel%
@@ -1531,16 +1122,6 @@ set "mmr_parent="
 exit /b %mmr_rc%
 
 :MoveRepositoryToDocuments
-rem ============================================================
-rem Function MoveRepositoryToDocuments
-rem Purpose
-rem   Move the repository beneath the Windows Documents folder.
-rem Return codes
-rem   0 Repository moved or already present
-rem   7 Documents path or move failed
-rem Dependencies
-rem   MoveRepositoryToParent PrintError
-rem ============================================================
 set "mrtd_parent="
 for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "[Environment]::GetFolderPath([Environment+SpecialFolder]::MyDocuments)"') do set "mrtd_parent=%%A"
 if not defined mrtd_parent (call :PrintError "FAIL: Documents folder could not be resolved." & exit /b 7)
@@ -1551,16 +1132,6 @@ set "mrtd_parent="
 exit /b %mrtd_rc%
 
 :MoveRepositoryWithPicker
-rem ============================================================
-rem Function MoveRepositoryWithPicker
-rem Purpose
-rem   Open a Windows folder picker and move the repository beneath the selected parent.
-rem Return codes
-rem   0 Repository moved or picker cancelled
-rem   7 Move failed
-rem Dependencies
-rem   MoveRepositoryToParent PrintWarning
-rem ============================================================
 set "mrwp_parent="
 for /f "delims=" %%A in ('powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description='Choose destination parent folder'; if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$d.SelectedPath}"') do set "mrwp_parent=%%A"
 if not defined mrwp_parent (call :PrintWarning "MOVE: cancelled; repository kept at %app.folder%." & exit /b 0)
@@ -1570,19 +1141,6 @@ set "mrwp_parent="
 exit /b %mrwp_rc%
 
 :MoveRepositoryToParent
-rem ============================================================
-rem Function MoveRepositoryToParent
-rem Purpose
-rem   Validate a destination parent then move or reuse a verified matching checkout.
-rem Outputs
-rem   app.folder app.final.cd and refreshed repository tool state
-rem Return codes
-rem   0 Repository moved or matching destination reused
-rem   7 Move failed or destination conflicts
-rem Dependencies
-rem   IsDirectoryWritable IsPathWithin FindGit VerifyRepositoryRemote PrepareRepositoryTools PrintError
-rem   PrintInfo PrintWarning PrependExecutableDirectoryToPath PrintSuccess
-rem ============================================================
 set "mrtp_parent=%~1"
 set "mrtp_previous="
 if not defined mrtp_parent exit /b 0
@@ -1634,67 +1192,21 @@ set "mrtp_parent="
 exit /b 0
 
 :RunProjectPrepare
-rem ============================================================
-rem Function RunProjectPrepare
-rem Purpose
-rem   Run the repository prepare launcher in project-only mode when present.
-rem Return codes
-rem   0 Preparation completed or launcher absent
-rem   8 Preparation failed
-rem Dependencies
-rem   RunRepositoryLauncher
-rem ============================================================
 call :RunRepositoryLauncher "prepare.bat" "Project preparation" "project"
 set "rpp_rc=%errorlevel%"
 exit /b %rpp_rc%
 
 :RunProjectBuild
-rem ============================================================
-rem Function RunProjectBuild
-rem Purpose
-rem   Run the repository build launcher when present.
-rem Return codes
-rem   0 Build completed or launcher absent
-rem   8 Build failed
-rem Dependencies
-rem   RunRepositoryLauncher
-rem ============================================================
 call :RunRepositoryLauncher "build.bat" "Build"
 set "rpb_rc=%errorlevel%"
 exit /b %rpb_rc%
 
 :RunProjectInstall
-rem ============================================================
-rem Function RunProjectInstall
-rem Purpose
-rem   Run the repository install launcher when present.
-rem Return codes
-rem   0 Installation completed or launcher absent
-rem   8 Installation failed
-rem Dependencies
-rem   RunRepositoryLauncher
-rem ============================================================
 call :RunRepositoryLauncher "install.bat" "Install"
 set "rpi_rc=%errorlevel%"
 exit /b %rpi_rc%
 
-:: ============================================================
-:: SPECIAL PURPOSE HELPERS
-:: ============================================================
-
 :ParseBootstrapUrl
-rem ============================================================
-rem Function ParseBootstrapUrl
-rem Purpose
-rem   Parse a supported raw bootstrap URL into inferred repository and tools metadata.
-rem   Explicit provider branch and tools URL values remain unchanged.
-rem Outputs
-rem   app.provider app.repo owner name branch URL and app.raw.tools.url
-rem Return codes
-rem   0 Parsing attempted
-rem Dependencies
-rem   PowerShell
-rem ============================================================
 set "pbu.provider="
 set "pbu.repo.url="
 set "pbu.repo.owner="
@@ -1717,18 +1229,6 @@ set "pbu.raw.tools.url="
 exit /b 0
 
 :ParseRepositoryUrl
-rem ============================================================
-rem Function ParseRepositoryUrl
-rem Purpose
-rem   Normalize common HTTPS and SSH repository URLs and infer provider-specific raw tools URLs.
-rem   Explicit provider and tools URL values remain unchanged.
-rem Outputs
-rem   app.provider app.repo owner name and helper URLs
-rem Return codes
-rem   0 Parsing attempted
-rem Dependencies
-rem   PowerShell
-rem ============================================================
 set "pru.provider="
 set "pru.repo.owner="
 set "pru.repo.name="
@@ -1747,16 +1247,6 @@ if defined app.raw.tools.url if not defined app.getgh.url set "app.getgh.url=%ap
 exit /b 0
 
 :EnsureGetGitHelper
-rem ============================================================
-rem Function EnsureGetGitHelper
-rem Purpose
-rem   Reuse a nonempty GetGit.bat or download a validated replacement.
-rem Return codes
-rem   0 Helper ready
-rem   4 Helper URL missing or download failed
-rem Dependencies
-rem   IsFileNonEmpty DownloadFile PrintInfo PrintError
-rem ============================================================
 call :IsFileNonEmpty "%app.tools%\GetGit.bat"
 if not errorlevel 1 exit /b 0
 if exist "%app.tools%\GetGit.bat" del /q "%app.tools%\GetGit.bat" >nul 2>&1
@@ -1768,17 +1258,6 @@ if errorlevel 1 (call :PrintError "FAIL: GetGit.bat was not downloaded." & exit 
 exit /b 0
 
 :FindGit
-rem ============================================================
-rem Function FindGit
-rem Purpose
-rem   Resolve a repository-local, bootstrap-local, or PATH git.exe.
-rem Outputs
-rem   app.git
-rem Return codes
-rem   0 Search completed
-rem Dependencies
-rem   none
-rem ============================================================
 set "app.git="
 if exist "%app.folder%\tools\git\cmd\git.exe" for %%A in ("%app.folder%\tools\git\cmd\git.exe") do set "app.git=%%~fA"
 if not defined app.git if exist "%app.tools%\git\cmd\git.exe" for %%A in ("%app.tools%\git\cmd\git.exe") do set "app.git=%%~fA"
@@ -1787,19 +1266,6 @@ if defined app.git if not exist "%app.git%" set "app.git="
 exit /b 0
 
 :EnsureGitHubCli
-rem ============================================================
-rem Function EnsureGitHubCli
-rem Purpose
-rem   Resolve or install GitHub CLI through repository preparation or GetGithubCLI.bat.
-rem Outputs
-rem   app.gh and PATH
-rem Return codes
-rem   0 GitHub CLI ready
-rem   6 GitHub CLI could not be installed
-rem Dependencies
-rem   PrepareRepositoryTools FindGitHubCli DownloadFile PrependExecutableDirectoryToPath PrintError
-rem   IsFileNonEmpty PrintInfo PrintWarning PrintSuccess
-rem ============================================================
 call :PrepareRepositoryTools
 if errorlevel 1 exit /b 6
 call :FindGitHubCli
@@ -1828,17 +1294,6 @@ call :PrintSuccess "OK: GitHub CLI ready: %app.gh%"
 exit /b 0
 
 :FindGitHubCli
-rem ============================================================
-rem Function FindGitHubCli
-rem Purpose
-rem   Resolve a repository-local, bootstrap-local, or PATH gh.exe.
-rem Outputs
-rem   app.gh
-rem Return codes
-rem   0 Search completed
-rem Dependencies
-rem   none
-rem ============================================================
 set "app.gh="
 if exist "%app.folder%\tools\gh\bin\gh.exe" for %%A in ("%app.folder%\tools\gh\bin\gh.exe") do set "app.gh=%%~fA"
 if not defined app.gh if exist "%app.tools%\gh\bin\gh.exe" for %%A in ("%app.tools%\gh\bin\gh.exe") do set "app.gh=%%~fA"
@@ -1847,18 +1302,6 @@ if defined app.gh if not exist "%app.gh%" set "app.gh="
 exit /b 0
 
 :PromptLoginMethod
-rem ============================================================
-rem Function PromptLoginMethod
-rem Purpose
-rem   Ask which browser behavior the standalone GitHub login fallback should use.
-rem Outputs
-rem   app.login.method
-rem Return codes
-rem   0 Valid method selected
-rem   6 Invalid method selected
-rem Dependencies
-rem   PrintError
-rem ============================================================
 echo(
 echo(  1. Let GitHub CLI open the default browser
 echo(  2. Open the default browser now
@@ -1876,17 +1319,6 @@ set "plm_choice="
 exit /b 0
 
 :OpenDeviceLoginPage
-rem ============================================================
-rem Function OpenDeviceLoginPage
-rem Purpose
-rem   Open the GitHub device page according to login method 2 or 3 and leave methods 1 and 4 untouched.
-rem Inputs
-rem   Login method
-rem Return codes
-rem   0 Page opened or deliberately not opened
-rem Dependencies
-rem   PrintWarning PrintInfo
-rem ============================================================
 if "%~1"=="2" start "" "https://github.com/login/device"
 if "%~1"=="3" powershell -NoProfile -ExecutionPolicy Bypass -Command "$u='https://github.com/login/device'; $p=$env:ProgramFiles+'\Google\Chrome\Application\chrome.exe'; if(Test-Path -LiteralPath $p){Start-Process -FilePath $p -ArgumentList @('--incognito',$u); exit 0}; $p=${env:ProgramFiles(x86)}+'\Microsoft\Edge\Application\msedge.exe'; if(Test-Path -LiteralPath $p){Start-Process -FilePath $p -ArgumentList @('--inprivate',$u); exit 0}; $p=$env:ProgramFiles+'\Mozilla Firefox\firefox.exe'; if(Test-Path -LiteralPath $p){Start-Process -FilePath $p -ArgumentList @('-private-window',$u); exit 0}; exit 1" >nul 2>&1
 if "%~1"=="3" if errorlevel 1 call :PrintWarning "WARN: a supported private browser was not found; open the device page manually."
@@ -1894,18 +1326,6 @@ if "%~1"=="4" call :PrintInfo "Open https://github.com/login/device on any compu
 exit /b 0
 
 :CheckGitHubAuthentication
-rem ============================================================
-rem Function CheckGitHubAuthentication
-rem Purpose
-rem   Confirm GitHub CLI authentication and capture the authenticated username.
-rem Outputs
-rem   app.github.user
-rem Return codes
-rem   0 Authenticated user resolved
-rem   6 Authentication unavailable
-rem Dependencies
-rem   GetGitHubUser
-rem ============================================================
 if not defined app.gh exit /b 6
 "%app.gh%" auth status -h github.com >>"%app.log%" 2>&1
 if errorlevel 1 exit /b 6
@@ -1914,18 +1334,6 @@ if errorlevel 1 exit /b 6
 exit /b 0
 
 :GetGitHubUser
-rem ============================================================
-rem Function GetGitHubUser
-rem Purpose
-rem   Read the authenticated GitHub login through the API.
-rem Outputs
-rem   app.github.user
-rem Return codes
-rem   0 Username resolved
-rem   6 Username unavailable
-rem Dependencies
-rem   none
-rem ============================================================
 set "app.github.user="
 if not defined app.gh exit /b 6
 for /f "usebackq delims=" %%A in (`"%app.gh%" api user --jq ".login" 2^>nul`) do if not defined app.github.user set "app.github.user=%%A"
@@ -1933,16 +1341,6 @@ if defined app.github.user exit /b 0
 exit /b 6
 
 :CheckGitHubWritePermission
-rem ============================================================
-rem Function CheckGitHubWritePermission
-rem Purpose
-rem   Check whether the authenticated account owns or can write to the original GitHub repository.
-rem Return codes
-rem   0 Direct write access confirmed
-rem   1 Direct write access unavailable or unknown
-rem Dependencies
-rem   GetGitHubUser
-rem ============================================================
 if not defined app.github.user call :GetGitHubUser
 if errorlevel 1 exit /b 1
 if /I "%app.github.user%"=="%app.repo.owner%" exit /b 0
@@ -1955,17 +1353,6 @@ set "cgp_permission="
 exit /b 1
 
 :PromptForkChoice
-rem ============================================================
-rem Function PromptForkChoice
-rem Purpose
-rem   Ask whether to create or reuse a personal fork, defaulting to yes.
-rem Outputs
-rem   app.fork.mode
-rem Return codes
-rem   0 Fork decision resolved
-rem Dependencies
-rem   PrintWarning
-rem ============================================================
 set "pfc_choice="
 set /p "pfc_choice=Create or use a personal fork? [Y/n]: "
 if not defined pfc_choice (set "app.fork.mode=yes" & exit /b 0)
@@ -1977,16 +1364,6 @@ call :PrintWarning "Choose y or n."
 goto :PromptForkChoice
 
 :CreateGitHubFork
-rem ============================================================
-rem Function CreateGitHubFork
-rem Purpose
-rem   Verify or create the personal fork through the GitHub API.
-rem Return codes
-rem   0 Fork exists and is visible
-rem   6 Fork creation or visibility check failed
-rem Dependencies
-rem   VerifyGitHubFork WaitForGitHubFork PrintInfo PrintError
-rem ============================================================
 call :VerifyGitHubFork
 set "cgf_rc=%errorlevel%"
 if "%cgf_rc%"=="0" (set "cgf_rc=" & exit /b 0)
@@ -2000,17 +1377,6 @@ if errorlevel 1 (call :PrintError "FAIL: the new fork did not become visible or 
 exit /b 0
 
 :VerifyGitHubFork
-rem ============================================================
-rem Function VerifyGitHubFork
-rem Purpose
-rem   Confirm that the authenticated account repository is a fork of the configured original repository.
-rem Return codes
-rem   0 Matching fork exists
-rem   1 Repository does not exist yet
-rem   6 Existing repository is not the expected fork
-rem Dependencies
-rem   PrintError PrintWarning
-rem ============================================================
 set "vgf_is_fork="
 set "vgf_parent="
 set "vgf_source="
@@ -2029,16 +1395,6 @@ set "vgf_source="
 exit /b 6
 
 :WaitForGitHubFork
-rem ============================================================
-rem Function WaitForGitHubFork
-rem Purpose
-rem   Poll GitHub until the personal fork becomes visible and matches the original repository.
-rem Return codes
-rem   0 Matching fork visible
-rem   6 Fork mismatch or timeout
-rem Dependencies
-rem   VerifyGitHubFork
-rem ============================================================
 set "wfgf_count=0"
 :WaitForGitHubForkPoll
 call :VerifyGitHubFork
@@ -2052,16 +1408,6 @@ timeout /t 2 /nobreak >nul
 goto :WaitForGitHubForkPoll
 
 :ConfigureOriginalRemote
-rem ============================================================
-rem Function ConfigureOriginalRemote
-rem Purpose
-rem   Configure origin to the original repository for direct-push or read-only fallback mode.
-rem Return codes
-rem   0 Origin configured
-rem   6 Origin could not be configured
-rem Dependencies
-rem   SetGitRemote PrintError
-rem ============================================================
 call :SetGitRemote "origin" "%app.repo.original.url%"
 set "cor_rc=%errorlevel%"
 if not "%cor_rc%"=="0" (call :PrintError "FAIL: origin remote could not be configured." & set "cor_rc=" & exit /b 6)
@@ -2069,16 +1415,6 @@ set "cor_rc="
 exit /b 0
 
 :ConfigureForkRemotes
-rem ============================================================
-rem Function ConfigureForkRemotes
-rem Purpose
-rem   Set upstream to the original repository and origin to the authenticated personal fork.
-rem Return codes
-rem   0 Remotes configured and fetched
-rem   6 Remote configuration or fetch failed
-rem Dependencies
-rem   SetGitRemote PrintError PrintWarning PrintSuccess
-rem ============================================================
 set "cfr_fork=https://github.com/%app.github.user%/%app.repo.name%.git"
 call :SetGitRemote "upstream" "%app.repo.original.url%"
 set "cfr_rc=%errorlevel%"
@@ -2099,16 +1435,6 @@ call :PrintSuccess "OK: fork remotes configured."
 exit /b 0
 
 :QuarantineNonGitFolder
-rem ============================================================
-rem Function QuarantineNonGitFolder
-rem Purpose
-rem   Move an existing non-Git target folder aside before cloning.
-rem Return codes
-rem   0 Folder moved aside
-rem   5 Folder could not be moved
-rem Dependencies
-rem   PrintWarning PrintInfo PrintError
-rem ============================================================
 set "qngf_target=%app.folder%.notgit.%app.timestamp%-%RANDOM%"
 call :PrintWarning "WARN: target exists but is not a Git checkout."
 call :PrintInfo "DO: Moving it to %qngf_target%."
@@ -2121,15 +1447,6 @@ set "qngf_rc="
 exit /b 0
 
 :WarnIfTemporaryRepository
-rem ============================================================
-rem Function WarnIfTemporaryRepository
-rem Purpose
-rem   Warn only when the completed Git checkout is actually located beneath TEMP.
-rem Return codes
-rem   0 Warning evaluated
-rem Dependencies
-rem   IsPathWithin PrintWarning
-rem ============================================================
 if not defined app.repo.ready exit /b 0
 if not exist "%app.folder%\.git" exit /b 0
 call :IsPathWithin "%app.folder%" "%TEMP%"
@@ -2141,15 +1458,6 @@ call :PrintWarning "Move this repository to a permanent folder before relying on
 exit /b 0
 
 :DrawMenu
-rem ============================================================
-rem Function DrawMenu
-rem Purpose
-rem   Draw the interactive bootstrap menu.
-rem Return codes
-rem   0 Menu displayed
-rem Dependencies
-rem   none
-rem ============================================================
 echo(+------------------------------------------------------------+
 echo(^|                    Bootstrap Menu                         ^|
 echo(+------------------------------------------------------------+
@@ -2165,23 +1473,7 @@ echo(^|  0  Exit                                                  ^|
 echo(+------------------------------------------------------------+
 exit /b 0
 
-:: ============================================================
-:: REUSABLE GENERIC HELPERS
-:: ============================================================
-
 :SetGitRemote
-rem ============================================================
-rem Function SetGitRemote
-rem Purpose
-rem   Add or update one Git remote in the current repository folder.
-rem Inputs
-rem   Remote name and URL
-rem Return codes
-rem   0 Remote configured
-rem   6 Name URL or Git command failed
-rem Dependencies
-rem   none
-rem ============================================================
 set "sgr_name=%~1"
 set "sgr_url=%~2"
 if not defined sgr_name (set "sgr_url=" & exit /b 6)
@@ -2203,18 +1495,6 @@ set "sgr_rc="
 exit /b 0
 
 :RunRepositoryLauncher
-rem ============================================================
-rem Function RunRepositoryLauncher
-rem Purpose
-rem   Run one optional repository batch launcher with optional arguments and consistent error handling.
-rem Inputs
-rem   Launcher file name action name and optional argument string
-rem Return codes
-rem   0 Launcher completed or was absent
-rem   8 Launcher failed
-rem Dependencies
-rem   PrintInfo PrintWarning PrintSuccess PrintError
-rem ============================================================
 set "rrl_script=%~1"
 set "rrl_action=%~2"
 set "rrl_arguments=%~3"
@@ -2236,36 +1516,12 @@ set "rrl_rc="
 exit /b 0
 
 :MakeTimestamp
-rem ============================================================
-rem Function MakeTimestamp
-rem Purpose
-rem   Create a sortable local timestamp for log and quarantine names.
-rem Outputs
-rem   app.timestamp
-rem Return codes
-rem   0 Timestamp created
-rem   1 Timestamp unavailable
-rem Dependencies
-rem   none
-rem ============================================================
 set "app.timestamp="
 for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Date -Format yyyy-MM-dd.HHmmss" 2^>nul') do set "app.timestamp=%%A"
 if not defined app.timestamp exit /b 1
 exit /b 0
 
 :IsDirectoryWritable
-rem ============================================================
-rem Function IsDirectoryWritable
-rem Purpose
-rem   Test directory write access by creating and deleting a unique probe file.
-rem Inputs
-rem   Directory path
-rem Return codes
-rem   0 Directory is writable
-rem   1 Directory is missing or not writable
-rem Dependencies
-rem   none
-rem ============================================================
 set "idw_dir=%~1"
 set "idw_file="
 if not defined idw_dir exit /b 1
@@ -2280,18 +1536,6 @@ set "idw_file="
 exit /b 0
 
 :IsPathWithin
-rem ============================================================
-rem Function IsPathWithin
-rem Purpose
-rem   Test whether one absolute path is equal to or beneath another path.
-rem Inputs
-rem   Candidate path and parent path
-rem Return codes
-rem   0 Candidate is within parent
-rem   1 Candidate is outside parent or comparison failed
-rem Dependencies
-rem   none
-rem ============================================================
 set "ipw_candidate=%~1"
 set "ipw_parent=%~2"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$c=[IO.Path]::GetFullPath($env:ipw_candidate).TrimEnd([char]92); $p=[IO.Path]::GetFullPath($env:ipw_parent).TrimEnd([char]92); if($c.Equals($p,[StringComparison]::OrdinalIgnoreCase) -or $c.StartsWith($p+[char]92,[StringComparison]::OrdinalIgnoreCase)){exit 0}; exit 1" >nul 2>&1
@@ -2301,20 +1545,6 @@ set "ipw_parent="
 exit /b %ipw_rc%
 
 :NormalizeGitUrl
-rem ============================================================
-rem Function NormalizeGitUrl
-rem Purpose
-rem   Normalize HTTPS and SSH Git URLs for case-insensitive repository comparison.
-rem Inputs
-rem   URL and output variable name
-rem Outputs
-rem   Named output variable
-rem Return codes
-rem   0 Normalized value produced
-rem   1 Input output name or normalization result is unavailable
-rem Dependencies
-rem   none
-rem ============================================================
 set "ngu_url=%~1"
 set "ngu_output=%~2"
 if not defined ngu_output exit /b 1
@@ -2332,36 +1562,12 @@ set "ngu_output="
 exit /b 1
 
 :ParseYesNoValue
-rem ============================================================
-rem Function ParseYesNoValue
-rem Purpose
-rem   Validate a yes or no value and assign it to a named variable.
-rem Inputs
-rem   Value and output variable name
-rem Return codes
-rem   0 Valid value assigned
-rem   1 Value or output name is invalid
-rem Dependencies
-rem   none
-rem ============================================================
 if "%~2"=="" exit /b 1
 if /I "%~1"=="yes" (set "%~2=yes" & exit /b 0)
 if /I "%~1"=="no" (set "%~2=no" & exit /b 0)
 exit /b 1
 
 :ResolvePathFromStart
-rem ============================================================
-rem Function ResolvePathFromStart
-rem Purpose
-rem   Resolve an absolute path or resolve a relative path against the launch directory.
-rem Inputs
-rem   Input path and output variable name
-rem Return codes
-rem   0 Path resolved
-rem   1 Input or output name is missing
-rem Dependencies
-rem   none
-rem ============================================================
 set "rpfs_input=%~1"
 set "rpfs_output=%~2"
 if not defined rpfs_input exit /b 1
@@ -2380,36 +1586,12 @@ set "rpfs_output="
 exit /b 0
 
 :IsFileNonEmpty
-rem ============================================================
-rem Function IsFileNonEmpty
-rem Purpose
-rem   Confirm that a regular file exists and has a nonzero size.
-rem Inputs
-rem   File path
-rem Return codes
-rem   0 File exists and is nonempty
-rem   1 File is missing empty or not a regular file
-rem Dependencies
-rem   none
-rem ============================================================
 if "%~1"=="" exit /b 1
 if not exist "%~1" exit /b 1
 for %%A in ("%~1") do if %%~zA GTR 0 exit /b 0
 exit /b 1
 
 :DownloadFile
-rem ============================================================
-rem Function DownloadFile
-rem Purpose
-rem   Download through a temporary file with curl or PowerShell then atomically promote a nonempty result.
-rem Inputs
-rem   URL and destination file
-rem Return codes
-rem   0 Nonempty file downloaded
-rem   4 Download failed or produced an empty file
-rem Dependencies
-rem   IsFileNonEmpty
-rem ============================================================
 set "df_url=%~1"
 set "df_file=%~2"
 set "df_temp=%~2.download.%RANDOM%-%RANDOM%.tmp"
@@ -2455,17 +1637,6 @@ set "df_rc="
 exit /b 4
 
 :PrependExecutableDirectoryToPath
-rem ============================================================
-rem Function PrependExecutableDirectoryToPath
-rem Purpose
-rem   Prepend an executable directory to PATH only when it is not already present.
-rem Inputs
-rem   Executable path
-rem Return codes
-rem   0 PATH updated or no change required
-rem Dependencies
-rem   none
-rem ============================================================
 set "pedtp_dir="
 if "%~1"=="" exit /b 0
 for %%A in ("%~1") do set "pedtp_dir=%%~dpA"
@@ -2476,77 +1647,22 @@ set "pedtp_dir="
 exit /b 0
 
 :PrintSuccess
-rem ============================================================
-rem Function PrintSuccess
-rem Purpose
-rem   Print and log a success message.
-rem Inputs
-rem   Message
-rem Return codes
-rem   0 Message processed
-rem Dependencies
-rem   PrintColor
-rem ============================================================
 call :PrintColor "%app.color.green%" "%~1"
 exit /b 0
 
 :PrintInfo
-rem ============================================================
-rem Function PrintInfo
-rem Purpose
-rem   Print and log an informational message.
-rem Inputs
-rem   Message
-rem Return codes
-rem   0 Message processed
-rem Dependencies
-rem   PrintColor
-rem ============================================================
 call :PrintColor "%app.color.cyan%" "%~1"
 exit /b 0
 
 :PrintWarning
-rem ============================================================
-rem Function PrintWarning
-rem Purpose
-rem   Print and log a warning message.
-rem Inputs
-rem   Message
-rem Return codes
-rem   0 Message processed
-rem Dependencies
-rem   PrintColor
-rem ============================================================
 call :PrintColor "%app.color.yellow%" "%~1"
 exit /b 0
 
 :PrintError
-rem ============================================================
-rem Function PrintError
-rem Purpose
-rem   Print and log an error message.
-rem Inputs
-rem   Message
-rem Return codes
-rem   0 Message processed
-rem Dependencies
-rem   PrintColor
-rem ============================================================
 call :PrintColor "%app.color.red%" "%~1"
 exit /b 0
 
 :PrintColor
-rem ============================================================
-rem Function PrintColor
-rem Purpose
-rem   Print one message with optional ANSI colour and append the plain message to the log.
-rem Inputs
-rem   Colour sequence and message
-rem Return codes
-rem   0 Message processed
-rem Dependencies
-rem   none
-rem ============================================================
 set "pc_color=%~1"
 set "pc_message=%~2"
 if not defined app.esc goto :PrintColorPlain
@@ -2566,18 +1682,6 @@ set "pc_message="
 exit /b 0
 
 :SetEscapeCharacter
-rem ============================================================
-rem Function SetEscapeCharacter
-rem Purpose
-rem   Capture the ANSI escape character into a named variable.
-rem Inputs
-rem   Output variable name
-rem Return codes
-rem   0 Escape character captured
-rem   2 Output variable missing
-rem Dependencies
-rem   none
-rem ============================================================
 set "sec_output=%~1"
 if not defined sec_output exit /b 2
 for /f %%A in ('echo prompt $E^| cmd') do set "%sec_output%=%%A"
@@ -2585,15 +1689,4 @@ set "sec_output="
 exit /b 0
 
 :SetExitCode
-rem ============================================================
-rem Function SetExitCode
-rem Purpose
-rem   Set the final process error level before the top-level goto eof.
-rem Inputs
-rem   Numeric exit code
-rem Return codes
-rem   same Requested exit code
-rem Dependencies
-rem   none
-rem ============================================================
 exit /b %~1
