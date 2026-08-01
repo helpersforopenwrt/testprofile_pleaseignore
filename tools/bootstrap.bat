@@ -23,7 +23,7 @@ if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
 cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39.6-crlf-entry-fix"
+set "app.version=bootstrap-integrated-39.7-documented-login-shortcuts"
 set "app.rc=0"
 set "app.timestamp="
 set "app.log.dir=%TEMP%\bootstrap_logs"
@@ -133,6 +133,22 @@ if defined app.final.cd cd /d "%app.final.cd%" >nul 2>&1
 call :SetExitCode "%app.rc%"
 goto :eof
 
+:: ============================================================
+:: HIGH LEVEL WORKFLOW FUNCTIONS
+:: ============================================================
+
+:: ============================================================
+:: Function DispatchMode
+:: Purpose
+::   Run exactly one selected top-level mode and return its result.
+:: Inputs
+::   app.mode and app.dryrun
+:: Return codes
+::   0 Selected mode completed
+::   nonzero Selected mode failed
+:: Dependencies
+::   RunCheck RunDoctor RunDryRun RunAutoWorkflow RunBootstrapWorkflow RunMenu
+:: ============================================================
 :DispatchMode
 set "dm_mode=%app.mode%"
 set "dm_dryrun=%app.dryrun%"
@@ -156,6 +172,18 @@ call :RunBootstrapWorkflow
 set "dm_rc=%errorlevel%"
 exit /b %dm_rc%
 
+:: ============================================================
+:: Function RunAutoWorkflow
+:: Purpose
+::   Run repository setup and then run the project lifecycle.
+:: Outputs
+::   app.final.cd
+:: Return codes
+::   0 Auto workflow completed
+::   nonzero A workflow step failed
+:: Dependencies
+::   RunRepositoryWorkflow RunProjectLifecycle PrintInfo PrintSuccess
+:: ============================================================
 :RunAutoWorkflow
 call :PrintInfo "MODE: auto [%app.version%]"
 call :PrintInfo "AUTO: Git, clone or update, repository tools, optional login and fork, optional move, prepare, build, and optional install."
@@ -171,6 +199,18 @@ call :PrintSuccess "DIR: %app.folder%"
 set "raw_rc="
 exit /b 0
 
+:: ============================================================
+:: Function RunBootstrapWorkflow
+:: Purpose
+::   Run repository setup without automatically preparing or building the project.
+:: Outputs
+::   app.final.cd
+:: Return codes
+::   0 Bootstrap workflow completed
+::   nonzero A workflow step failed
+:: Dependencies
+::   RunRepositoryWorkflow PrintInfo PrintSuccess
+:: ============================================================
 :RunBootstrapWorkflow
 call :PrintInfo "MODE: default [%app.version%]"
 call :RunRepositoryWorkflow
@@ -182,6 +222,19 @@ call :PrintSuccess "DIR: %app.folder%"
 set "rbw_rc="
 exit /b 0
 
+:: ============================================================
+:: Function RunRepositoryWorkflow
+:: Purpose
+::   Run the shared repository workflow used by default and auto modes.
+::   The sequence is repository readiness, optional provider login and fork, then optional move.
+:: Outputs
+::   app.repo.ready app.final.cd
+:: Return codes
+::   0 Repository workflow completed
+::   nonzero A workflow step failed
+:: Dependencies
+::   EnsureRepositoryReady ResolveLoginDecision RunProviderLogin MaybeMoveRepository
+:: ============================================================
 :RunRepositoryWorkflow
 call :EnsureRepositoryReady
 set "rrw_rc=%errorlevel%"
@@ -198,6 +251,18 @@ if not "%rrw_rc%"=="0" exit /b %rrw_rc%
 set "rrw_rc="
 exit /b 0
 
+:: ============================================================
+:: Function EnsureRepositoryReady
+:: Purpose
+::   Ensure Git is available, clone or update the checkout, and prepare repository tools.
+:: Outputs
+::   app.repo.ready app.repo.tools.prepared app.final.cd
+:: Return codes
+::   0 Repository and repository tools are ready
+::   nonzero Git, synchronization, or repository preparation failed
+:: Dependencies
+::   EnsureGit SynchronizeRepository PrepareRepositoryTools
+:: ============================================================
 :EnsureRepositoryReady
 if defined app.repo.ready goto :EnsureRepositoryReadyPrepare
 call :EnsureGit
@@ -213,6 +278,16 @@ if not "%err_rc%"=="0" exit /b %err_rc%
 set "err_rc="
 exit /b 0
 
+:: ============================================================
+:: Function RunProjectLifecycle
+:: Purpose
+::   Run project preparation, build, and installation according to independent command-line decisions.
+:: Return codes
+::   0 Requested lifecycle steps completed
+::   8 A requested project lifecycle step failed
+:: Dependencies
+::   RunProjectPrepare RunProjectBuild RunProjectInstall PrintWarning PrintInfo
+:: ============================================================
 :RunProjectLifecycle
 set "rpl_rc=0"
 if /I "%app.project.prepare%"=="yes" call :RunProjectPrepare
@@ -230,6 +305,16 @@ if /I not "%app.project.install%"=="yes" call :PrintInfo "SKIP: project installa
 set "rpl_rc="
 exit /b 0
 
+:: ============================================================
+:: Function RunCheck
+:: Purpose
+::   Validate inferred repository context without installing tools or changing repository files.
+:: Return codes
+::   0 Required context is present
+::   3 Required context is missing
+:: Dependencies
+::   FindGit PrintSuccess PrintInfo PrintError PrintWarning
+:: ============================================================
 :RunCheck
 call :PrintInfo "CHECK: essential bootstrap context"
 call :PrintInfo "Version: %app.version%"
@@ -246,6 +331,17 @@ if not defined app.getgit.url if defined app.git call :PrintInfo "INFO: GetGit.b
 call :PrintSuccess "OK: essential check passed."
 exit /b 0
 
+:: ============================================================
+:: Function RunDoctor
+:: Purpose
+::   Report context, tool, checkout, provider, and lifecycle diagnostics without making changes.
+:: Return codes
+::   0 Diagnostics completed
+::   3 Essential context check failed
+::   5 Existing checkout references an unexpected repository
+:: Dependencies
+::   RunCheck FindGit FindGitHubCli VerifyRepositoryRemote PrintInfo PrintSuccess PrintWarning PrintError
+:: ============================================================
 :RunDoctor
 call :RunCheck
 set "rd_rc=%errorlevel%"
@@ -287,6 +383,16 @@ set "rd_rc="
 set "rd_remote_rc="
 exit /b 0
 
+:: ============================================================
+:: Function RunDryRun
+:: Purpose
+::   Describe the selected workflow without installing, cloning, moving, authenticating, or building.
+:: Return codes
+::   0 Plan displayed
+::   5 Existing checkout references an unexpected repository
+:: Dependencies
+::   FindGit VerifyRepositoryRemote PrintInfo PrintSuccess PrintError
+:: ============================================================
 :RunDryRun
 call :PrintInfo "MODE: dryrun [%app.version%]"
 call :FindGit
@@ -321,6 +427,17 @@ if /I "%app.mode%"=="auto" if /I not "%app.project.install%"=="yes" call :PrintI
 call :PrintSuccess "OK: dryrun complete; no repository changes were made."
 exit /b 0
 
+:: ============================================================
+:: Function RunMenu
+:: Purpose
+::   Provide an interactive menu for repository and project operations.
+:: Return codes
+::   0 User exited the menu
+:: Dependencies
+::   DrawMenu PrintWarning RunAutoWorkflow EnsureGit SynchronizeRepository
+::   EnsureRepositoryReady ResolveLoginDecision RunProviderLogin RunProjectPrepare RunProjectBuild
+::   RunProjectInstall MaybeMoveRepository RunBootstrapWorkflow
+:: ============================================================
 :RunMenu
 :RunMenuLoop
 cls
@@ -383,6 +500,16 @@ call :RunBootstrapWorkflow
 pause
 goto :RunMenuLoop
 
+:: ============================================================
+:: Function ShowHelp
+:: Purpose
+::   Display current syntax modes automation decisions login shortcuts aliases
+::   and examples.
+:: Return codes
+::   0 Help displayed
+:: Dependencies
+::   none
+:: ============================================================
 :ShowHelp
 echo(
 echo %app.launch.name% [%app.version%]
@@ -416,8 +543,9 @@ echo                        Move a non-Git target aside or fail; default quarant
 echo(
 echo Login and publication options:
 echo   nologin              Skip provider login and fork handling
-echo   login [ask^|1^|2^|3^|4^|no]
+echo   login [ask^|1^|2^|3^|4^|1a^|2a^|3a^|4a^|no]
 echo                        Request login and optionally preselect browser behavior
+echo                        Suffix a accepts the detected Git identity defaults
 echo   fork ask^|yes^|no    Preselect personal-fork handling; default ask
 echo   identity ask^|defaults
 echo                        Ask or accept derived defaults; default ask
@@ -431,6 +559,7 @@ echo   1                    Let GitHub CLI open the default browser
 echo   2                    Open the GitHub device page in the default browser first
 echo   3                    Open the GitHub device page in a private browser first
 echo   4                    Do not open a browser on this computer
+echo   1a through 4a         Use that method and accept detected Git name and email
 echo(
 echo Destination and project options:
 echo   move no              Keep the checkout in its resolved folder; default
@@ -469,7 +598,8 @@ echo Examples:
 echo   %app.launch.name% auto
 echo   %app.launch.name% auto unattended
 echo   %app.launch.name% auto unattended nologin
-echo   %app.launch.name% auto unattended login 4 fork yes identity defaults
+echo   %app.launch.name% auto unattended login 4a fork yes
+echo   %app.launch.name% auto login 4a
 echo   %app.launch.name% auto login 4 gitname "Example User" gitemail user@example.com
 echo   %app.launch.name% auto repo https://github.com/Owner/Repo.git branch main
 echo   %app.launch.name% auto dir projects\Repo move no prepare yes build yes install no
@@ -478,6 +608,8 @@ echo(
 echo Notes:
 echo   Options may be combined in any order; later repeated options win.
 echo   Quote names, email addresses, or paths that contain spaces.
+echo   At the login prompt, 1-4 selects the method immediately.
+echo   At the login prompt, 1a-4a also accepts detected Git identity defaults.
 echo   Explicit ask values remain interactive even with unattended.
 echo   GitHub device authorization still requires user action in a browser.
 echo   Project prepare, build, and install launchers may have their own prompts.
@@ -486,10 +618,35 @@ echo Cache-safe loader:
 echo   set "bootstrap=https://raw.githubusercontent.com/ExampleOwner/ExampleRepo/main/tools/bootstrap.bat" ^& call curl.exe -sSfL -H "Cache-Control: no-cache" "%%bootstrap%%?cache=%%RANDOM%%" -o "%%TEMP%%\bootstrap.bat" ^&^& call "%%TEMP%%\bootstrap.bat" auto
 exit /b 0
 
+:: ============================================================
+:: Function ShowVersion
+:: Purpose
+::   Print the internal bootstrap version.
+:: Return codes
+::   0 Version displayed
+:: Dependencies
+::   none
+:: ============================================================
 :ShowVersion
 echo %app.version%
 exit /b 0
 
+:: ============================================================
+:: LOWER LEVEL WORKFLOW FUNCTIONS
+:: ============================================================
+
+:: ============================================================
+:: Function InitializeRuntime
+:: Purpose
+::   Create the log file and initialize optional ANSI colours.
+:: Outputs
+::   app.timestamp app.log app.esc
+:: Return codes
+::   0 Runtime initialized
+::   1 Timestamp or log initialization failed
+:: Dependencies
+::   MakeTimestamp SetEscapeCharacter PrintInfo
+:: ============================================================
 :InitializeRuntime
 call :MakeTimestamp
 if errorlevel 1 exit /b 1
@@ -503,6 +660,21 @@ if errorlevel 1 set "app.esc="
 call :PrintInfo "LOG: %app.log%"
 exit /b 0
 
+:: ============================================================
+:: Function ParseArguments
+:: Purpose
+::   Parse modes and command-line decisions in any order.
+::   Login values 1a through 4a also select detected Git identity defaults.
+:: Inputs
+::   All command-line arguments
+:: Outputs
+::   app.mode and related app option variables
+:: Return codes
+::   0 Arguments accepted
+::   2 An argument is unknown incomplete or invalid
+:: Dependencies
+::   ApplyLoginShortcut ParseYesNoValue ResolvePathFromStart PrintError PrintWarning
+:: ============================================================
 :ParseArguments
 if "%~1"=="" exit /b 0
 set "pa_arg=%~1"
@@ -577,10 +749,10 @@ set "app.login.method=ask"
 set "app.explicit.login=1"
 if /I "%~2"=="no" (set "app.login.mode=none" & shift & shift & goto :ParseArguments)
 if /I "%~2"=="ask" (set "app.login.method=ask" & shift & shift & goto :ParseArguments)
-if "%~2"=="1" (set "app.login.method=1" & shift & shift & goto :ParseArguments)
-if "%~2"=="2" (set "app.login.method=2" & shift & shift & goto :ParseArguments)
-if "%~2"=="3" (set "app.login.method=3" & shift & shift & goto :ParseArguments)
-if "%~2"=="4" (set "app.login.method=4" & shift & shift & goto :ParseArguments)
+call :ApplyLoginShortcut "%~2"
+set "pal_rc=%errorlevel%"
+if "%pal_rc%"=="0" (set "pal_rc=" & shift & shift & goto :ParseArguments)
+set "pal_rc="
 shift
 goto :ParseArguments
 :ParseArgumentsRepo
@@ -720,6 +892,18 @@ if /I "%~2"=="fail" (set "app.conflict.mode=fail" & set "app.explicit.conflict=1
 call :PrintError "FAIL: conflict requires quarantine or fail."
 exit /b 2
 
+:: ============================================================
+:: Function ApplyAutomationDefaults
+:: Purpose
+::   Fill unresolved decisions for unattended execution without overriding explicit options.
+::   Suppress identity prompts when both Git identity values were supplied.
+:: Outputs
+::   Login fork identity push move project update and conflict decisions
+:: Return codes
+::   0 Defaults applied
+:: Dependencies
+::   none
+:: ============================================================
 :ApplyAutomationDefaults
 if defined app.git_name if defined app.git_email if not defined app.explicit.identity set "app.identity.mode=defaults"
 if not defined app.unattended exit /b 0
@@ -737,6 +921,19 @@ if not defined app.explicit.update set "app.update.mode=yes"
 if not defined app.explicit.conflict set "app.conflict.mode=quarantine"
 exit /b 0
 
+:: ============================================================
+:: Function ResolveBootstrapContext
+:: Purpose
+::   Infer repository metadata from the loader URL or explicit repository URL.
+::   Preserve explicit command-line overrides and derive helper download URLs.
+:: Outputs
+::   Repository provider owner name branch and helper URLs
+:: Return codes
+::   0 Context resolved
+::   3 Required repository context could not be resolved
+:: Dependencies
+::   ParseBootstrapUrl ParseRepositoryUrl PrintSuccess PrintError PrintWarning
+:: ============================================================
 :ResolveBootstrapContext
 if not defined app.repo.url if not defined app.bootstrap.url (call :PrintError "FAIL: no repository URL or bootstrap loader URL was provided." & exit /b 3)
 if not defined app.explicit.repo if defined app.bootstrap.url call :ParseBootstrapUrl
@@ -756,6 +953,18 @@ call :PrintSuccess "OK: Repo: %app.repo.url%"
 call :PrintSuccess "OK: Branch: %app.repo.branch%"
 exit /b 0
 
+:: ============================================================
+:: Function ResolveRepositoryFolder
+:: Purpose
+::   Choose the target checkout path using explicit path, matching current checkout, writable launch directory, then TEMP fallback.
+:: Outputs
+::   app.folder and app.repo.parent
+:: Return codes
+::   0 Target folder resolved
+::   3 No writable target parent was available
+:: Dependencies
+::   UseCurrentRepository SelectRepositoryParent PrintSuccess
+:: ============================================================
 :ResolveRepositoryFolder
 if defined app.folder goto :ResolveRepositoryFolderNormalize
 call :UseCurrentRepository
@@ -770,6 +979,18 @@ set "rrf_rc="
 call :PrintSuccess "OK: Folder: %app.folder%"
 exit /b 0
 
+:: ============================================================
+:: Function UseCurrentRepository
+:: Purpose
+::   Reuse the launch directory when it is already the intended repository checkout.
+:: Outputs
+::   app.folder when a matching checkout is found
+:: Return codes
+::   0 Current directory selected
+::   1 Current directory is not the matching checkout
+:: Dependencies
+::   PrintInfo
+:: ============================================================
 :UseCurrentRepository
 set "ucr_name="
 if not exist "%app.start.dir%\.git" exit /b 1
@@ -780,6 +1001,18 @@ set "ucr_name="
 call :PrintInfo "INFO: Reusing the current repository folder."
 exit /b 0
 
+:: ============================================================
+:: Function SelectRepositoryParent
+:: Purpose
+::   Use the writable launch directory as checkout parent and use TEMP only as a fallback.
+:: Outputs
+::   app.repo.parent
+:: Return codes
+::   0 Writable parent selected
+::   3 Neither launch directory nor TEMP is writable
+:: Dependencies
+::   IsDirectoryWritable PrintWarning PrintError
+:: ============================================================
 :SelectRepositoryParent
 set "app.repo.parent="
 call :IsDirectoryWritable "%app.start.dir%"
@@ -795,6 +1028,17 @@ exit /b 0
 for %%A in ("%app.start.dir%") do set "app.repo.parent=%%~fA"
 exit /b 0
 
+:: ============================================================
+:: Function ConfigureProvider
+:: Purpose
+::   Set provider display name and supported login, fork, and raw-tools capabilities.
+:: Outputs
+::   app.provider.display and provider capability flags
+:: Return codes
+::   0 Provider configured
+:: Dependencies
+::   none
+:: ============================================================
 :ConfigureProvider
 set "app.provider.display=Generic Git"
 set "app.provider.can.login=0"
@@ -807,6 +1051,18 @@ if /I "%app.provider%"=="bitbucket" set "app.provider.display=Bitbucket"
 if /I "%app.provider%"=="gitea" set "app.provider.display=Gitea or Forgejo"
 exit /b 0
 
+:: ============================================================
+:: Function EnsureGit
+:: Purpose
+::   Find Git or install it through the inferred GetGit helper.
+:: Outputs
+::   app.git and PATH
+:: Return codes
+::   0 Git is ready
+::   4 Git could not be installed
+:: Dependencies
+::   FindGit EnsureGetGitHelper PrependExecutableDirectoryToPath PrintWarning PrintError PrintSuccess
+:: ============================================================
 :EnsureGit
 call :FindGit
 if defined app.git goto :EnsureGitReady
@@ -826,6 +1082,19 @@ call :PrependExecutableDirectoryToPath "%app.git%"
 call :PrintSuccess "OK: Git ready: %app.git%"
 exit /b 0
 
+:: ============================================================
+:: Function SynchronizeRepository
+:: Purpose
+::   Clone the repository or safely fast-forward an existing matching checkout.
+:: Outputs
+::   app.repo.ready app.final.cd
+:: Return codes
+::   0 Checkout ready
+::   5 Clone or update failed
+:: Dependencies
+::   EnsureGit VerifyRepositoryRemote CloneRepository UpdateRepository QuarantineNonGitFolder PrintError
+::   PrintInfo
+:: ============================================================
 :SynchronizeRepository
 if not defined app.git call :EnsureGit
 if errorlevel 1 exit /b 5
@@ -857,6 +1126,16 @@ set "app.final.cd=%app.folder%"
 set "sr_rc="
 exit /b 0
 
+:: ============================================================
+:: Function CloneRepository
+:: Purpose
+::   Clone the configured branch into the resolved checkout folder.
+:: Return codes
+::   0 Repository cloned
+::   5 Git clone failed
+:: Dependencies
+::   PrintInfo PrintSuccess PrintError PrintWarning
+:: ============================================================
 :CloneRepository
 call :PrintInfo "DO: Cloning %app.repo.url%."
 "%app.git%" clone --branch "%app.repo.branch%" "%app.repo.url%" "%app.folder%" >>"%app.log%" 2>&1
@@ -866,6 +1145,19 @@ call :PrintSuccess "OK: Repo cloned."
 set "cr_rc="
 exit /b 0
 
+:: ============================================================
+:: Function UpdateRepository
+:: Purpose
+::   Verify the expected original remote and fast-forward the configured branch from that remote.
+::   A missing local branch may be created to track the selected remote branch.
+:: Outputs
+::   app.repo.sync.remote
+:: Return codes
+::   0 Repository updated
+::   5 Remote verification or Git update failed
+:: Dependencies
+::   VerifyRepositoryRemote PrintInfo PrintSuccess PrintError PrintWarning
+:: ============================================================
 :UpdateRepository
 call :VerifyRepositoryRemote
 set "ur_rc=%errorlevel%"
@@ -891,6 +1183,18 @@ call :PrintSuccess "OK: Repo ready."
 set "ur_rc="
 exit /b 0
 
+:: ============================================================
+:: Function VerifyRepositoryRemote
+:: Purpose
+::   Confirm that origin or upstream points to the original repository and select that remote for updates.
+:: Outputs
+::   app.repo.sync.remote and normalized remote values
+:: Return codes
+::   0 Expected remote found
+::   5 Checkout is not the expected repository
+:: Dependencies
+::   NormalizeGitUrl PrintError PrintWarning
+:: ============================================================
 :VerifyRepositoryRemote
 "%app.git%" -C "%app.folder%" rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: target is not a Git worktree." & exit /b 5)
@@ -912,6 +1216,18 @@ if defined app.folder.origin call :PrintWarning "ORIGIN: %app.folder.origin%"
 if defined app.folder.upstream call :PrintWarning "UPSTREAM: %app.folder.upstream%"
 exit /b 5
 
+:: ============================================================
+:: Function PrepareRepositoryTools
+:: Purpose
+::   Let the cloned repository prepare Git and provider command-line tools without authenticating.
+:: Outputs
+::   app.repo.tools.prepared and refreshed tool paths
+:: Return codes
+::   0 Repository tools prepared or no launcher exists
+::   8 Repository preparation failed
+:: Dependencies
+::   RunRepositoryLauncher FindGit FindGitHubCli PrependExecutableDirectoryToPath
+:: ============================================================
 :PrepareRepositoryTools
 if defined app.repo.tools.prepared exit /b 0
 call :RunRepositoryLauncher "prepare.bat" "Repository preparation" "repository"
@@ -925,22 +1241,85 @@ call :FindGitHubCli
 if defined app.gh call :PrependExecutableDirectoryToPath "%app.gh%"
 exit /b 0
 
+:: ============================================================
+:: Function ResolveLoginDecision
+:: Purpose
+::   Respect explicit settings or ask once whether provider login should run.
+::   Input 1 through 4 selects the browser method immediately.
+::   Input 1a through 4a also accepts detected Git identity defaults.
+:: Outputs
+::   app.login.mode app.login.method app.identity.mode app.fork.mode
+:: Return codes
+::   0 Login decision resolved
+:: Dependencies
+::   ApplyLoginShortcut PrintInfo PrintWarning
+:: ============================================================
 :ResolveLoginDecision
 if /I not "%app.provider.can.login%"=="1" (set "app.login.mode=none" & set "app.fork.mode=no" & call :PrintWarning "SKIP: provider login is not implemented for %app.provider%." & exit /b 0)
 if /I "%app.login.mode%"=="none" (set "app.fork.mode=no" & exit /b 0)
 if /I "%app.login.mode%"=="login" exit /b 0
 set "rld_choice="
+set "rld_rc=1"
 call :PrintInfo "%app.provider.display% login is optional."
-call :PrintInfo "Press Enter to skip provider login and fork, or type y to login."
-set /p "rld_choice=%app.provider.display% login? [y/N]: "
-if /I "%rld_choice%"=="y" (set "app.login.mode=login" & set "rld_choice=" & exit /b 0)
-if /I "%rld_choice%"=="yes" (set "app.login.mode=login" & set "rld_choice=" & exit /b 0)
+call :PrintInfo "Press Enter to skip, type y to choose a login method, or enter 1-4 now."
+call :PrintInfo "Append a, for example 4a, to accept the detected Git name and email."
+set /p "rld_choice=%app.provider.display% login? [y/N/1-4/1a-4a]: "
+if /I "%rld_choice%"=="y" (set "app.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
+if /I "%rld_choice%"=="yes" (set "app.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
+call :ApplyLoginShortcut "%rld_choice%"
+set "rld_rc=%errorlevel%"
+if "%rld_rc%"=="0" (set "rld_choice=" & set "rld_rc=" & exit /b 0)
 if defined rld_choice if /I not "%rld_choice%"=="n" if /I not "%rld_choice%"=="no" call :PrintWarning "NOTE: unrecognized input; skipping provider login and fork."
 set "app.login.mode=none"
 set "app.fork.mode=no"
 set "rld_choice="
+set "rld_rc="
 exit /b 0
 
+:: ============================================================
+:: Function ApplyLoginShortcut
+:: Purpose
+::   Apply a compact provider-login choice shared by command-line parsing and
+::   the interactive login prompt.
+:: Inputs
+::   Argument 1 is 1 2 3 4 1a 2a 3a or 4a
+:: Outputs
+::   app.login.mode app.login.method
+::   app.identity.mode and app.explicit.identity for an a-suffixed choice
+:: Return codes
+::   0 Choice recognized and applied
+::   1 Choice not recognized
+:: Dependencies
+::   none
+:: ============================================================
+:ApplyLoginShortcut
+set "als_choice=%~1"
+set "als_method="
+if /I "%als_choice%"=="1" set "als_method=1"
+if /I "%als_choice%"=="2" set "als_method=2"
+if /I "%als_choice%"=="3" set "als_method=3"
+if /I "%als_choice%"=="4" set "als_method=4"
+if /I "%als_choice%"=="1a" (set "als_method=1" & set "app.identity.mode=defaults" & set "app.explicit.identity=1")
+if /I "%als_choice%"=="2a" (set "als_method=2" & set "app.identity.mode=defaults" & set "app.explicit.identity=1")
+if /I "%als_choice%"=="3a" (set "als_method=3" & set "app.identity.mode=defaults" & set "app.explicit.identity=1")
+if /I "%als_choice%"=="4a" (set "als_method=4" & set "app.identity.mode=defaults" & set "app.explicit.identity=1")
+if not defined als_method (set "als_choice=" & exit /b 1)
+set "app.login.mode=login"
+set "app.login.method=%als_method%"
+set "als_choice="
+set "als_method="
+exit /b 0
+
+:: ============================================================
+:: Function RunProviderLogin
+:: Purpose
+::   Dispatch the requested provider login and fork workflow.
+:: Return codes
+::   0 Login completed or skipped
+::   6 Provider login or fork setup failed
+:: Dependencies
+::   RunGitHubLoginWorkflow PrintWarning
+:: ============================================================
 :RunProviderLogin
 if /I "%app.login.mode%"=="none" (call :PrintWarning "SKIP: provider login and fork steps skipped." & exit /b 0)
 if /I "%app.provider%"=="github" goto :RunProviderLoginGitHub
@@ -951,6 +1330,16 @@ call :RunGitHubLoginWorkflow
 set "rplg_rc=%errorlevel%"
 exit /b %rplg_rc%
 
+:: ============================================================
+:: Function RunGitHubLoginWorkflow
+:: Purpose
+::   Prefer the repository just_login launcher and use a standalone fallback only when that launcher is absent.
+:: Return codes
+::   0 GitHub setup completed
+::   6 GitHub setup failed
+:: Dependencies
+::   EnsureGit EnsureGitHubCli RunRepositoryLogin RunFallbackGitHubLogin ConfigureFallbackGitHubFork ConfigureFallbackGitIdentity RunFallbackGitPush
+:: ============================================================
 :RunGitHubLoginWorkflow
 call :EnsureGit
 if errorlevel 1 exit /b 6
@@ -974,6 +1363,16 @@ call :RunRepositoryLogin
 set "rglw_rc=%errorlevel%"
 exit /b %rglw_rc%
 
+:: ============================================================
+:: Function RunRepositoryLogin
+:: Purpose
+::   Call repository just_login with explicit repository branch browser fork identity and push decisions.
+:: Return codes
+::   0 Repository login launcher completed
+::   6 Repository login launcher failed
+:: Dependencies
+::   just_login.bat PrintError PrintSuccess
+:: ============================================================
 :RunRepositoryLogin
 set "rrl_rc=0"
 pushd "%app.folder%" >nul 2>&1
@@ -986,6 +1385,19 @@ set "rrl_rc="
 call :PrintSuccess "OK: repository just_login.bat completed GitHub setup."
 exit /b 0
 
+:: ============================================================
+:: Function RunFallbackGitHubLogin
+:: Purpose
+::   Authenticate GitHub CLI when the repository does not provide just_login.bat.
+:: Outputs
+::   app.github.user
+:: Return codes
+::   0 GitHub authentication confirmed
+::   6 GitHub authentication failed
+:: Dependencies
+::   CheckGitHubAuthentication PromptLoginMethod OpenDeviceLoginPage GetGitHubUser PrintInfo PrintError
+::   PrintSuccess
+:: ============================================================
 :RunFallbackGitHubLogin
 call :CheckGitHubAuthentication
 set "rfgl_rc=%errorlevel%"
@@ -1025,6 +1437,17 @@ call :PrintSuccess "OK: GitHub login ready: %app.github.user%"
 set "rfgl_rc="
 exit /b 0
 
+:: ============================================================
+:: Function ConfigureFallbackGitHubFork
+:: Purpose
+::   Configure direct push, a verified personal fork, or read-only original-repository mode.
+:: Return codes
+::   0 Direct push fork or read-only workflow configured
+::   6 Remote or fork workflow failed
+:: Dependencies
+::   GetGitHubUser CheckGitHubWritePermission PromptForkChoice CreateGitHubFork ConfigureOriginalRemote
+::   ConfigureForkRemotes PrintSuccess PrintWarning
+:: ============================================================
 :ConfigureFallbackGitHubFork
 call :GetGitHubUser
 set "cfghf_rc=%errorlevel%"
@@ -1059,6 +1482,18 @@ call :PrintWarning "SKIP: fork was not requested; push was disabled because dire
 set "cfghf_rc="
 exit /b 0
 
+:: ============================================================
+:: Function ConfigureFallbackGitIdentity
+:: Purpose
+::   Resolve and write repository-local Git identity when just_login.bat is unavailable.
+:: Outputs
+::   Local Git user name and email
+:: Return codes
+::   0 Local identity configured
+::   6 Identity could not be resolved or written
+:: Dependencies
+::   GetGitHubUser PrintError PrintSuccess
+:: ============================================================
 :ConfigureFallbackGitIdentity
 set "cfgi_name="
 set "cfgi_email="
@@ -1096,6 +1531,16 @@ set "cfgi_input="
 set "cfgi_id="
 exit /b 0
 
+:: ============================================================
+:: Function RunFallbackGitPush
+:: Purpose
+::   Push the current branch after standalone GitHub login setup when requested.
+:: Return codes
+::   0 Push completed skipped or no commits exist
+::   6 Push failed
+:: Dependencies
+::   PrintInfo PrintSuccess PrintWarning PrintError
+:: ============================================================
 :RunFallbackGitPush
 if /I "%app.push.mode%"=="no" (call :PrintWarning "SKIP: Git push disabled." & exit /b 0)
 "%app.git%" -C "%app.folder%" rev-parse --verify HEAD >nul 2>&1
@@ -1110,6 +1555,19 @@ call :PrintSuccess "OK: Git push complete."
 set "rfgp_branch="
 exit /b 0
 
+:: ============================================================
+:: Function MaybeMoveRepository
+:: Purpose
+::   Move the repository only when explicitly requested.
+:: Outputs
+::   app.folder app.final.cd
+:: Return codes
+::   0 Repository moved or move skipped
+::   7 Move failed
+:: Dependencies
+::   MoveRepositoryToDocuments MoveRepositoryWithPicker MoveRepositoryToParent PrintInfo ResolvePathFromStart
+::   PrintError
+:: ============================================================
 :MaybeMoveRepository
 if /I "%app.move.mode%"=="no" exit /b 0
 if /I "%app.move.mode%"=="documents" call :MoveRepositoryToDocuments
@@ -1139,6 +1597,16 @@ set "mmr_choice="
 set "mmr_parent="
 exit /b %mmr_rc%
 
+:: ============================================================
+:: Function MoveRepositoryToDocuments
+:: Purpose
+::   Move the repository beneath the Windows Documents folder.
+:: Return codes
+::   0 Repository moved or already present
+::   7 Documents path or move failed
+:: Dependencies
+::   MoveRepositoryToParent PrintError
+:: ============================================================
 :MoveRepositoryToDocuments
 set "mrtd_parent="
 for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "[Environment]::GetFolderPath([Environment+SpecialFolder]::MyDocuments)"') do set "mrtd_parent=%%A"
@@ -1149,6 +1617,16 @@ set "mrtd_rc=%errorlevel%"
 set "mrtd_parent="
 exit /b %mrtd_rc%
 
+:: ============================================================
+:: Function MoveRepositoryWithPicker
+:: Purpose
+::   Open a Windows folder picker and move the repository beneath the selected parent.
+:: Return codes
+::   0 Repository moved or picker cancelled
+::   7 Move failed
+:: Dependencies
+::   MoveRepositoryToParent PrintWarning
+:: ============================================================
 :MoveRepositoryWithPicker
 set "mrwp_parent="
 for /f "delims=" %%A in ('powershell -NoProfile -STA -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description='Choose destination parent folder'; if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$d.SelectedPath}"') do set "mrwp_parent=%%A"
@@ -1158,6 +1636,19 @@ set "mrwp_rc=%errorlevel%"
 set "mrwp_parent="
 exit /b %mrwp_rc%
 
+:: ============================================================
+:: Function MoveRepositoryToParent
+:: Purpose
+::   Validate a destination parent then move or reuse a verified matching checkout.
+:: Outputs
+::   app.folder app.final.cd and refreshed repository tool state
+:: Return codes
+::   0 Repository moved or matching destination reused
+::   7 Move failed or destination conflicts
+:: Dependencies
+::   IsDirectoryWritable IsPathWithin FindGit VerifyRepositoryRemote PrepareRepositoryTools PrintError
+::   PrintInfo PrintWarning PrependExecutableDirectoryToPath PrintSuccess
+:: ============================================================
 :MoveRepositoryToParent
 set "mrtp_parent=%~1"
 set "mrtp_previous="
@@ -1209,21 +1700,67 @@ call :PrintSuccess "OK: Repository ready at %app.folder%."
 set "mrtp_parent="
 exit /b 0
 
+:: ============================================================
+:: Function RunProjectPrepare
+:: Purpose
+::   Run the repository prepare launcher in project-only mode when present.
+:: Return codes
+::   0 Preparation completed or launcher absent
+::   8 Preparation failed
+:: Dependencies
+::   RunRepositoryLauncher
+:: ============================================================
 :RunProjectPrepare
 call :RunRepositoryLauncher "prepare.bat" "Project preparation" "project"
 set "rpp_rc=%errorlevel%"
 exit /b %rpp_rc%
 
+:: ============================================================
+:: Function RunProjectBuild
+:: Purpose
+::   Run the repository build launcher when present.
+:: Return codes
+::   0 Build completed or launcher absent
+::   8 Build failed
+:: Dependencies
+::   RunRepositoryLauncher
+:: ============================================================
 :RunProjectBuild
 call :RunRepositoryLauncher "build.bat" "Build"
 set "rpb_rc=%errorlevel%"
 exit /b %rpb_rc%
 
+:: ============================================================
+:: Function RunProjectInstall
+:: Purpose
+::   Run the repository install launcher when present.
+:: Return codes
+::   0 Installation completed or launcher absent
+::   8 Installation failed
+:: Dependencies
+::   RunRepositoryLauncher
+:: ============================================================
 :RunProjectInstall
 call :RunRepositoryLauncher "install.bat" "Install"
 set "rpi_rc=%errorlevel%"
 exit /b %rpi_rc%
 
+:: ============================================================
+:: SPECIAL PURPOSE HELPERS
+:: ============================================================
+
+:: ============================================================
+:: Function ParseBootstrapUrl
+:: Purpose
+::   Parse a supported raw bootstrap URL into inferred repository and tools metadata.
+::   Explicit provider branch and tools URL values remain unchanged.
+:: Outputs
+::   app.provider app.repo owner name branch URL and app.raw.tools.url
+:: Return codes
+::   0 Parsing attempted
+:: Dependencies
+::   PowerShell
+:: ============================================================
 :ParseBootstrapUrl
 set "pbu.provider="
 set "pbu.repo.url="
@@ -1246,6 +1783,18 @@ set "pbu.repo.branch="
 set "pbu.raw.tools.url="
 exit /b 0
 
+:: ============================================================
+:: Function ParseRepositoryUrl
+:: Purpose
+::   Normalize common HTTPS and SSH repository URLs and infer provider-specific raw tools URLs.
+::   Explicit provider and tools URL values remain unchanged.
+:: Outputs
+::   app.provider app.repo owner name and helper URLs
+:: Return codes
+::   0 Parsing attempted
+:: Dependencies
+::   PowerShell
+:: ============================================================
 :ParseRepositoryUrl
 set "pru.provider="
 set "pru.repo.owner="
@@ -1264,6 +1813,16 @@ if defined app.raw.tools.url if not defined app.getgit.url set "app.getgit.url=%
 if defined app.raw.tools.url if not defined app.getgh.url set "app.getgh.url=%app.raw.tools.url%/GetGithubCLI.bat"
 exit /b 0
 
+:: ============================================================
+:: Function EnsureGetGitHelper
+:: Purpose
+::   Reuse a nonempty GetGit.bat or download a validated replacement.
+:: Return codes
+::   0 Helper ready
+::   4 Helper URL missing or download failed
+:: Dependencies
+::   IsFileNonEmpty DownloadFile PrintInfo PrintError
+:: ============================================================
 :EnsureGetGitHelper
 call :IsFileNonEmpty "%app.tools%\GetGit.bat"
 if not errorlevel 1 exit /b 0
@@ -1275,6 +1834,17 @@ call :DownloadFile "%app.getgit.url%" "%app.tools%\GetGit.bat"
 if errorlevel 1 (call :PrintError "FAIL: GetGit.bat was not downloaded." & exit /b 4)
 exit /b 0
 
+:: ============================================================
+:: Function FindGit
+:: Purpose
+::   Resolve a repository-local, bootstrap-local, or PATH git.exe.
+:: Outputs
+::   app.git
+:: Return codes
+::   0 Search completed
+:: Dependencies
+::   none
+:: ============================================================
 :FindGit
 set "app.git="
 if exist "%app.folder%\tools\git\cmd\git.exe" for %%A in ("%app.folder%\tools\git\cmd\git.exe") do set "app.git=%%~fA"
@@ -1283,6 +1853,19 @@ if not defined app.git for /f "delims=" %%A in ('where git.exe 2^>nul') do if no
 if defined app.git if not exist "%app.git%" set "app.git="
 exit /b 0
 
+:: ============================================================
+:: Function EnsureGitHubCli
+:: Purpose
+::   Resolve or install GitHub CLI through repository preparation or GetGithubCLI.bat.
+:: Outputs
+::   app.gh and PATH
+:: Return codes
+::   0 GitHub CLI ready
+::   6 GitHub CLI could not be installed
+:: Dependencies
+::   PrepareRepositoryTools FindGitHubCli DownloadFile PrependExecutableDirectoryToPath PrintError
+::   IsFileNonEmpty PrintInfo PrintWarning PrintSuccess
+:: ============================================================
 :EnsureGitHubCli
 call :PrepareRepositoryTools
 if errorlevel 1 exit /b 6
@@ -1311,6 +1894,17 @@ call :PrependExecutableDirectoryToPath "%app.gh%"
 call :PrintSuccess "OK: GitHub CLI ready: %app.gh%"
 exit /b 0
 
+:: ============================================================
+:: Function FindGitHubCli
+:: Purpose
+::   Resolve a repository-local, bootstrap-local, or PATH gh.exe.
+:: Outputs
+::   app.gh
+:: Return codes
+::   0 Search completed
+:: Dependencies
+::   none
+:: ============================================================
 :FindGitHubCli
 set "app.gh="
 if exist "%app.folder%\tools\gh\bin\gh.exe" for %%A in ("%app.folder%\tools\gh\bin\gh.exe") do set "app.gh=%%~fA"
@@ -1319,6 +1913,18 @@ if not defined app.gh for /f "delims=" %%A in ('where gh.exe 2^>nul') do if not 
 if defined app.gh if not exist "%app.gh%" set "app.gh="
 exit /b 0
 
+:: ============================================================
+:: Function PromptLoginMethod
+:: Purpose
+::   Ask which browser behavior the standalone GitHub login fallback should use.
+:: Outputs
+::   app.login.method
+:: Return codes
+::   0 Valid method selected
+::   6 Invalid method selected
+:: Dependencies
+::   PrintError
+:: ============================================================
 :PromptLoginMethod
 echo(
 echo(  1. Let GitHub CLI open the default browser
@@ -1336,6 +1942,17 @@ if not "%plm_choice%"=="1" if not "%plm_choice%"=="2" if not "%plm_choice%"=="3"
 set "plm_choice="
 exit /b 0
 
+:: ============================================================
+:: Function OpenDeviceLoginPage
+:: Purpose
+::   Open the GitHub device page according to login method 2 or 3 and leave methods 1 and 4 untouched.
+:: Inputs
+::   Login method
+:: Return codes
+::   0 Page opened or deliberately not opened
+:: Dependencies
+::   PrintWarning PrintInfo
+:: ============================================================
 :OpenDeviceLoginPage
 if "%~1"=="2" start "" "https://github.com/login/device"
 if "%~1"=="3" powershell -NoProfile -ExecutionPolicy Bypass -Command "$u='https://github.com/login/device'; $p=$env:ProgramFiles+'\Google\Chrome\Application\chrome.exe'; if(Test-Path -LiteralPath $p){Start-Process -FilePath $p -ArgumentList @('--incognito',$u); exit 0}; $p=${env:ProgramFiles(x86)}+'\Microsoft\Edge\Application\msedge.exe'; if(Test-Path -LiteralPath $p){Start-Process -FilePath $p -ArgumentList @('--inprivate',$u); exit 0}; $p=$env:ProgramFiles+'\Mozilla Firefox\firefox.exe'; if(Test-Path -LiteralPath $p){Start-Process -FilePath $p -ArgumentList @('-private-window',$u); exit 0}; exit 1" >nul 2>&1
@@ -1343,6 +1960,18 @@ if "%~1"=="3" if errorlevel 1 call :PrintWarning "WARN: a supported private brow
 if "%~1"=="4" call :PrintInfo "Open https://github.com/login/device on any computer when GitHub CLI shows the code."
 exit /b 0
 
+:: ============================================================
+:: Function CheckGitHubAuthentication
+:: Purpose
+::   Confirm GitHub CLI authentication and capture the authenticated username.
+:: Outputs
+::   app.github.user
+:: Return codes
+::   0 Authenticated user resolved
+::   6 Authentication unavailable
+:: Dependencies
+::   GetGitHubUser
+:: ============================================================
 :CheckGitHubAuthentication
 if not defined app.gh exit /b 6
 "%app.gh%" auth status -h github.com >>"%app.log%" 2>&1
@@ -1351,6 +1980,18 @@ call :GetGitHubUser
 if errorlevel 1 exit /b 6
 exit /b 0
 
+:: ============================================================
+:: Function GetGitHubUser
+:: Purpose
+::   Read the authenticated GitHub login through the API.
+:: Outputs
+::   app.github.user
+:: Return codes
+::   0 Username resolved
+::   6 Username unavailable
+:: Dependencies
+::   none
+:: ============================================================
 :GetGitHubUser
 set "app.github.user="
 if not defined app.gh exit /b 6
@@ -1358,6 +1999,16 @@ for /f "usebackq delims=" %%A in (`"%app.gh%" api user --jq ".login" 2^>nul`) do
 if defined app.github.user exit /b 0
 exit /b 6
 
+:: ============================================================
+:: Function CheckGitHubWritePermission
+:: Purpose
+::   Check whether the authenticated account owns or can write to the original GitHub repository.
+:: Return codes
+::   0 Direct write access confirmed
+::   1 Direct write access unavailable or unknown
+:: Dependencies
+::   GetGitHubUser
+:: ============================================================
 :CheckGitHubWritePermission
 if not defined app.github.user call :GetGitHubUser
 if errorlevel 1 exit /b 1
@@ -1370,6 +2021,17 @@ if /I "%cgp_permission%"=="WRITE" (set "cgp_permission=" & exit /b 0)
 set "cgp_permission="
 exit /b 1
 
+:: ============================================================
+:: Function PromptForkChoice
+:: Purpose
+::   Ask whether to create or reuse a personal fork, defaulting to yes.
+:: Outputs
+::   app.fork.mode
+:: Return codes
+::   0 Fork decision resolved
+:: Dependencies
+::   PrintWarning
+:: ============================================================
 :PromptForkChoice
 set "pfc_choice="
 set /p "pfc_choice=Create or use a personal fork? [Y/n]: "
@@ -1381,6 +2043,16 @@ if /I "%pfc_choice%"=="no" (set "app.fork.mode=no" & set "pfc_choice=" & exit /b
 call :PrintWarning "Choose y or n."
 goto :PromptForkChoice
 
+:: ============================================================
+:: Function CreateGitHubFork
+:: Purpose
+::   Verify or create the personal fork through the GitHub API.
+:: Return codes
+::   0 Fork exists and is visible
+::   6 Fork creation or visibility check failed
+:: Dependencies
+::   VerifyGitHubFork WaitForGitHubFork PrintInfo PrintError
+:: ============================================================
 :CreateGitHubFork
 call :VerifyGitHubFork
 set "cgf_rc=%errorlevel%"
@@ -1394,6 +2066,17 @@ call :WaitForGitHubFork
 if errorlevel 1 (call :PrintError "FAIL: the new fork did not become visible or did not match the original repository." & exit /b 6)
 exit /b 0
 
+:: ============================================================
+:: Function VerifyGitHubFork
+:: Purpose
+::   Confirm that the authenticated account repository is a fork of the configured original repository.
+:: Return codes
+::   0 Matching fork exists
+::   1 Repository does not exist yet
+::   6 Existing repository is not the expected fork
+:: Dependencies
+::   PrintError PrintWarning
+:: ============================================================
 :VerifyGitHubFork
 set "vgf_is_fork="
 set "vgf_parent="
@@ -1412,6 +2095,16 @@ set "vgf_parent="
 set "vgf_source="
 exit /b 6
 
+:: ============================================================
+:: Function WaitForGitHubFork
+:: Purpose
+::   Poll GitHub until the personal fork becomes visible and matches the original repository.
+:: Return codes
+::   0 Matching fork visible
+::   6 Fork mismatch or timeout
+:: Dependencies
+::   VerifyGitHubFork
+:: ============================================================
 :WaitForGitHubFork
 set "wfgf_count=0"
 :WaitForGitHubForkPoll
@@ -1425,6 +2118,16 @@ if %wfgf_count% GEQ 30 (set "wfgf_count=" & exit /b 6)
 timeout /t 2 /nobreak >nul
 goto :WaitForGitHubForkPoll
 
+:: ============================================================
+:: Function ConfigureOriginalRemote
+:: Purpose
+::   Configure origin to the original repository for direct-push or read-only fallback mode.
+:: Return codes
+::   0 Origin configured
+::   6 Origin could not be configured
+:: Dependencies
+::   SetGitRemote PrintError
+:: ============================================================
 :ConfigureOriginalRemote
 call :SetGitRemote "origin" "%app.repo.original.url%"
 set "cor_rc=%errorlevel%"
@@ -1432,6 +2135,16 @@ if not "%cor_rc%"=="0" (call :PrintError "FAIL: origin remote could not be confi
 set "cor_rc="
 exit /b 0
 
+:: ============================================================
+:: Function ConfigureForkRemotes
+:: Purpose
+::   Set upstream to the original repository and origin to the authenticated personal fork.
+:: Return codes
+::   0 Remotes configured and fetched
+::   6 Remote configuration or fetch failed
+:: Dependencies
+::   SetGitRemote PrintError PrintWarning PrintSuccess
+:: ============================================================
 :ConfigureForkRemotes
 set "cfr_fork=https://github.com/%app.github.user%/%app.repo.name%.git"
 call :SetGitRemote "upstream" "%app.repo.original.url%"
@@ -1452,6 +2165,16 @@ set "cfr_rc="
 call :PrintSuccess "OK: fork remotes configured."
 exit /b 0
 
+:: ============================================================
+:: Function QuarantineNonGitFolder
+:: Purpose
+::   Move an existing non-Git target folder aside before cloning.
+:: Return codes
+::   0 Folder moved aside
+::   5 Folder could not be moved
+:: Dependencies
+::   PrintWarning PrintInfo PrintError
+:: ============================================================
 :QuarantineNonGitFolder
 set "qngf_target=%app.folder%.notgit.%app.timestamp%-%RANDOM%"
 call :PrintWarning "WARN: target exists but is not a Git checkout."
@@ -1464,6 +2187,15 @@ set "qngf_target="
 set "qngf_rc="
 exit /b 0
 
+:: ============================================================
+:: Function WarnIfTemporaryRepository
+:: Purpose
+::   Warn only when the completed Git checkout is actually located beneath TEMP.
+:: Return codes
+::   0 Warning evaluated
+:: Dependencies
+::   IsPathWithin PrintWarning
+:: ============================================================
 :WarnIfTemporaryRepository
 if not defined app.repo.ready exit /b 0
 if not exist "%app.folder%\.git" exit /b 0
@@ -1475,6 +2207,15 @@ call :PrintWarning "  %app.folder%"
 call :PrintWarning "Move this repository to a permanent folder before relying on it."
 exit /b 0
 
+:: ============================================================
+:: Function DrawMenu
+:: Purpose
+::   Draw the interactive bootstrap menu.
+:: Return codes
+::   0 Menu displayed
+:: Dependencies
+::   none
+:: ============================================================
 :DrawMenu
 echo(+------------------------------------------------------------+
 echo(^|                    Bootstrap Menu                         ^|
@@ -1491,6 +2232,22 @@ echo(^|  0  Exit                                                  ^|
 echo(+------------------------------------------------------------+
 exit /b 0
 
+:: ============================================================
+:: REUSABLE GENERIC HELPERS
+:: ============================================================
+
+:: ============================================================
+:: Function SetGitRemote
+:: Purpose
+::   Add or update one Git remote in the current repository folder.
+:: Inputs
+::   Remote name and URL
+:: Return codes
+::   0 Remote configured
+::   6 Name URL or Git command failed
+:: Dependencies
+::   none
+:: ============================================================
 :SetGitRemote
 set "sgr_name=%~1"
 set "sgr_url=%~2"
@@ -1512,6 +2269,18 @@ if not "%sgr_rc%"=="0" (set "sgr_rc=" & exit /b 6)
 set "sgr_rc="
 exit /b 0
 
+:: ============================================================
+:: Function RunRepositoryLauncher
+:: Purpose
+::   Run one optional repository batch launcher with optional arguments and consistent error handling.
+:: Inputs
+::   Launcher file name action name and optional argument string
+:: Return codes
+::   0 Launcher completed or was absent
+::   8 Launcher failed
+:: Dependencies
+::   PrintInfo PrintWarning PrintSuccess PrintError
+:: ============================================================
 :RunRepositoryLauncher
 set "rrl_script=%~1"
 set "rrl_action=%~2"
@@ -1533,12 +2302,36 @@ set "rrl_arguments="
 set "rrl_rc="
 exit /b 0
 
+:: ============================================================
+:: Function MakeTimestamp
+:: Purpose
+::   Create a sortable local timestamp for log and quarantine names.
+:: Outputs
+::   app.timestamp
+:: Return codes
+::   0 Timestamp created
+::   1 Timestamp unavailable
+:: Dependencies
+::   none
+:: ============================================================
 :MakeTimestamp
 set "app.timestamp="
 for /f "delims=" %%A in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Date -Format yyyy-MM-dd.HHmmss" 2^>nul') do set "app.timestamp=%%A"
 if not defined app.timestamp exit /b 1
 exit /b 0
 
+:: ============================================================
+:: Function IsDirectoryWritable
+:: Purpose
+::   Test directory write access by creating and deleting a unique probe file.
+:: Inputs
+::   Directory path
+:: Return codes
+::   0 Directory is writable
+::   1 Directory is missing or not writable
+:: Dependencies
+::   none
+:: ============================================================
 :IsDirectoryWritable
 set "idw_dir=%~1"
 set "idw_file="
@@ -1553,6 +2346,18 @@ set "idw_dir="
 set "idw_file="
 exit /b 0
 
+:: ============================================================
+:: Function IsPathWithin
+:: Purpose
+::   Test whether one absolute path is equal to or beneath another path.
+:: Inputs
+::   Candidate path and parent path
+:: Return codes
+::   0 Candidate is within parent
+::   1 Candidate is outside parent or comparison failed
+:: Dependencies
+::   none
+:: ============================================================
 :IsPathWithin
 set "ipw_candidate=%~1"
 set "ipw_parent=%~2"
@@ -1562,6 +2367,20 @@ set "ipw_candidate="
 set "ipw_parent="
 exit /b %ipw_rc%
 
+:: ============================================================
+:: Function NormalizeGitUrl
+:: Purpose
+::   Normalize HTTPS and SSH Git URLs for case-insensitive repository comparison.
+:: Inputs
+::   URL and output variable name
+:: Outputs
+::   Named output variable
+:: Return codes
+::   0 Normalized value produced
+::   1 Input output name or normalization result is unavailable
+:: Dependencies
+::   none
+:: ============================================================
 :NormalizeGitUrl
 set "ngu_url=%~1"
 set "ngu_output=%~2"
@@ -1579,12 +2398,36 @@ set "ngu_url="
 set "ngu_output="
 exit /b 1
 
+:: ============================================================
+:: Function ParseYesNoValue
+:: Purpose
+::   Validate a yes or no value and assign it to a named variable.
+:: Inputs
+::   Value and output variable name
+:: Return codes
+::   0 Valid value assigned
+::   1 Value or output name is invalid
+:: Dependencies
+::   none
+:: ============================================================
 :ParseYesNoValue
 if "%~2"=="" exit /b 1
 if /I "%~1"=="yes" (set "%~2=yes" & exit /b 0)
 if /I "%~1"=="no" (set "%~2=no" & exit /b 0)
 exit /b 1
 
+:: ============================================================
+:: Function ResolvePathFromStart
+:: Purpose
+::   Resolve an absolute path or resolve a relative path against the launch directory.
+:: Inputs
+::   Input path and output variable name
+:: Return codes
+::   0 Path resolved
+::   1 Input or output name is missing
+:: Dependencies
+::   none
+:: ============================================================
 :ResolvePathFromStart
 set "rpfs_input=%~1"
 set "rpfs_output=%~2"
@@ -1603,12 +2446,36 @@ set "rpfs_input="
 set "rpfs_output="
 exit /b 0
 
+:: ============================================================
+:: Function IsFileNonEmpty
+:: Purpose
+::   Confirm that a regular file exists and has a nonzero size.
+:: Inputs
+::   File path
+:: Return codes
+::   0 File exists and is nonempty
+::   1 File is missing empty or not a regular file
+:: Dependencies
+::   none
+:: ============================================================
 :IsFileNonEmpty
 if "%~1"=="" exit /b 1
 if not exist "%~1" exit /b 1
 for %%A in ("%~1") do if %%~zA GTR 0 exit /b 0
 exit /b 1
 
+:: ============================================================
+:: Function DownloadFile
+:: Purpose
+::   Download through a temporary file with curl or PowerShell then atomically promote a nonempty result.
+:: Inputs
+::   URL and destination file
+:: Return codes
+::   0 Nonempty file downloaded
+::   4 Download failed or produced an empty file
+:: Dependencies
+::   IsFileNonEmpty
+:: ============================================================
 :DownloadFile
 set "df_url=%~1"
 set "df_file=%~2"
@@ -1654,6 +2521,17 @@ set "df_temp="
 set "df_rc="
 exit /b 4
 
+:: ============================================================
+:: Function PrependExecutableDirectoryToPath
+:: Purpose
+::   Prepend an executable directory to PATH only when it is not already present.
+:: Inputs
+::   Executable path
+:: Return codes
+::   0 PATH updated or no change required
+:: Dependencies
+::   none
+:: ============================================================
 :PrependExecutableDirectoryToPath
 set "pedtp_dir="
 if "%~1"=="" exit /b 0
@@ -1664,22 +2542,77 @@ if errorlevel 1 set "PATH=%pedtp_dir%;%PATH%"
 set "pedtp_dir="
 exit /b 0
 
+:: ============================================================
+:: Function PrintSuccess
+:: Purpose
+::   Print and log a success message.
+:: Inputs
+::   Message
+:: Return codes
+::   0 Message processed
+:: Dependencies
+::   PrintColor
+:: ============================================================
 :PrintSuccess
 call :PrintColor "%app.color.green%" "%~1"
 exit /b 0
 
+:: ============================================================
+:: Function PrintInfo
+:: Purpose
+::   Print and log an informational message.
+:: Inputs
+::   Message
+:: Return codes
+::   0 Message processed
+:: Dependencies
+::   PrintColor
+:: ============================================================
 :PrintInfo
 call :PrintColor "%app.color.cyan%" "%~1"
 exit /b 0
 
+:: ============================================================
+:: Function PrintWarning
+:: Purpose
+::   Print and log a warning message.
+:: Inputs
+::   Message
+:: Return codes
+::   0 Message processed
+:: Dependencies
+::   PrintColor
+:: ============================================================
 :PrintWarning
 call :PrintColor "%app.color.yellow%" "%~1"
 exit /b 0
 
+:: ============================================================
+:: Function PrintError
+:: Purpose
+::   Print and log an error message.
+:: Inputs
+::   Message
+:: Return codes
+::   0 Message processed
+:: Dependencies
+::   PrintColor
+:: ============================================================
 :PrintError
 call :PrintColor "%app.color.red%" "%~1"
 exit /b 0
 
+:: ============================================================
+:: Function PrintColor
+:: Purpose
+::   Print one message with optional ANSI colour and append the plain message to the log.
+:: Inputs
+::   Colour sequence and message
+:: Return codes
+::   0 Message processed
+:: Dependencies
+::   none
+:: ============================================================
 :PrintColor
 set "pc_color=%~1"
 set "pc_message=%~2"
@@ -1699,6 +2632,18 @@ set "pc_color="
 set "pc_message="
 exit /b 0
 
+:: ============================================================
+:: Function SetEscapeCharacter
+:: Purpose
+::   Capture the ANSI escape character into a named variable.
+:: Inputs
+::   Output variable name
+:: Return codes
+::   0 Escape character captured
+::   2 Output variable missing
+:: Dependencies
+::   none
+:: ============================================================
 :SetEscapeCharacter
 set "sec_output=%~1"
 if not defined sec_output exit /b 2
@@ -1706,5 +2651,16 @@ for /f %%A in ('echo prompt $E^| cmd') do set "%sec_output%=%%A"
 set "sec_output="
 exit /b 0
 
+:: ============================================================
+:: Function SetExitCode
+:: Purpose
+::   Set the final process error level before the top-level goto eof.
+:: Inputs
+::   Numeric exit code
+:: Return codes
+::   same Requested exit code
+:: Dependencies
+::   none
+:: ============================================================
 :SetExitCode
 exit /b %~1
