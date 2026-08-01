@@ -2,7 +2,7 @@
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
-set "app.git_create_repo.version=git-create-repository-v2.2-default-identity"
+set "app.git_create_repo.version=git-create-repository-v2.4-shared-git-login"
 set "app.git_create_repo.root="
 set "app.git_create_repo.provider=github"
 set "app.git_create_repo.owner="
@@ -16,6 +16,7 @@ set "app.git_create_repo.message="
 set "app.git_create_repo.description="
 set "app.git_create_repo.login.mode=ask"
 set "app.git_create_repo.login="
+set "app.git_create_repo.browser.request=ask"
 set "app.git_create_repo.identity.mode=defaults"
 set "app.git_create_repo.git.name="
 set "app.git_create_repo.git.email="
@@ -129,6 +130,7 @@ exit /b %gcrm_rc%
 :PrepareDependencies
 if not exist "%app.git_create_repo.root%\prepare.bat" (echo ERROR: prepare.bat was not found in the project root. & exit /b 1)
 if not exist "%app.git_create_repo.rewrite%" (echo ERROR: Rewrite helper was not found: & echo   %app.git_create_repo.rewrite% & exit /b 1)
+if not exist "%~dp0git_login.bat" (echo ERROR: Shared GitHub login helper was not found: & echo   %~dp0git_login.bat & exit /b 1)
 echo.
 echo Preparing Git and GitHub CLI...
 call "%app.git_create_repo.root%\prepare.bat" repository
@@ -145,39 +147,25 @@ exit /b 0
 :: ============================================================
 :: Function AuthenticateGitHub
 :: Purpose
-::   Reuses an active GitHub CLI login or asks the user to login.
+::   Uses git_login.bat authentication-only mode to reuse or establish
+::   GitHub CLI authentication without changing repository state.
 :: Usage
 ::   call AuthenticateGitHub
 :: Output
 ::   app.git_create_repo.login
 :: Returns
 ::   0 authenticated and Git credentials configured
-::   1 authentication was declined or failed
+::   1 shared authentication failed or was cancelled
+:: Requires
+::   git_login.bat
 :: ============================================================
 :AuthenticateGitHub
 echo.
-echo Checking GitHub login...
-gh auth status --hostname github.com >nul 2>nul
-if not errorlevel 1 goto :AuthenticateGitHubAccount
-if /I "%app.git_create_repo.login.mode%"=="no" (echo ERROR: GitHub login is required to create a repository. & exit /b 1)
-if /I "%app.git_create_repo.login.mode%"=="yes" goto :AuthenticateGitHubLogin
-set "app.git_create_repo.input="
-set /p "app.git_create_repo.input=GitHub login is required. Login now? [y/N]: "
-if /I not "%app.git_create_repo.input%"=="y" (echo Cancelled before authentication. & exit /b 1)
-:AuthenticateGitHubLogin
-echo.
-echo GitHub CLI will start secure browser authentication.
-gh auth login --hostname github.com --git-protocol https --web
+call "%~dp0git_login.bat" authenticate prepared yes pause no login "%app.git_create_repo.login.mode%" browser "%app.git_create_repo.browser.request%"
 set "gcra_rc=%errorlevel%"
-if not "%gcra_rc%"=="0" (echo ERROR: GitHub login failed or was cancelled. & exit /b 1)
-:AuthenticateGitHubAccount
-set "app.git_create_repo.login="
-for /f "delims=" %%A in ('gh api user --jq ".login" 2^>nul') do set "app.git_create_repo.login=%%A"
-if not defined app.git_create_repo.login (echo ERROR: Could not determine the authenticated GitHub account. & exit /b 1)
-echo Logged in as:
-echo   %app.git_create_repo.login%
-gh auth setup-git --hostname github.com >nul 2>nul
-if errorlevel 1 (echo ERROR: GitHub CLI could not configure Git authentication. & exit /b 1)
+if not "%gcra_rc%"=="0" (echo ERROR: GitHub authentication failed or was cancelled. & exit /b 1)
+set "app.git_create_repo.login=%app.git_login.login%"
+if not defined app.git_create_repo.login (echo ERROR: Shared GitHub login did not return an authenticated account. & exit /b 1)
 exit /b 0
 
 :: ============================================================
@@ -765,6 +753,7 @@ if /I "%~1"=="identity" goto :ParseArgsIdentity
 if /I "%~1"=="gitname" goto :ParseArgsGitName
 if /I "%~1"=="gitemail" goto :ParseArgsGitEmail
 if /I "%~1"=="login" goto :ParseArgsLogin
+if /I "%~1"=="browser" goto :ParseArgsBrowser
 if /I "%~1"=="message" goto :ParseArgsMessage
 if /I "%~1"=="description" goto :ParseArgsDescription
 if /I "%~1"=="confirm" goto :ParseArgsConfirm
@@ -857,6 +846,21 @@ set "app.git_create_repo.login.mode=%~2"
 shift
 shift
 goto :ParseArgs
+:ParseArgsBrowser
+if "%~2"=="" (echo ERROR: browser requires ask, 1, 2, 3, or 4. & exit /b 2)
+if /I "%~2"=="ask" goto :ParseArgsBrowserStore
+if "%~2"=="1" goto :ParseArgsBrowserStore
+if "%~2"=="2" goto :ParseArgsBrowserStore
+if "%~2"=="3" goto :ParseArgsBrowserStore
+if "%~2"=="4" goto :ParseArgsBrowserStore
+echo ERROR: browser requires ask, 1, 2, 3, or 4.
+exit /b 2
+:ParseArgsBrowserStore
+set "app.git_create_repo.browser.request=%~2"
+if /I not "%~2"=="ask" set "app.git_create_repo.login.mode=yes"
+shift
+shift
+goto :ParseArgs
 :ParseArgsMessage
 if "%~2"=="" (echo ERROR: message requires quoted text. & exit /b 2)
 set "app.git_create_repo.message=%~2"
@@ -919,6 +923,8 @@ echo   rename yes^|no
 echo.
 echo Authentication and identity:
 echo   login ask^|yes^|no
+echo   browser ask^|1^|2^|3^|4
+echo                        Authentication is provided by git_login.bat
 echo   identity defaults^|ask
 echo   gitname "NAME"
 echo   gitemail "EMAIL"
@@ -936,6 +942,7 @@ echo   git_create_repository.bat name testrepo_pleaseignore dryrun
 echo.
 echo Test creation:
 echo   git_create_repository.bat name testrepo_pleaseignore
+echo   git_create_repository.bat name testrepo_pleaseignore browser 4
 echo.
 echo Safety requirements:
 echo   tracked files must be clean

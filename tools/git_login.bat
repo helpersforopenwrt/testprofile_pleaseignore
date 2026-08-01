@@ -23,6 +23,7 @@ set "APP_GH_DEVICE_URL="
 ::   call tools\git_login.bat repo OWNER/REPO
 ::   call tools\git_login.bat repo URL branch main
 ::   call tools\git_login.bat browser 4 fork yes identity defaults push yes
+::   call tools\git_login.bat authenticate browser 4 prepared yes pause no
 ::   call tools\git_login.bat help
 ::
 :: Returns: 0 on successful setup, successful no-commit setup, or help
@@ -46,6 +47,9 @@ set "app.git_login.repo.web="
 set "app.git_login.repo.url="
 set "app.git_login.branch="
 set "app.git_login.login="
+set "app.git_login.authenticate.only="
+set "app.git_login.login.request=yes"
+set "app.git_login.pause.request=yes"
 set "app.git_login.can.push="
 set "app.git_login.use.fork="
 set "app.git_login.read.only="
@@ -88,14 +92,15 @@ call :Main %*
 set "app.git_login.rc=%errorlevel%"
 :end
 call :CleanupTemp
-call :PauseIfNeeded
+if /I not "%app.git_login.pause.request%"=="no" call :PauseIfNeeded
 exit /b %app.git_login.rc%
 :: ============================================================
 :: Function Main
-:: Coordinates authentication, repository and fork resolution,
-:: local Git setup, remote configuration, and optional push.
+:: Coordinates authentication, optional authentication-only return,
+:: repository and fork resolution, local Git setup, remote
+:: configuration, and optional push.
 ::
-:: Usage: call main [repo REPO] [branch BRANCH] [browser METHOD] [fork MODE] [identity MODE] [push MODE] [prepared MODE] [help]
+:: Usage: call main [authenticate] [login MODE] [repo REPO] [branch BRANCH] [browser METHOD] [fork MODE] [identity MODE] [push MODE] [prepared MODE] [pause MODE] [help]
 ::
 :: Returns: 0 on successful setup, successful no-commit setup, or help
 ::          1 on dependency, authentication, repository, permission,
@@ -117,7 +122,7 @@ if not "%_glm_rc%"=="0" goto :Main
 if defined app.git_login.help goto :_Main_help
 echo.
 echo ============================================================
-echo  GitHub login, permission, and origin setup
+if defined app.git_login.authenticate.only (echo  GitHub authentication) else (echo  GitHub login, permission, and origin setup)
 echo ============================================================
 echo.
 echo Project:
@@ -150,6 +155,7 @@ where gh.exe >nul 2>nul
 if errorlevel 1 (echo ERROR: GitHub CLI is unavailable after preparation. & set "_glm_rc=1" & goto :Main)
 call :Authenticate
 if errorlevel 1 (set "_glm_rc=%errorlevel%" & goto :Main)
+if defined app.git_login.authenticate.only (echo OK: GitHub authentication is ready. & set "_glm_rc=0" & goto :Main)
 git rev-parse --is-inside-work-tree >nul 2>nul
 if errorlevel 1 goto :_Main_no_repo
 set "app.git_login.repo.exists=1"
@@ -302,16 +308,15 @@ call :ShowHelp
 set "_glm_rc=%errorlevel%" & goto :Main
 :: ============================================================
 :: Function Authenticate
-:: Authenticates GitHub CLI when necessary, determines the login,
-:: and configures Git credential integration.
+:: Reuses an active GitHub CLI login or runs the shared selectable
+:: device-login flow. Authentication-only callers may request an
+:: approval prompt before the browser-method menu.
 ::
 :: Usage: call authenticate
 ::
-:: Output:
-::   app.git_login.login  authenticated GitHub account
-::
-:: Returns: 0 when authenticated
-::          1 on login, account, or credential-setup failure
+:: Output: app.git_login.login
+:: Returns: 0 when authenticated and Git credentials are configured
+::          1 when login is declined, cancelled, or fails
 :: Requires: gh, chooseloginbrowser, rundevicelogin
 :: Dependencies
 ::   ChooseLoginBrowser RunDeviceLogin
@@ -323,6 +328,22 @@ echo Checking GitHub login...
 gh auth status --hostname github.com >nul 2>nul
 if not errorlevel 1 goto :_Authenticate_ready
 echo GitHub login is required.
+if /I "%app.git_login.login.request%"=="no" (echo ERROR: Login was disabled by the caller. & set "_gla_rc=1" & goto :Authenticate)
+if /I not "%app.git_login.login.request%"=="ask" goto :_Authenticate_browser
+if /I not "%app.git_login.browser.request%"=="ask" goto :_Authenticate_browser
+echo Press Enter to cancel, type y to choose a login method, or enter 1-4 now.
+set "app.git_login.input="
+set /p "app.git_login.input=GitHub login? [y/N/1-4]: "
+if "%app.git_login.input%"=="1" set "app.git_login.browser.request=1"
+if "%app.git_login.input%"=="2" set "app.git_login.browser.request=2"
+if "%app.git_login.input%"=="3" set "app.git_login.browser.request=3"
+if "%app.git_login.input%"=="4" set "app.git_login.browser.request=4"
+if "%app.git_login.input%"=="1" goto :_Authenticate_browser
+if "%app.git_login.input%"=="2" goto :_Authenticate_browser
+if "%app.git_login.input%"=="3" goto :_Authenticate_browser
+if "%app.git_login.input%"=="4" goto :_Authenticate_browser
+if /I not "%app.git_login.input%"=="y" (echo Cancelled before authentication. & set "_gla_rc=1" & goto :Authenticate)
+:_Authenticate_browser
 echo.
 set "APP_GH_DEVICE_URL=%app.git_login.browser.url%"
 call :ChooseLoginBrowser
@@ -339,6 +360,7 @@ call :RunDeviceLogin %gla_clipboard%
 set "gla_login_rc=%errorlevel%"
 if not "%gla_login_rc%"=="0" (echo ERROR: GitHub login failed or was cancelled. & set "_gla_rc=%gla_login_rc%" & goto :Authenticate)
 :_Authenticate_ready
+set "app.git_login.login="
 for /f "delims=" %%A in ('gh api user --jq ".login" 2^>nul') do set "app.git_login.login=%%A"
 if not defined app.git_login.login (echo ERROR: Could not determine the logged-in GitHub account. & set "_gla_rc=1" & goto :Authenticate)
 gh auth setup-git --hostname github.com >nul 2>nul
@@ -1002,6 +1024,9 @@ set "_glx_rc=0" & goto :RestoreRemotes
 :: ============================================================
 :ParseArgs
 if "%~1"=="" exit /b 0
+if /I "%~1"=="authenticate" goto :_ParseArgs_authenticate
+if /I "%~1"=="auth" goto :_ParseArgs_authenticate
+if /I "%~1"=="login" goto :_ParseArgs_login
 if /I "%~1"=="repo" goto :_ParseArgs_repo
 if /I "%~1"=="url" goto :_ParseArgs_repo
 if /I "%~1"=="branch" goto :_ParseArgs_branch
@@ -1012,6 +1037,7 @@ if /I "%~1"=="gitname" goto :_ParseArgs_gitname
 if /I "%~1"=="gitemail" goto :_ParseArgs_gitemail
 if /I "%~1"=="push" goto :_ParseArgs_push
 if /I "%~1"=="prepared" goto :_ParseArgs_prepared
+if /I "%~1"=="pause" goto :_ParseArgs_pause
 if /I "%~1"=="help" goto :_ParseArgs_help
 if /I "%~1"=="/help" goto :_ParseArgs_help
 if /I "%~1"=="-help" goto :_ParseArgs_help
@@ -1025,6 +1051,24 @@ if /I "%~1"=="--?" goto :_ParseArgs_help
 if /I "%~1"=="?" goto :_ParseArgs_help
 echo ERROR: Unrecognized argument: %~1
 exit /b 2
+:_ParseArgs_authenticate
+set "app.git_login.authenticate.only=1"
+shift
+goto :ParseArgs
+:_ParseArgs_login
+if "%~2"=="" (echo ERROR: login requires ask, yes, or no. & exit /b 2)
+if /I "%~2"=="ask" set "app.git_login.login.request=ask"
+if /I "%~2"=="yes" set "app.git_login.login.request=yes"
+if /I "%~2"=="no" set "app.git_login.login.request=no"
+if /I "%~2"=="ask" goto :_ParseArgs_login_ready
+if /I "%~2"=="yes" goto :_ParseArgs_login_ready
+if /I "%~2"=="no" goto :_ParseArgs_login_ready
+echo ERROR: login requires ask, yes, or no.
+exit /b 2
+:_ParseArgs_login_ready
+shift
+shift
+goto :ParseArgs
 :_ParseArgs_repo
 if "%~2"=="" (echo ERROR: repo requires OWNER/REPO or a URL. & exit /b 2)
 set "app.git_login.repo.input=%~2"
@@ -1117,6 +1161,18 @@ exit /b 2
 shift
 shift
 goto :ParseArgs
+:_ParseArgs_pause
+if "%~2"=="" (echo ERROR: pause requires yes or no. & exit /b 2)
+if /I "%~2"=="yes" set "app.git_login.pause.request=yes"
+if /I "%~2"=="no" set "app.git_login.pause.request=no"
+if /I "%~2"=="yes" goto :_ParseArgs_pause_ready
+if /I "%~2"=="no" goto :_ParseArgs_pause_ready
+echo ERROR: pause requires yes or no.
+exit /b 2
+:_ParseArgs_pause_ready
+shift
+shift
+goto :ParseArgs
 :_ParseArgs_help
 set "app.git_login.help=1"
 exit /b 0
@@ -1138,7 +1194,12 @@ echo.
 echo Usage:
 echo   git_login.bat [OPTIONS]
 echo.
+echo Modes:
+echo   authenticate          Authenticate only; do not change repository state
+echo   auth                  Alias for authenticate
+echo.
 echo Options:
+echo   login ask^|yes^|no    Approval behavior when authentication is missing
 echo   repo OWNER/REPO
 echo   repo URL
 echo   branch NAME
@@ -1150,6 +1211,7 @@ echo   gitemail EMAIL
 echo                        Supplying both values pre-fills local identity
 echo   push yes^|no
 echo   prepared yes^|no     Skip dependency preparation when already ready
+echo   pause yes^|no        Enable or suppress direct-launch pause handling
 echo.
 echo Help aliases:
 echo   help  /help  -help  --help  /h  -h  --h  /?  -?  --?  ?
@@ -1160,7 +1222,8 @@ echo   2  Open the device page in the default browser first
 echo   3  Open the device page in a private browser first
 echo   4  Do not open a browser on this computer
 echo.
-echo The helper authenticates GitHub CLI and configures local Git identity
+echo authenticate returns after GitHub CLI authentication and credential setup.
+echo The normal mode authenticates GitHub CLI and configures local Git identity
 echo and repository remotes. Direct push is used when permitted; otherwise
 echo a matching personal fork can be created or reused. fork no keeps a
 echo read-only origin and disables push when direct permission is unavailable.
