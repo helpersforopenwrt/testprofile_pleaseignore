@@ -23,7 +23,7 @@ if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
 cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39.7-documented-login-shortcuts"
+set "app.version=bootstrap-integrated-39.8-create-repository"
 set "app.rc=0"
 set "app.timestamp="
 set "app.log.dir=%TEMP%\bootstrap_logs"
@@ -76,6 +76,8 @@ set "app.identity.mode=ask"
 set "app.push.mode=yes"
 set "app.move.mode=no"
 set "app.move.parent="
+set "app.create_repository.requested="
+set "app.create_repository.name="
 set "app.explicit.repo="
 set "app.explicit.branch="
 set "app.explicit.provider="
@@ -182,12 +184,15 @@ exit /b %dm_rc%
 ::   0 Auto workflow completed
 ::   nonzero A workflow step failed
 :: Dependencies
-::   RunRepositoryWorkflow RunProjectLifecycle PrintInfo PrintSuccess
+::   RunRepositoryWorkflow RunRequestedRepositoryCreation RunProjectLifecycle PrintInfo PrintSuccess
 :: ============================================================
 :RunAutoWorkflow
 call :PrintInfo "MODE: auto [%app.version%]"
-call :PrintInfo "AUTO: Git, clone or update, repository tools, optional login and fork, optional move, prepare, build, and optional install."
+call :PrintInfo "AUTO: Git, clone or update, repository tools, optional login and fork, optional new repository, optional move, prepare, build, and optional install."
 call :RunRepositoryWorkflow
+set "raw_rc=%errorlevel%"
+if not "%raw_rc%"=="0" exit /b %raw_rc%
+call :RunRequestedRepositoryCreation
 set "raw_rc=%errorlevel%"
 if not "%raw_rc%"=="0" exit /b %raw_rc%
 call :RunProjectLifecycle
@@ -209,11 +214,14 @@ exit /b 0
 ::   0 Bootstrap workflow completed
 ::   nonzero A workflow step failed
 :: Dependencies
-::   RunRepositoryWorkflow PrintInfo PrintSuccess
+::   RunRepositoryWorkflow RunRequestedRepositoryCreation PrintInfo PrintSuccess
 :: ============================================================
 :RunBootstrapWorkflow
 call :PrintInfo "MODE: default [%app.version%]"
 call :RunRepositoryWorkflow
+set "rbw_rc=%errorlevel%"
+if not "%rbw_rc%"=="0" exit /b %rbw_rc%
+call :RunRequestedRepositoryCreation
 set "rbw_rc=%errorlevel%"
 if not "%rbw_rc%"=="0" exit /b %rbw_rc%
 if not defined app.final.cd set "app.final.cd=%app.folder%"
@@ -249,6 +257,44 @@ call :MaybeMoveRepository
 set "rrw_rc=%errorlevel%"
 if not "%rrw_rc%"=="0" exit /b %rrw_rc%
 set "rrw_rc="
+exit /b 0
+
+:: ============================================================
+:: Function RunRequestedRepositoryCreation
+:: Purpose
+::   Run the repository creator after checkout and repository tools
+::   are established, then adopt its renamed checkout folder.
+:: Inputs
+::   app.create_repository.requested app.create_repository.name app.folder
+:: Outputs
+::   app.folder app.final.folder app.final.cd app.tools app.repo.url
+:: Return codes
+::   0 No creation requested or creation completed
+::   nonzero Repository creation or folder adoption failed
+:: Dependencies
+::   git_create_repository.bat ParseRepositoryUrl PrintInfo PrintSuccess PrintError
+:: ============================================================
+:RunRequestedRepositoryCreation
+if not defined app.create_repository.requested exit /b 0
+if not exist "%app.folder%\tools\git_create_repository.bat" (call :PrintError "FAIL: tools\git_create_repository.bat was not found in the established checkout." & exit /b 1)
+call :PrintInfo "DO: Creating new repository %app.create_repository.name%."
+cd /d "%app.folder%" >nul 2>&1
+if errorlevel 1 (call :PrintError "FAIL: Could not enter the established checkout." & exit /b 1)
+call "%app.folder%\tools\git_create_repository.bat" name "%app.create_repository.name%" prepared yes
+set "rrcr_rc=%errorlevel%"
+if not "%rrcr_rc%"=="0" exit /b %rrcr_rc%
+for %%A in ("%CD%") do set "app.folder=%%~fA"
+for %%A in ("%app.folder%\..") do set "app.repo.parent=%%~fA"
+set "app.final.folder=%app.folder%"
+set "app.final.cd=%app.folder%"
+set "app.tools=%app.folder%\tools"
+set "app.repo.sync.remote=origin"
+set "app.repo.url="
+for /f "delims=" %%A in ('git.exe remote get-url origin 2^>nul') do set "app.repo.url=%%A"
+if defined app.repo.url call :ParseRepositoryUrl
+call :PrintSuccess "OK: New repository created from the established checkout."
+call :PrintSuccess "DIR: %app.folder%"
+set "rrcr_rc="
 exit /b 0
 
 :: ============================================================
@@ -418,6 +464,7 @@ if /I "%app.move.mode%"=="no" call :PrintInfo "Would not move the repository."
 if /I "%app.move.mode%"=="ask" call :PrintInfo "Would ask whether to move the repository."
 if /I "%app.move.mode%"=="documents" call :PrintInfo "Would move the repository to Documents."
 if /I "%app.move.mode%"=="path" call :PrintInfo "Would move the repository beneath %app.move.parent%."
+if defined app.create_repository.requested call :PrintInfo "Would create a new repository named %app.create_repository.name%, then rename the checkout folder."
 if /I "%app.mode%"=="auto" if /I "%app.project.prepare%"=="yes" call :PrintInfo "Would run project preparation."
 if /I "%app.mode%"=="auto" if /I not "%app.project.prepare%"=="yes" call :PrintInfo "Would skip project preparation."
 if /I "%app.mode%"=="auto" if /I "%app.project.build%"=="yes" call :PrintInfo "Would run project build."
@@ -540,6 +587,10 @@ echo   getgithubcli URL     Override the GetGithubCLI.bat URL
 echo   update yes^|no       Update an existing checkout; default yes
 echo   conflict quarantine^|fail
 echo                        Move a non-Git target aside or fail; default quarantine
+echo   create_repository NAME
+echo   create-repository NAME
+echo                        After checkout setup, create a normal repository from
+echo                        the project and rename the checkout folder to NAME
 echo(
 echo Login and publication options:
 echo   nologin              Skip provider login and fork handling
@@ -603,6 +654,7 @@ echo   %app.launch.name% auto login 4a
 echo   %app.launch.name% auto login 4 gitname "Example User" gitemail user@example.com
 echo   %app.launch.name% auto repo https://github.com/Owner/Repo.git branch main
 echo   %app.launch.name% auto dir projects\Repo move no prepare yes build yes install no
+echo   %app.launch.name% auto create_repository NewRepo
 echo   %app.launch.name% doctor repo https://github.com/Owner/Repo.git
 echo(
 echo Notes:
@@ -612,6 +664,7 @@ echo   At the login prompt, 1-4 selects the method immediately.
 echo   At the login prompt, 1a-4a also accepts detected Git identity defaults.
 echo   Explicit ask values remain interactive even with unattended.
 echo   GitHub device authorization still requires user action in a browser.
+echo   create_repository runs after checkout setup and before auto prepare or build.
 echo   Project prepare, build, and install launchers may have their own prompts.
 echo(
 echo Cache-safe loader:
@@ -706,6 +759,8 @@ if /I "%pa_arg%"=="nomove" (set "app.move.mode=no" & set "app.move.parent=" & se
 if /I "%pa_arg%"=="--no-move" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="nologin" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="--no-login" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="create_repository" goto :ParseArgumentsCreateRepository
+if /I "%pa_arg%"=="create-repository" goto :ParseArgumentsCreateRepository
 if /I "%pa_arg%"=="login" goto :ParseArgumentsLogin
 if /I "%pa_arg%"=="repo" goto :ParseArgumentsRepo
 if /I "%pa_arg%"=="provider" goto :ParseArgumentsProvider
@@ -743,6 +798,19 @@ exit /b 2
 :ParseArgumentsHelp
 set "app.mode=help"
 exit /b 0
+:ParseArgumentsCreateRepository
+if "%~2"=="" (call :PrintError "FAIL: create_repository requires a new repository name." & exit /b 2)
+set "pcr_name=%~2"
+if not "%pcr_name:\=%"=="%pcr_name%" (set "pcr_name=" & call :PrintError "FAIL: create_repository name cannot contain backslashes." & exit /b 2)
+if not "%pcr_name:/=%"=="%pcr_name%" (set "pcr_name=" & call :PrintError "FAIL: create_repository name cannot contain forward slashes." & exit /b 2)
+if "%pcr_name%"=="." (set "pcr_name=" & call :PrintError "FAIL: create_repository name cannot be a dot." & exit /b 2)
+if "%pcr_name%"==".." (set "pcr_name=" & call :PrintError "FAIL: create_repository name cannot be two dots." & exit /b 2)
+set "app.create_repository.name=%pcr_name%"
+set "app.create_repository.requested=1"
+set "pcr_name="
+shift
+shift
+goto :ParseArguments
 :ParseArgumentsLogin
 set "app.login.mode=login"
 set "app.login.method=ask"
@@ -905,6 +973,8 @@ exit /b 2
 ::   none
 :: ============================================================
 :ApplyAutomationDefaults
+if defined app.create_repository.requested if not defined app.explicit.login set "app.login.mode=none"
+if defined app.create_repository.requested if not defined app.explicit.login set "app.login.method=ask"
 if defined app.git_name if defined app.git_email if not defined app.explicit.identity set "app.identity.mode=defaults"
 if not defined app.unattended exit /b 0
 if not defined app.explicit.login set "app.login.mode=none"

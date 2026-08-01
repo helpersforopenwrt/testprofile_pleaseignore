@@ -2,7 +2,7 @@
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
-set "app.git_create_repo.version=git-create-repository-v2.4-shared-git-login"
+set "app.git_create_repo.version=git-create-repository-v2.5-folder-rename"
 set "app.git_create_repo.root="
 set "app.git_create_repo.provider=github"
 set "app.git_create_repo.owner="
@@ -28,7 +28,14 @@ set "app.git_create_repo.old.slug="
 set "app.git_create_repo.old.name="
 set "app.git_create_repo.references=all"
 set "app.git_create_repo.rename.name=yes"
+set "app.git_create_repo.folder.rename=yes"
+set "app.git_create_repo.folder.current.name="
+set "app.git_create_repo.folder.parent="
+set "app.git_create_repo.folder.target="
+set "app.git_create_repo.folder.rename.required="
+set "app.git_create_repo.folder.rename.ready="
 set "app.git_create_repo.confirm="
+set "app.git_create_repo.prepared=no"
 set "app.git_create_repo.dryrun="
 set "app.git_create_repo.help="
 set "app.git_create_repo.report="
@@ -51,11 +58,22 @@ goto :main
 :main
 call :RunMain %*
 set "app.git_create_repo.rc=%errorlevel%"
+if "%app.git_create_repo.rc%"=="0" if defined app.git_create_repo.folder.rename.required if defined app.git_create_repo.folder.rename.ready goto :rename_project_folder
 goto :end
 
 :end
 call :PauseIfNeeded
 exit /b %app.git_create_repo.rc%
+
+:rename_project_folder
+call :PauseIfNeeded
+echo.
+echo Renaming project folder:
+echo   %app.git_create_repo.root%
+echo to:
+echo   %app.git_create_repo.folder.target%
+echo.
+cd /d "%app.git_create_repo.folder.parent%" && ren "%app.git_create_repo.root%" "%app.git_create_repo.name%" && cd /d "%app.git_create_repo.folder.target%" && (echo OK: Project folder renamed. & echo DIR: %app.git_create_repo.folder.target% & exit /b 0) || (echo ERROR: The repository was created and pushed, but the project folder could not be renamed. & echo Expected folder: & echo   %app.git_create_repo.folder.target% & exit /b 1)
 
 :: ============================================================
 :: Function RunMain
@@ -87,6 +105,8 @@ call :ResolveTargetRepository
 if errorlevel 1 (popd & exit /b 1)
 call :ResolveOptions
 if errorlevel 1 (popd & exit /b 1)
+call :ResolveFolderRename
+if errorlevel 1 (popd & exit /b 1)
 call :ValidateWorkspace
 if errorlevel 1 (popd & exit /b 1)
 call :BuildMigrationPlan
@@ -114,6 +134,7 @@ call :PushBranch
 if errorlevel 1 (popd & exit /b 1)
 call :ShowSuccess
 set "gcrm_rc=%errorlevel%"
+if "%gcrm_rc%"=="0" set "app.git_create_repo.folder.rename.ready=1"
 popd
 exit /b %gcrm_rc%
 
@@ -131,11 +152,13 @@ exit /b %gcrm_rc%
 if not exist "%app.git_create_repo.root%\prepare.bat" (echo ERROR: prepare.bat was not found in the project root. & exit /b 1)
 if not exist "%app.git_create_repo.rewrite%" (echo ERROR: Rewrite helper was not found: & echo   %app.git_create_repo.rewrite% & exit /b 1)
 if not exist "%~dp0git_login.bat" (echo ERROR: Shared GitHub login helper was not found: & echo   %~dp0git_login.bat & exit /b 1)
+if /I "%app.git_create_repo.prepared%"=="yes" goto :PrepareDependenciesCheck
 echo.
 echo Preparing Git and GitHub CLI...
 call "%app.git_create_repo.root%\prepare.bat" repository
 set "gcrpd_rc=%errorlevel%"
 if not "%gcrpd_rc%"=="0" (echo ERROR: Repository dependency preparation failed. & exit /b 1)
+:PrepareDependenciesCheck
 where git.exe >nul 2>nul
 if errorlevel 1 (echo ERROR: Git is unavailable after preparation. & exit /b 1)
 where gh.exe >nul 2>nul
@@ -279,11 +302,60 @@ if /I "%app.git_create_repo.identity.mode%"=="defaults" goto :ResolveOptionsIden
 echo ERROR: identity must be ask or defaults.
 exit /b 1
 :ResolveOptionsIdentityDone
-if /I "%app.git_create_repo.login.mode%"=="ask" exit /b 0
-if /I "%app.git_create_repo.login.mode%"=="yes" exit /b 0
-if /I "%app.git_create_repo.login.mode%"=="no" exit /b 0
+if /I "%app.git_create_repo.login.mode%"=="ask" goto :ResolveOptionsLoginDone
+if /I "%app.git_create_repo.login.mode%"=="yes" goto :ResolveOptionsLoginDone
+if /I "%app.git_create_repo.login.mode%"=="no" goto :ResolveOptionsLoginDone
 echo ERROR: login must be ask, yes, or no.
 exit /b 1
+:ResolveOptionsLoginDone
+if /I "%app.git_create_repo.prepared%"=="yes" goto :ResolveOptionsPreparedDone
+if /I "%app.git_create_repo.prepared%"=="no" goto :ResolveOptionsPreparedDone
+echo ERROR: prepared must be yes or no.
+exit /b 1
+:ResolveOptionsPreparedDone
+if /I "%app.git_create_repo.folder.rename%"=="yes" exit /b 0
+if /I "%app.git_create_repo.folder.rename%"=="no" exit /b 0
+echo ERROR: folderrename must be yes or no.
+exit /b 1
+
+:: ============================================================
+:: Function ResolveFolderRename
+:: Purpose
+::   Resolves and validates the final leaf-folder rename. The ren
+::   command receives a full source path and only a new folder name.
+:: Usage
+::   call ResolveFolderRename
+:: Output
+::   app.git_create_repo.folder.current.name
+::   app.git_create_repo.folder.parent
+::   app.git_create_repo.folder.target
+::   app.git_create_repo.folder.rename.required
+:: Returns
+::   0 rename is unnecessary, disabled, or safe
+::   1 target name or target folder is invalid
+:: Requires
+::   none
+:: ============================================================
+:ResolveFolderRename
+set "app.git_create_repo.folder.current.name="
+set "app.git_create_repo.folder.parent="
+set "app.git_create_repo.folder.target="
+set "app.git_create_repo.folder.rename.required="
+for %%A in ("%app.git_create_repo.root%") do set "app.git_create_repo.folder.current.name=%%~nxA"
+for %%A in ("%app.git_create_repo.root%") do set "app.git_create_repo.folder.parent=%%~dpA"
+if not defined app.git_create_repo.folder.current.name (echo ERROR: Could not resolve the current project folder name. & exit /b 1)
+if not defined app.git_create_repo.folder.parent (echo ERROR: Could not resolve the project parent folder. & exit /b 1)
+if not "%app.git_create_repo.name:\=%"=="%app.git_create_repo.name%" (echo ERROR: The new folder name cannot contain backslashes. & exit /b 1)
+if not "%app.git_create_repo.name:/=%"=="%app.git_create_repo.name%" (echo ERROR: The new folder name cannot contain forward slashes. & exit /b 1)
+if "%app.git_create_repo.name%"=="." (echo ERROR: The new folder name cannot be a dot. & exit /b 1)
+if "%app.git_create_repo.name%"==".." (echo ERROR: The new folder name cannot be two dots. & exit /b 1)
+set "app.git_create_repo.folder.target=%app.git_create_repo.folder.parent%%app.git_create_repo.name%"
+if /I "%app.git_create_repo.folder.rename%"=="no" exit /b 0
+if /I "%app.git_create_repo.folder.current.name%"=="%app.git_create_repo.name%" exit /b 0
+if exist "%app.git_create_repo.folder.target%\" (echo ERROR: The target project folder already exists: & echo   %app.git_create_repo.folder.target% & exit /b 1)
+if exist "%app.git_create_repo.folder.target%" (echo ERROR: A file already uses the target project-folder path: & echo   %app.git_create_repo.folder.target% & exit /b 1)
+set "app.git_create_repo.folder.rename.required=1"
+exit /b 0
 
 :: ============================================================
 :: Function ValidateWorkspace
@@ -363,6 +435,10 @@ echo.
 echo Branch:
 echo   %app.git_create_repo.branch%
 echo.
+echo Current project folder:
+echo   %app.git_create_repo.root%
+echo.
+if defined app.git_create_repo.folder.rename.required (echo Project folder after success: & echo   %app.git_create_repo.folder.target% & echo.) else (echo Project folder rename: & echo   not required & echo.)
 echo Reference migration:
 echo   %app.git_create_repo.references%
 echo.
@@ -693,6 +769,8 @@ git log -1 --oneline
 echo.
 echo Reference report:
 echo   %app.git_create_repo.report%
+echo.
+if defined app.git_create_repo.folder.rename.required (echo Project folder will now be renamed to: & echo   %app.git_create_repo.folder.target%) else (echo Project folder: & echo   %app.git_create_repo.root%)
 exit /b 0
 
 :: ============================================================
@@ -757,6 +835,8 @@ if /I "%~1"=="browser" goto :ParseArgsBrowser
 if /I "%~1"=="message" goto :ParseArgsMessage
 if /I "%~1"=="description" goto :ParseArgsDescription
 if /I "%~1"=="confirm" goto :ParseArgsConfirm
+if /I "%~1"=="prepared" goto :ParseArgsPrepared
+if /I "%~1"=="folderrename" goto :ParseArgsFolderRename
 if /I "%~1"=="dryrun" goto :ParseArgsDryRun
 if /I "%~1"=="help" goto :ParseArgsHelp
 if /I "%~1"=="/help" goto :ParseArgsHelp
@@ -879,6 +959,18 @@ set "app.git_create_repo.confirm=%~2"
 shift
 shift
 goto :ParseArgs
+:ParseArgsPrepared
+if "%~2"=="" (echo ERROR: prepared requires yes or no. & exit /b 2)
+set "app.git_create_repo.prepared=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsFolderRename
+if "%~2"=="" (echo ERROR: folderrename requires yes or no. & exit /b 2)
+set "app.git_create_repo.folder.rename=%~2"
+shift
+shift
+goto :ParseArgs
 :ParseArgsDryRun
 set "app.git_create_repo.dryrun=1"
 shift
@@ -932,6 +1024,8 @@ echo.
 echo Commit and execution:
 echo   message "TEXT"
 echo   confirm CREATE
+echo   prepared yes^|no
+echo   folderrename yes^|no
 echo   dryrun
 echo.
 echo Help:
@@ -950,6 +1044,7 @@ echo   untracked non-ignored files are included
 echo   binary files containing old repository references stop the run
 echo   the remote repository is created only after local validation
 echo   the new GitHub repository is verified as a non-fork
+echo   the successful checkout folder is renamed to the repository name
 exit /b 0
 
 :: ============================================================
