@@ -1,373 +1,370 @@
 @echo off
-:: ============================================================
-:: git_create_repository.bat
-:: Creates a new GitHub repository, preserves existing local history,
-:: updates build_config.bat, configures remotes, and pushes a branch.
-::
-:: Usage:
-::   call tools\git_create_repository.bat
-::   call tools\git_create_repository.bat owner OWNER name REPOSITORY
-::   call tools\git_create_repository.bat owner OWNER name REPOSITORY visibility public
-::   call tools\git_create_repository.bat owner OWNER name REPOSITORY source OWNER/SOURCE
-::
-:: Returns: 0 on success or cancellation
-::          1 on dependency, validation, local preparation, creation,
-::            remote configuration, or push failure
-::          2 on invalid arguments
-:: Requires: _common.bat, prepare.bat, git, gh, PowerShell, :Main,
-::           :ParseArgs, :AuthenticateGitHub, :ResolveTarget,
-::           :ResolveSource, :ResolveVisibility, :ResolveBranch,
-::           :ShowPlan, :InitializeLocalGit, :EnsureGitIdentity,
-::           :UpdateBuildConfig, :RestoreBuildConfig,
-::           :CreateLocalCommit, :CreateGitHubRepository,
-::           :ConfigureRemotes, :PushBranch, :ShowHelp,
-::           :PauseIfNeeded, :IsConsole
-:: ============================================================
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
+set "app.git_create_repo.version=git-create-repository-v2"
+set "app.git_create_repo.root="
+set "app.git_create_repo.provider=github"
 set "app.git_create_repo.owner="
 set "app.git_create_repo.name="
 set "app.git_create_repo.slug="
 set "app.git_create_repo.url="
-set "app.git_create_repo.visibility="
+set "app.git_create_repo.web="
+set "app.git_create_repo.visibility=private"
 set "app.git_create_repo.branch="
 set "app.git_create_repo.message="
-set "app.git_create_repo.source.input="
-set "app.git_create_repo.source.slug="
-set "app.git_create_repo.source.web="
-set "app.git_create_repo.source.url="
-set "app.git_create_repo.config.slug="
-set "app.git_create_repo.existing.origin="
-set "app.git_create_repo.existing.origin.slug="
+set "app.git_create_repo.description="
+set "app.git_create_repo.login.mode=ask"
 set "app.git_create_repo.login="
-set "app.git_create_repo.owner.type="
-set "app.git_create_repo.current.branch="
-set "app.git_create_repo.confirm="
-set "app.git_create_repo.has.head="
-set "app.git_create_repo.has.staged="
+set "app.git_create_repo.identity.mode=ask"
 set "app.git_create_repo.git.name="
 set "app.git_create_repo.git.email="
+set "app.git_create_repo.source.mode=keep"
+set "app.git_create_repo.source.input="
+set "app.git_create_repo.source.slug="
+set "app.git_create_repo.source.url="
+set "app.git_create_repo.old.slug="
+set "app.git_create_repo.old.name="
+set "app.git_create_repo.references=all"
+set "app.git_create_repo.rename.name=yes"
+set "app.git_create_repo.confirm="
+set "app.git_create_repo.dryrun="
+set "app.git_create_repo.help="
+set "app.git_create_repo.report="
+set "app.git_create_repo.backup="
+set "app.git_create_repo.original.head="
+set "app.git_create_repo.original.branch="
+set "app.git_create_repo.original.origin="
+set "app.git_create_repo.original.upstream="
+set "app.git_create_repo.original.git.name="
+set "app.git_create_repo.original.git.email="
+set "app.git_create_repo.created="
+set "app.git_create_repo.commit.created="
+set "app.git_create_repo.branch.created="
+set "app.git_create_repo.rc=0"
 set "app.git_create_repo.input="
 set "app.git_create_repo.timestamp="
-set "app.git_create_repo.logs="
-set "app.git_create_repo.backup="
-set "app.git_create_repo.created="
-set "app.git_create_repo.help="
-set "app.git_create_repo.rc=0"
-call "%~dp0_common.bat" init
-if not errorlevel 1 goto :run
+set "app.git_create_repo.rewrite=%~dp0git_create_repository_rewrite.ps1"
+goto :main
+
+:main
+call :RunMain %*
 set "app.git_create_repo.rc=%errorlevel%"
 goto :end
-:run
-call :Main %*
-set "app.git_create_repo.rc=%errorlevel%"
+
 :end
 call :PauseIfNeeded
 exit /b %app.git_create_repo.rc%
+
 :: ============================================================
-:: :Main
-:: Parses options, prepares dependencies, resolves and confirms the
-:: plan, prepares local Git/configuration, creates the GitHub
-:: repository, configures remotes, and pushes the branch.
-::
-:: Usage: call :Main [owner OWNER] [name REPOSITORY] [source REPOSITORY] [visibility VALUE] [branch NAME] [message TEXT]
-::
-:: Returns: 0 on success or cancellation
-::          1 on dependency, validation, local preparation, creation,
-::            remote configuration, or push failure
-::          2 on invalid arguments
-:: Requires: :ParseArgs, :AuthenticateGitHub, :ResolveTarget,
-::           :ResolveSource, :ResolveVisibility, :ResolveBranch,
-::           :ShowPlan, :InitializeLocalGit, :EnsureGitIdentity,
-::           :UpdateBuildConfig, :RestoreBuildConfig,
-::           :CreateLocalCommit, :CreateGitHubRepository,
-::           :ConfigureRemotes, :PushBranch, :ShowHelp
+:: Function RunMain
+:: Purpose
+::   Runs the complete new-repository migration workflow.
+:: Usage
+::   call Main with supported command-line arguments
+:: Returns
+::   0 success, cancellation, or dry run
+::   1 operational failure
+::   2 invalid arguments
 :: ============================================================
-:Main
-for /f "tokens=1 delims==" %%v in ('set gcrm_ 2^>nul') do set "%%v="
-if defined _gcrm_rc (set "_gcrm_rc=" & exit /b %_gcrm_rc%)
+:RunMain
 call :ParseArgs %*
-set "_gcrm_rc=%errorlevel%"
-if not "%_gcrm_rc%"=="0" goto :Main
-if defined app.git_create_repo.help goto :_Main_help
-echo.
-echo ============================================================
-echo  Create GitHub repository
-echo ============================================================
-echo.
-echo Project:
-echo   %APP_DISPLAY_NAME%
-echo.
-echo Project root:
-echo   %CD%
-echo.
-if not exist "%CD%\prepare.bat" (echo ERROR: prepare.bat was not found in the project root. & set "_gcrm_rc=1" & goto :Main)
-echo Preparing Git and GitHub CLI...
-call "%CD%\prepare.bat" repository
-if errorlevel 1 (echo ERROR: Dependency preparation failed. & set "_gcrm_rc=1" & goto :Main)
-where git.exe >nul 2>nul
-if errorlevel 1 (echo ERROR: Git is unavailable after preparation. & set "_gcrm_rc=1" & goto :Main)
-where gh.exe >nul 2>nul
-if errorlevel 1 (echo ERROR: GitHub CLI is unavailable after preparation. & set "_gcrm_rc=1" & goto :Main)
-where powershell.exe >nul 2>nul
-if errorlevel 1 (echo ERROR: Windows PowerShell is unavailable. & set "_gcrm_rc=1" & goto :Main)
+set "gcrm_rc=%errorlevel%"
+if not "%gcrm_rc%"=="0" exit /b %gcrm_rc%
+if defined app.git_create_repo.help (call :ShowHelp & exit /b %errorlevel%)
+call :ResolveProjectRoot
+if errorlevel 1 exit /b 1
+pushd "%app.git_create_repo.root%" >nul 2>&1
+if errorlevel 1 (echo ERROR: Could not enter the project root. & exit /b 1)
+call :PrepareDependencies
+if errorlevel 1 (popd & exit /b 1)
 call :AuthenticateGitHub
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-call :ResolveTarget
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-call :ResolveSource
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-call :ResolveVisibility
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-call :ResolveBranch
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-gh repo view "%app.git_create_repo.slug%" >nul 2>nul
-if not errorlevel 1 (echo. & echo ERROR: The target GitHub repository already exists: & echo   https://github.com/%app.git_create_repo.slug% & echo. & echo Nothing was created or overwritten. & set "_gcrm_rc=1" & goto :Main)
+if errorlevel 1 (popd & exit /b 1)
+call :ResolveSourceRepository
+if errorlevel 1 (popd & exit /b 1)
+call :ResolveTargetRepository
+if errorlevel 1 (popd & exit /b 1)
+call :ResolveOptions
+if errorlevel 1 (popd & exit /b 1)
+call :ValidateWorkspace
+if errorlevel 1 (popd & exit /b 1)
+call :BuildMigrationPlan
+if errorlevel 1 (popd & exit /b 1)
 call :ShowPlan
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-set /p "app.git_create_repo.confirm=Type CREATE to continue: "
-if "%app.git_create_repo.confirm%"=="CREATE" goto :_Main_local
-echo.
-echo Cancelled.
-set "_gcrm_rc=0" & goto :Main
-:_Main_local
-call :InitializeLocalGit
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
+if errorlevel 1 (popd & exit /b 1)
+if defined app.git_create_repo.dryrun (echo. & echo DRY RUN: dependencies may have been prepared; no project files, commits, remotes, or repositories were changed. & popd & exit /b 0)
+call :ConfirmCreation
+if errorlevel 1 (popd & exit /b 0)
+call :CaptureOriginalState
+if errorlevel 1 (popd & exit /b 1)
+call :EnsureTargetBranch
+if errorlevel 1 (popd & exit /b 1)
+call :ApplyReferenceChanges
+if errorlevel 1 (call :RollbackLocalMigration & popd & exit /b 1)
 call :EnsureGitIdentity
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-call :UpdateBuildConfig
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-call :CreateLocalCommit
-if not errorlevel 1 goto :_Main_remote
-call :RestoreBuildConfig
-git reset >nul 2>nul
-set "_gcrm_rc=1" & goto :Main
-:_Main_remote
+if errorlevel 1 (call :RollbackLocalMigration & popd & exit /b 1)
+call :CreateMigrationCommit
+if errorlevel 1 (call :RollbackLocalMigration & popd & exit /b 1)
 call :CreateGitHubRepository
-if errorlevel 1 (set "_gcrm_rc=%errorlevel%" & goto :Main)
-set "app.git_create_repo.created=1"
+if errorlevel 1 (call :RollbackLocalMigration & popd & exit /b 1)
 call :ConfigureRemotes
-if errorlevel 1 goto :_Main_created_error
+if errorlevel 1 (call :RestoreRemotes & popd & exit /b 1)
 call :PushBranch
-if errorlevel 1 goto :_Main_created_error
-echo.
-echo ============================================================
-echo  Repository created successfully
-echo ============================================================
-echo.
-echo GitHub:
-echo   https://github.com/%app.git_create_repo.slug%
-echo.
-echo Remotes:
-git remote -v
-echo.
-echo Latest commit:
-git log -1 --oneline
-echo.
-set "_gcrm_rc=0" & goto :Main
-:_Main_created_error
-echo.
-echo The GitHub repository now exists and was not deleted:
-echo   https://github.com/%app.git_create_repo.slug%
-echo.
-set "_gcrm_rc=1" & goto :Main
-:_Main_help
-call :ShowHelp
-set "_gcrm_rc=%errorlevel%" & goto :Main
+if errorlevel 1 (popd & exit /b 1)
+call :ShowSuccess
+set "gcrm_rc=%errorlevel%"
+popd
+exit /b %gcrm_rc%
+
 :: ============================================================
-:: :AuthenticateGitHub
-:: Logs in when necessary, resolves the authenticated account, and
-:: configures Git HTTPS authentication.
-::
-:: Usage: call :AuthenticateGitHub
-::
-:: Output:
-::   app.git_create_repo.login  authenticated GitHub login
-::
-:: Returns: 0 on success
-::          1 on authentication or setup failure
-:: Requires: gh
+:: Function PrepareDependencies
+:: Purpose
+::   Prepares Git and GitHub CLI without authenticating.
+:: Usage
+::   call PrepareDependencies
+:: Returns
+::   0 dependencies ready
+::   1 preparation or dependency failure
+:: ============================================================
+:PrepareDependencies
+if not exist "%app.git_create_repo.root%\prepare.bat" (echo ERROR: prepare.bat was not found in the project root. & exit /b 1)
+if not exist "%app.git_create_repo.rewrite%" (echo ERROR: Rewrite helper was not found: & echo   %app.git_create_repo.rewrite% & exit /b 1)
+echo.
+echo Preparing Git and GitHub CLI...
+call "%app.git_create_repo.root%\prepare.bat" repository
+set "gcrpd_rc=%errorlevel%"
+if not "%gcrpd_rc%"=="0" (echo ERROR: Repository dependency preparation failed. & exit /b 1)
+where git.exe >nul 2>nul
+if errorlevel 1 (echo ERROR: Git is unavailable after preparation. & exit /b 1)
+where gh.exe >nul 2>nul
+if errorlevel 1 (echo ERROR: GitHub CLI is unavailable after preparation. & exit /b 1)
+where powershell.exe >nul 2>nul
+if errorlevel 1 (echo ERROR: Windows PowerShell is unavailable. & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function AuthenticateGitHub
+:: Purpose
+::   Reuses an active GitHub CLI login or asks the user to login.
+:: Usage
+::   call AuthenticateGitHub
+:: Output
+::   app.git_create_repo.login
+:: Returns
+::   0 authenticated and Git credentials configured
+::   1 authentication was declined or failed
 :: ============================================================
 :AuthenticateGitHub
-for /f "tokens=1 delims==" %%v in ('set gcra_ 2^>nul') do set "%%v="
-if defined _gcra_rc (set "_gcra_rc=" & exit /b %_gcra_rc%)
 echo.
 echo Checking GitHub login...
 gh auth status --hostname github.com >nul 2>nul
-if not errorlevel 1 goto :_AuthenticateGitHub_account
-echo GitHub login is required.
-echo A browser window will open for secure login.
+if not errorlevel 1 goto :AuthenticateGitHubAccount
+if /I "%app.git_create_repo.login.mode%"=="no" (echo ERROR: GitHub login is required to create a repository. & exit /b 1)
+if /I "%app.git_create_repo.login.mode%"=="yes" goto :AuthenticateGitHubLogin
+set "app.git_create_repo.input="
+set /p "app.git_create_repo.input=GitHub login is required. Login now? [y/N]: "
+if /I not "%app.git_create_repo.input%"=="y" (echo Cancelled before authentication. & exit /b 1)
+:AuthenticateGitHubLogin
 echo.
+echo GitHub CLI will start secure browser authentication.
 gh auth login --hostname github.com --git-protocol https --web
-if errorlevel 1 (echo ERROR: GitHub login failed or was cancelled. & set "_gcra_rc=1" & goto :AuthenticateGitHub)
-:_AuthenticateGitHub_account
+set "gcra_rc=%errorlevel%"
+if not "%gcra_rc%"=="0" (echo ERROR: GitHub login failed or was cancelled. & exit /b 1)
+:AuthenticateGitHubAccount
 set "app.git_create_repo.login="
 for /f "delims=" %%A in ('gh api user --jq ".login" 2^>nul') do set "app.git_create_repo.login=%%A"
-if not defined app.git_create_repo.login (echo ERROR: Could not determine the logged-in GitHub account. & set "_gcra_rc=1" & goto :AuthenticateGitHub)
+if not defined app.git_create_repo.login (echo ERROR: Could not determine the authenticated GitHub account. & exit /b 1)
 echo Logged in as:
 echo   %app.git_create_repo.login%
-echo.
 gh auth setup-git --hostname github.com >nul 2>nul
-if errorlevel 1 (echo ERROR: GitHub CLI could not configure Git authentication. & set "_gcra_rc=1" & goto :AuthenticateGitHub)
-set "_gcra_rc=0" & goto :AuthenticateGitHub
+if errorlevel 1 (echo ERROR: GitHub CLI could not configure Git authentication. & exit /b 1)
+exit /b 0
+
 :: ============================================================
-:: :ResolveTarget
-:: Resolves and validates the target owner and repository name from
-:: arguments, project configuration, or authenticated account.
-::
-:: Usage: call :ResolveTarget
-::
-:: Output:
-::   app.git_create_repo.slug  OWNER/REPOSITORY
-::   app.git_create_repo.url   HTTPS Git URL
-::
-:: Returns: 0 on success
-::          1 on missing or unauthorized target
-:: Requires: gh, PowerShell
+:: Function ResolveSourceRepository
+:: Purpose
+::   Resolves the old repository identity used for reference changes.
+::   An existing upstream is preferred over origin.
+:: Usage
+::   call ResolveSourceRepository
+:: Output
+::   app.git_create_repo.old.slug
+::   app.git_create_repo.source.slug and source.url
+:: Returns
+::   0 source resolved
+::   1 source input is invalid
 :: ============================================================
-:ResolveTarget
-for /f "tokens=1 delims==" %%v in ('set gcrt_ 2^>nul') do set "%%v="
-if defined _gcrt_rc (set "_gcrt_rc=" & exit /b %_gcrt_rc%)
-if defined app.repo_slug set "app.git_create_repo.config.slug=%app.repo_slug%"
-if defined app.git_create_repo.config.slug goto :_ResolveTarget_owner
-if not defined CFG_REPO_URL goto :_ResolveTarget_owner
-set "GCR_PARSE_URL=%CFG_REPO_URL%"
-for /f "delims=" %%A in ('powershell -NoProfile -Command "$u=$env:GCR_PARSE_URL; if($u -match 'github\.com[:/](?<o>[^/]+)/(?<r>[^/]+?)(?:\.git)?/?$'){Write-Output ($Matches.o+'/'+$Matches.r)}" 2^>nul') do set "app.git_create_repo.config.slug=%%A"
-set "GCR_PARSE_URL="
-:_ResolveTarget_owner
-if defined app.git_create_repo.owner goto :_ResolveTarget_name
-if defined app.git_create_repo.config.slug for /f "tokens=1 delims=/" %%A in ("%app.git_create_repo.config.slug%") do set "app.git_create_repo.owner=%%A"
+:ResolveSourceRepository
+set "gcrsr_input=%app.git_create_repo.source.input%"
+if /I "%gcrsr_input%"=="none" set "gcrsr_input="
+if /I "%gcrsr_input%"=="keep" set "gcrsr_input="
+if not defined gcrsr_input for /f "delims=" %%A in ('git remote get-url upstream 2^>nul') do set "gcrsr_input=%%A"
+if not defined gcrsr_input for /f "delims=" %%A in ('git remote get-url origin 2^>nul') do set "gcrsr_input=%%A"
+if not defined gcrsr_input if defined app.repo_slug set "gcrsr_input=%app.repo_slug%"
+if not defined gcrsr_input if defined CFG_REPO_URL set "gcrsr_input=%CFG_REPO_URL%"
+if not defined gcrsr_input (echo ERROR: Could not determine the current repository. & echo Supply source OWNER/REPOSITORY. & exit /b 1)
+set "GCR_SOURCE_INPUT=%gcrsr_input%"
+set "gcrsr_slug="
+for /f "delims=" %%A in ('powershell.exe -NoProfile -Command "$u=$env:GCR_SOURCE_INPUT.Trim(); if($u -match 'github\.com[:/](?<o>[^/]+)/(?<r>[^/]+?)(?:\.git)?/?$'){Write-Output ($Matches.o+'/'+$Matches.r)} elseif($u -match '^[^/]+/[^/]+$'){Write-Output $u}" 2^>nul') do set "gcrsr_slug=%%A"
+set "GCR_SOURCE_INPUT="
+if not defined gcrsr_slug (echo ERROR: Source repository is not a supported GitHub URL or OWNER/REPOSITORY slug: & echo   %gcrsr_input% & exit /b 1)
+set "app.git_create_repo.source.slug="
+set "app.git_create_repo.source.url="
+for /f "delims=" %%A in ('gh repo view "%gcrsr_slug%" --json nameWithOwner --jq ".nameWithOwner" 2^>nul') do set "app.git_create_repo.source.slug=%%A"
+for /f "delims=" %%A in ('gh repo view "%gcrsr_slug%" --json url --jq ".url" 2^>nul') do set "app.git_create_repo.source.url=%%A.git"
+if not defined app.git_create_repo.source.slug (echo ERROR: Source repository was not found or is not visible: & echo   %gcrsr_slug% & exit /b 1)
+set "app.git_create_repo.old.slug=%app.git_create_repo.source.slug%"
+for /f "tokens=2 delims=/" %%A in ("%app.git_create_repo.old.slug%") do set "app.git_create_repo.old.name=%%A"
+if /I "%app.git_create_repo.source.input%"=="none" set "app.git_create_repo.source.mode=none"
+exit /b 0
+
+:: ============================================================
+:: Function ResolveTargetRepository
+:: Purpose
+::   Resolves and validates the new GitHub owner and repository name.
+:: Usage
+::   call ResolveTargetRepository
+:: Output
+::   app.git_create_repo.slug, url, and web
+:: Returns
+::   0 target is valid and absent
+::   1 target is invalid, unauthorized, or already exists
+:: ============================================================
+:ResolveTargetRepository
 if not defined app.git_create_repo.owner set "app.git_create_repo.owner=%app.git_create_repo.login%"
-:_ResolveTarget_name
-if defined app.git_create_repo.name goto :_ResolveTarget_compose
-if defined app.git_create_repo.config.slug for /f "tokens=2 delims=/" %%A in ("%app.git_create_repo.config.slug%") do set "app.git_create_repo.name=%%A"
-if not defined app.git_create_repo.name set "app.git_create_repo.name=%APP_NAME%"
 if not defined app.git_create_repo.name set /p "app.git_create_repo.name=New repository name: "
-:_ResolveTarget_compose
-if not defined app.git_create_repo.owner (echo ERROR: Repository owner is required. & set "_gcrt_rc=1" & goto :ResolveTarget)
-if not defined app.git_create_repo.name (echo ERROR: Repository name is required. & set "_gcrt_rc=1" & goto :ResolveTarget)
+if not defined app.git_create_repo.owner (echo ERROR: Repository owner is required. & exit /b 1)
+if not defined app.git_create_repo.name (echo ERROR: Repository name is required. & exit /b 1)
+echo(%app.git_create_repo.name%| findstr /R /X "[A-Za-z0-9._-][A-Za-z0-9._-]*" >nul
+if errorlevel 1 (echo ERROR: Repository name contains unsupported characters. & exit /b 1)
 set "app.git_create_repo.slug=%app.git_create_repo.owner%/%app.git_create_repo.name%"
 set "app.git_create_repo.url=https://github.com/%app.git_create_repo.slug%.git"
-set "app.git_create_repo.owner.type="
-for /f "delims=" %%A in ('gh api "users/%app.git_create_repo.owner%" --jq ".type" 2^>nul') do set "app.git_create_repo.owner.type=%%A"
-if not defined app.git_create_repo.owner.type (echo ERROR: Target account or organization was not found: & echo   %app.git_create_repo.owner% & set "_gcrt_rc=1" & goto :ResolveTarget)
-if /I "%app.git_create_repo.owner.type%"=="User" if /I not "%app.git_create_repo.owner%"=="%app.git_create_repo.login%" goto :_ResolveTarget_wrong_user
-set "_gcrt_rc=0" & goto :ResolveTarget
-:_ResolveTarget_wrong_user
-echo ERROR: You are logged in as %app.git_create_repo.login%.
-echo Creating a repository for %app.git_create_repo.owner% requires logging in as that user.
-echo Organizations may be targeted when your account has permission.
-set "_gcrt_rc=1" & goto :ResolveTarget
+set "app.git_create_repo.web=https://github.com/%app.git_create_repo.slug%"
+if /I "%app.git_create_repo.slug%"=="%app.git_create_repo.old.slug%" (echo ERROR: The new repository must differ from the source repository. & exit /b 1)
+set "gcrtr_owner_type="
+for /f "delims=" %%A in ('gh api "users/%app.git_create_repo.owner%" --jq ".type" 2^>nul') do set "gcrtr_owner_type=%%A"
+if not defined gcrtr_owner_type (echo ERROR: Target user or organization was not found: & echo   %app.git_create_repo.owner% & exit /b 1)
+if /I "%gcrtr_owner_type%"=="User" if /I not "%app.git_create_repo.owner%"=="%app.git_create_repo.login%" (echo ERROR: You are logged in as %app.git_create_repo.login% but targeted user %app.git_create_repo.owner%. & exit /b 1)
+gh repo view "%app.git_create_repo.slug%" >nul 2>nul
+if not errorlevel 1 (echo ERROR: The target repository already exists: & echo   %app.git_create_repo.web% & exit /b 1)
+exit /b 0
+
 :: ============================================================
-:: :ResolveSource
-:: Resolves an optional source repository from an argument, upstream,
-:: or an existing origin different from the new target.
-::
-:: Usage: call :ResolveSource
-::
-:: Returns: 0 when resolved or absent
-::          1 when the selected source is invalid or invisible
-:: Requires: git, gh, PowerShell
+:: Function ResolveOptions
+:: Purpose
+::   Resolves branch, visibility, source-remote, and rewrite options.
+:: Usage
+::   call ResolveOptions
+:: Returns
+::   0 options are valid
+::   1 an option is invalid
 :: ============================================================
-:ResolveSource
-for /f "tokens=1 delims==" %%v in ('set gcrs_ 2^>nul') do set "%%v="
-if defined _gcrs_rc (set "_gcrs_rc=" & exit /b %_gcrs_rc%)
-if defined app.git_create_repo.source.input goto :_ResolveSource_normalize
-for /f "delims=" %%A in ('git remote get-url upstream 2^>nul') do set "app.git_create_repo.source.input=%%A"
-if defined app.git_create_repo.source.input goto :_ResolveSource_normalize
-for /f "delims=" %%A in ('git remote get-url origin 2^>nul') do set "app.git_create_repo.existing.origin=%%A"
-if not defined app.git_create_repo.existing.origin (set "_gcrs_rc=0" & goto :ResolveSource)
-set "GCR_PARSE_URL=%app.git_create_repo.existing.origin%"
-for /f "delims=" %%A in ('powershell -NoProfile -Command "$u=$env:GCR_PARSE_URL; if($u -match 'github\.com[:/](?<o>[^/]+)/(?<r>[^/]+?)(?:\.git)?/?$'){Write-Output ($Matches.o+'/'+$Matches.r)}" 2^>nul') do set "app.git_create_repo.existing.origin.slug=%%A"
-set "GCR_PARSE_URL="
-if /I "%app.git_create_repo.existing.origin.slug%"=="%app.git_create_repo.slug%" (set "_gcrs_rc=0" & goto :ResolveSource)
-set "app.git_create_repo.source.input=%app.git_create_repo.existing.origin%"
-:_ResolveSource_normalize
-set "app.git_create_repo.source.slug="
-set "app.git_create_repo.source.web="
-for /f "delims=" %%A in ('gh repo view "%app.git_create_repo.source.input%" --json nameWithOwner --jq ".nameWithOwner" 2^>nul') do set "app.git_create_repo.source.slug=%%A"
-for /f "delims=" %%A in ('gh repo view "%app.git_create_repo.source.input%" --json url --jq ".url" 2^>nul') do set "app.git_create_repo.source.web=%%A"
-if not defined app.git_create_repo.source.slug (echo ERROR: Source repository was not found or is not visible: & echo   %app.git_create_repo.source.input% & set "_gcrs_rc=1" & goto :ResolveSource)
-if /I "%app.git_create_repo.source.slug%"=="%app.git_create_repo.slug%" goto :_ResolveSource_same
-set "app.git_create_repo.source.url=%app.git_create_repo.source.web%.git"
-set "_gcrs_rc=0" & goto :ResolveSource
-:_ResolveSource_same
-set "app.git_create_repo.source.slug="
-set "app.git_create_repo.source.web="
-set "app.git_create_repo.source.url="
-set "_gcrs_rc=0" & goto :ResolveSource
-:: ============================================================
-:: :ResolveVisibility
-:: Resolves and validates repository visibility.
-::
-:: Usage: call :ResolveVisibility
-::
-:: Returns: 0 when private, public, or internal
-::          1 otherwise
-:: Requires: none
-:: ============================================================
-:ResolveVisibility
-for /f "tokens=1 delims==" %%v in ('set gcrv_ 2^>nul') do set "%%v="
-if defined _gcrv_rc (set "_gcrv_rc=" & exit /b %_gcrv_rc%)
-if defined app.git_create_repo.visibility goto :_ResolveVisibility_validate
-if defined app.repo_visibility set "app.git_create_repo.visibility=%app.repo_visibility%"
-if defined app.github_visibility set "app.git_create_repo.visibility=%app.github_visibility%"
-if defined app.git_create_repo.visibility goto :_ResolveVisibility_validate
-echo Repository visibility:
-echo   private
-echo   public
-echo   internal
-echo.
-set /p "app.git_create_repo.visibility=Visibility [private]: "
-if not defined app.git_create_repo.visibility set "app.git_create_repo.visibility=private"
-:_ResolveVisibility_validate
-if /I "%app.git_create_repo.visibility%"=="private" (set "app.git_create_repo.visibility=private" & set "_gcrv_rc=0" & goto :ResolveVisibility)
-if /I "%app.git_create_repo.visibility%"=="public" (set "app.git_create_repo.visibility=public" & set "_gcrv_rc=0" & goto :ResolveVisibility)
-if /I "%app.git_create_repo.visibility%"=="internal" (set "app.git_create_repo.visibility=internal" & set "_gcrv_rc=0" & goto :ResolveVisibility)
-echo ERROR: Visibility must be private, public, or internal.
-set "_gcrv_rc=1" & goto :ResolveVisibility
-:: ============================================================
-:: :ResolveBranch
-:: Resolves the branch to publish from arguments, configuration,
-:: current branch, or main.
-::
-:: Usage: call :ResolveBranch
-::
-:: Returns: 0 when the branch name is valid
-::          1 when invalid
-:: Requires: git
-:: ============================================================
-:ResolveBranch
-for /f "tokens=1 delims==" %%v in ('set gcrb_ 2^>nul') do set "%%v="
-if defined _gcrb_rc (set "_gcrb_rc=" & exit /b %_gcrb_rc%)
-if defined app.git_create_repo.branch goto :_ResolveBranch_validate
-if defined CFG_BRANCH set "app.git_create_repo.branch=%CFG_BRANCH%"
-if defined app.git_create_repo.branch goto :_ResolveBranch_validate
-for /f "delims=" %%A in ('git branch --show-current 2^>nul') do set "app.git_create_repo.branch=%%A"
+:ResolveOptions
+if not defined app.git_create_repo.branch for /f "delims=" %%A in ('git branch --show-current 2^>nul') do set "app.git_create_repo.branch=%%A"
 if not defined app.git_create_repo.branch set "app.git_create_repo.branch=main"
-:_ResolveBranch_validate
 git check-ref-format --branch "%app.git_create_repo.branch%" >nul 2>nul
-if errorlevel 1 (echo ERROR: Invalid branch name: & echo   %app.git_create_repo.branch% & set "_gcrb_rc=1" & goto :ResolveBranch)
-set "_gcrb_rc=0" & goto :ResolveBranch
+if errorlevel 1 (echo ERROR: Invalid branch name: %app.git_create_repo.branch% & exit /b 1)
+if /I "%app.git_create_repo.visibility%"=="private" goto :ResolveOptionsVisibilityDone
+if /I "%app.git_create_repo.visibility%"=="public" goto :ResolveOptionsVisibilityDone
+if /I "%app.git_create_repo.visibility%"=="internal" goto :ResolveOptionsVisibilityDone
+echo ERROR: Visibility must be private, public, or internal.
+exit /b 1
+:ResolveOptionsVisibilityDone
+if /I "%app.git_create_repo.source.mode%"=="keep" goto :ResolveOptionsSourceDone
+if /I "%app.git_create_repo.source.mode%"=="none" goto :ResolveOptionsSourceDone
+echo ERROR: Source mode must be keep or none.
+exit /b 1
+:ResolveOptionsSourceDone
+if /I "%app.git_create_repo.references%"=="all" goto :ResolveOptionsReferencesDone
+if /I "%app.git_create_repo.references%"=="urls" goto :ResolveOptionsReferencesDone
+if /I "%app.git_create_repo.references%"=="none" goto :ResolveOptionsReferencesDone
+echo ERROR: References must be all, urls, or none.
+exit /b 1
+:ResolveOptionsReferencesDone
+if /I "%app.git_create_repo.rename.name%"=="yes" goto :ResolveOptionsRenameDone
+if /I "%app.git_create_repo.rename.name%"=="no" goto :ResolveOptionsRenameDone
+echo ERROR: rename must be yes or no.
+exit /b 1
+:ResolveOptionsRenameDone
+if /I "%app.git_create_repo.identity.mode%"=="ask" goto :ResolveOptionsIdentityDone
+if /I "%app.git_create_repo.identity.mode%"=="defaults" goto :ResolveOptionsIdentityDone
+echo ERROR: identity must be ask or defaults.
+exit /b 1
+:ResolveOptionsIdentityDone
+if /I "%app.git_create_repo.login.mode%"=="ask" exit /b 0
+if /I "%app.git_create_repo.login.mode%"=="yes" exit /b 0
+if /I "%app.git_create_repo.login.mode%"=="no" exit /b 0
+echo ERROR: login must be ask, yes, or no.
+exit /b 1
+
 :: ============================================================
-:: :ShowPlan
-:: Displays the target, visibility, branch, source, and local update
-:: behavior before confirmation.
-::
-:: Usage: call :ShowPlan
-::
-:: Returns: 0
-:: Requires: none
+:: Function ValidateWorkspace
+:: Purpose
+::   Requires a Git worktree with no tracked staged or unstaged edits.
+::   Untracked non-ignored files are allowed and will be included.
+:: Usage
+::   call ValidateWorkspace
+:: Returns
+::   0 workspace is safe for reversible migration
+::   1 worktree is unsuitable
+:: ============================================================
+:ValidateWorkspace
+git rev-parse --is-inside-work-tree >nul 2>nul
+if errorlevel 1 (echo ERROR: The project root is not a Git worktree. & exit /b 1)
+git rev-parse --verify HEAD >nul 2>nul
+if errorlevel 1 (echo ERROR: The source repository has no commit history. & exit /b 1)
+git diff --quiet --ignore-submodules --
+if errorlevel 1 (echo ERROR: Tracked files have unstaged changes. & echo Commit or restore them before creating a new repository. & exit /b 1)
+git diff --cached --quiet --ignore-submodules --
+if errorlevel 1 (echo ERROR: The index already contains staged changes. & echo Commit or unstage them before continuing. & exit /b 1)
+if exist ".git\MERGE_HEAD" (echo ERROR: A merge is in progress. & exit /b 1)
+if exist ".git\rebase-merge" (echo ERROR: A rebase is in progress. & exit /b 1)
+if exist ".git\rebase-apply" (echo ERROR: A rebase is in progress. & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function BuildMigrationPlan
+:: Purpose
+::   Scans tracked and untracked non-ignored text files and reports
+::   every old-repository reference that would be changed.
+:: Usage
+::   call BuildMigrationPlan
+:: Output
+::   app.git_create_repo.report and backup
+:: Returns
+::   0 plan generated
+::   1 scan or encoding safety failure
+:: ============================================================
+:BuildMigrationPlan
+call :CreateTimestamp
+if errorlevel 1 exit /b 1
+set "app.git_create_repo.report=%TEMP%\git_create_repository.%app.git_create_repo.timestamp%.plan.txt"
+set "app.git_create_repo.backup=%TEMP%\git_create_repository.%app.git_create_repo.timestamp%.backup"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%app.git_create_repo.rewrite%" -Mode Plan -Root "%app.git_create_repo.root%" -OldSlug "%app.git_create_repo.old.slug%" -NewSlug "%app.git_create_repo.slug%" -References "%app.git_create_repo.references%" -RenameName "%app.git_create_repo.rename.name%" -Report "%app.git_create_repo.report%"
+set "gcrbp_rc=%errorlevel%"
+if not "%gcrbp_rc%"=="0" (echo ERROR: Repository reference scan failed. & echo Report: %app.git_create_repo.report% & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function ShowPlan
+:: Purpose
+::   Displays the complete repository creation and migration plan.
+:: Usage
+::   call ShowPlan
+:: Returns
+::   0
 :: ============================================================
 :ShowPlan
 echo.
 echo ============================================================
-echo  Planned repository
+echo  Planned new repository
 echo ============================================================
 echo.
-echo GitHub account:
+echo Authenticated GitHub account:
 echo   %app.git_create_repo.login%
+echo.
+echo Source repository:
+echo   %app.git_create_repo.old.slug%
 echo.
 echo New repository:
 echo   %app.git_create_repo.slug%
@@ -378,406 +375,601 @@ echo.
 echo Branch:
 echo   %app.git_create_repo.branch%
 echo.
-if defined app.git_create_repo.source.slug goto :_ShowPlan_source
-echo No source repository is configured.
-echo Existing local Git history, if any, will be preserved.
-goto :_ShowPlan_config
-:_ShowPlan_source
-echo Repository-copy source:
-echo   %app.git_create_repo.source.slug%
+echo Reference migration:
+echo   %app.git_create_repo.references%
 echo.
-echo Existing Git history will be preserved.
-echo The source will become the upstream remote.
-:_ShowPlan_config
+echo Rename standalone repository name:
+echo   %app.git_create_repo.rename.name%
 echo.
-echo build_config.bat will be updated before the commit.
-echo The previous active repository settings will remain as comments.
+if /I "%app.git_create_repo.source.mode%"=="keep" (echo Local upstream after creation: & echo   %app.git_create_repo.source.url%) else (echo Local upstream after creation: & echo   none)
 echo.
+echo Files included:
+echo   tracked files and untracked non-ignored files
+echo.
+echo Reference report:
+echo   %app.git_create_repo.report%
+echo.
+type "%app.git_create_repo.report%"
+echo.
+echo Safety:
+echo   tracked worktree is clean
+echo   modified files will be backed up before commit
+echo   the GitHub repository is created only after local validation
+echo   the new repository is created normally, never as a fork
 exit /b 0
+
 :: ============================================================
-:: :InitializeLocalGit
-:: Initializes Git when needed and ensures the requested branch is
-:: checked out while preserving existing history.
-::
-:: Usage: call :InitializeLocalGit
-::
-:: Returns: 0 on success
-::          1 on initialization or branch failure
-:: Requires: git
+:: Function ConfirmCreation
+:: Purpose
+::   Requires the exact CREATE token unless preconfirmed.
+:: Usage
+::   call ConfirmCreation
+:: Returns
+::   0 confirmed
+::   1 cancelled
 :: ============================================================
-:InitializeLocalGit
-for /f "tokens=1 delims==" %%v in ('set gcri_ 2^>nul') do set "%%v="
-if defined _gcri_rc (set "_gcri_rc=" & exit /b %_gcri_rc%)
-git rev-parse --is-inside-work-tree >nul 2>nul
-if not errorlevel 1 goto :_InitializeLocalGit_existing
-git init -b "%app.git_create_repo.branch%" >nul 2>nul
-if not errorlevel 1 (set "_gcri_rc=0" & goto :InitializeLocalGit)
-git init
-if errorlevel 1 (echo ERROR: git init failed. & set "_gcri_rc=1" & goto :InitializeLocalGit)
-git symbolic-ref HEAD "refs/heads/%app.git_create_repo.branch%" >nul 2>nul
-if errorlevel 1 (echo ERROR: Could not select branch %app.git_create_repo.branch%. & set "_gcri_rc=1" & goto :InitializeLocalGit)
-set "_gcri_rc=0" & goto :InitializeLocalGit
-:_InitializeLocalGit_existing
-set "app.git_create_repo.current.branch="
-for /f "delims=" %%A in ('git branch --show-current 2^>nul') do set "app.git_create_repo.current.branch=%%A"
-if defined app.git_create_repo.current.branch goto :_InitializeLocalGit_named
+:ConfirmCreation
+if "%app.git_create_repo.confirm%"=="CREATE" exit /b 0
+set "app.git_create_repo.input="
+set /p "app.git_create_repo.input=Type CREATE to create and push the new repository: "
+if "%app.git_create_repo.input%"=="CREATE" exit /b 0
+echo.
+echo Cancelled. No files, commits, remotes, or repositories were changed.
+exit /b 1
+
+:: ============================================================
+:: Function CaptureOriginalState
+:: Purpose
+::   Records the original commit, branch, and primary remotes.
+:: Usage
+::   call CaptureOriginalState
+:: Returns
+::   0 state captured
+::   1 HEAD or branch unavailable
+:: ============================================================
+:CaptureOriginalState
+for /f "delims=" %%A in ('git rev-parse HEAD 2^>nul') do set "app.git_create_repo.original.head=%%A"
+for /f "delims=" %%A in ('git branch --show-current 2^>nul') do set "app.git_create_repo.original.branch=%%A"
+for /f "delims=" %%A in ('git remote get-url origin 2^>nul') do set "app.git_create_repo.original.origin=%%A"
+for /f "delims=" %%A in ('git remote get-url upstream 2^>nul') do set "app.git_create_repo.original.upstream=%%A"
+for /f "delims=" %%A in ('git config --local --get user.name 2^>nul') do set "app.git_create_repo.original.git.name=%%A"
+for /f "delims=" %%A in ('git config --local --get user.email 2^>nul') do set "app.git_create_repo.original.git.email=%%A"
+if not defined app.git_create_repo.original.head (echo ERROR: Could not capture the original HEAD. & exit /b 1)
+if not defined app.git_create_repo.original.branch (echo ERROR: Detached HEAD is not supported. & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function EnsureTargetBranch
+:: Purpose
+::   Selects or creates the branch that will be pushed.
+:: Usage
+::   call EnsureTargetBranch
+:: Returns
+::   0 branch selected
+::   1 branch selection failed
+:: ============================================================
+:EnsureTargetBranch
+if /I "%app.git_create_repo.original.branch%"=="%app.git_create_repo.branch%" exit /b 0
 git show-ref --verify --quiet "refs/heads/%app.git_create_repo.branch%"
-if not errorlevel 1 goto :_InitializeLocalGit_switch_existing
-git rev-parse --verify HEAD >nul 2>nul
-if errorlevel 1 (git symbolic-ref HEAD "refs/heads/%app.git_create_repo.branch%" >nul 2>nul) else (git switch -c "%app.git_create_repo.branch%" >nul 2>nul)
-if errorlevel 1 (echo ERROR: Could not create branch %app.git_create_repo.branch%. & set "_gcri_rc=1" & goto :InitializeLocalGit)
-set "_gcri_rc=0" & goto :InitializeLocalGit
-:_InitializeLocalGit_switch_existing
-git switch "%app.git_create_repo.branch%" >nul 2>nul
-if errorlevel 1 (echo ERROR: Could not switch to existing branch %app.git_create_repo.branch%. & set "_gcri_rc=1" & goto :InitializeLocalGit)
-set "_gcri_rc=0" & goto :InitializeLocalGit
-:_InitializeLocalGit_named
-if /I "%app.git_create_repo.current.branch%"=="%app.git_create_repo.branch%" (set "_gcri_rc=0" & goto :InitializeLocalGit)
-git show-ref --verify --quiet "refs/heads/%app.git_create_repo.branch%"
-if not errorlevel 1 (echo ERROR: Target branch already exists locally: & echo   %app.git_create_repo.branch% & echo Switch to it or choose another branch before continuing. & set "_gcri_rc=1" & goto :InitializeLocalGit)
-echo Renaming current branch:
-echo   %app.git_create_repo.current.branch% to %app.git_create_repo.branch%
-git branch -m "%app.git_create_repo.branch%"
-if errorlevel 1 (echo ERROR: Could not rename the current branch. & set "_gcri_rc=1" & goto :InitializeLocalGit)
-set "_gcri_rc=0" & goto :InitializeLocalGit
+if errorlevel 1 goto :EnsureTargetBranchCreate
+git switch "%app.git_create_repo.branch%"
+if errorlevel 1 (echo ERROR: Could not switch to branch %app.git_create_repo.branch%. & exit /b 1)
+exit /b 0
+:EnsureTargetBranchCreate
+git switch -c "%app.git_create_repo.branch%"
+if errorlevel 1 (echo ERROR: Could not create branch %app.git_create_repo.branch%. & exit /b 1)
+set "app.git_create_repo.branch.created=1"
+exit /b 0
+
 :: ============================================================
-:: :EnsureGitIdentity
-:: Resolves and stores local Git user.name and user.email.
-::
-:: Usage: call :EnsureGitIdentity
-::
-:: Returns: 0 on success
-::          1 when identity is missing or cannot be stored
-:: Requires: git
+:: Function ApplyReferenceChanges
+:: Purpose
+::   Applies the reviewed reference migration with byte backups,
+::   stages all non-ignored project files, and checks whitespace.
+:: Usage
+::   call ApplyReferenceChanges
+:: Returns
+::   0 changes staged safely
+::   1 rewrite, staging, or whitespace check failure
+:: ============================================================
+:ApplyReferenceChanges
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%app.git_create_repo.rewrite%" -Mode Apply -Root "%app.git_create_repo.root%" -OldSlug "%app.git_create_repo.old.slug%" -NewSlug "%app.git_create_repo.slug%" -References "%app.git_create_repo.references%" -RenameName "%app.git_create_repo.rename.name%" -Report "%app.git_create_repo.report%" -BackupRoot "%app.git_create_repo.backup%"
+set "gcra_rc=%errorlevel%"
+if not "%gcra_rc%"=="0" (echo ERROR: Repository reference migration failed. & exit /b 1)
+git add --all
+if errorlevel 1 (echo ERROR: git add --all failed. & exit /b 1)
+git diff --cached --check
+if errorlevel 1 (echo ERROR: Staged whitespace validation failed. & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function EnsureGitIdentity
+:: Purpose
+::   Resolves local Git identity from arguments, Git, or GitHub.
+:: Usage
+::   call EnsureGitIdentity
+:: Returns
+::   0 identity stored locally
+::   1 identity unavailable or cannot be stored
 :: ============================================================
 :EnsureGitIdentity
-for /f "tokens=1 delims==" %%v in ('set gcre_ 2^>nul') do set "%%v="
-if defined _gcre_rc (set "_gcre_rc=" & exit /b %_gcre_rc%)
+if defined app.git_create_repo.git.name goto :EnsureGitIdentityEmail
+if /I "%app.git_create_repo.identity.mode%"=="defaults" goto :EnsureGitIdentityGitHub
 for /f "delims=" %%A in ('git config --local --get user.name 2^>nul') do set "app.git_create_repo.git.name=%%A"
-for /f "delims=" %%A in ('git config --local --get user.email 2^>nul') do set "app.git_create_repo.git.email=%%A"
-if defined app.git_name set "app.git_create_repo.git.name=%app.git_name%"
-if defined app.git_email set "app.git_create_repo.git.email=%app.git_email%"
 if not defined app.git_create_repo.git.name for /f "delims=" %%A in ('git config --global --get user.name 2^>nul') do set "app.git_create_repo.git.name=%%A"
+:EnsureGitIdentityEmail
+if defined app.git_create_repo.git.email goto :EnsureGitIdentityPrompt
+if /I "%app.git_create_repo.identity.mode%"=="defaults" goto :EnsureGitIdentityGitHub
+for /f "delims=" %%A in ('git config --local --get user.email 2^>nul') do set "app.git_create_repo.git.email=%%A"
 if not defined app.git_create_repo.git.email for /f "delims=" %%A in ('git config --global --get user.email 2^>nul') do set "app.git_create_repo.git.email=%%A"
+goto :EnsureGitIdentityPrompt
+:EnsureGitIdentityGitHub
+if not defined app.git_create_repo.git.name set "app.git_create_repo.git.name=%app.git_create_repo.login%"
+set "gcre_id="
+for /f "delims=" %%A in ('gh api user --jq ".id" 2^>nul') do set "gcre_id=%%A"
+if not defined app.git_create_repo.git.email for /f "delims=" %%A in ('gh api user --jq ".email // empty" 2^>nul') do set "app.git_create_repo.git.email=%%A"
+if not defined app.git_create_repo.git.email if defined gcre_id set "app.git_create_repo.git.email=%gcre_id%+%app.git_create_repo.login%@users.noreply.github.com"
+:EnsureGitIdentityPrompt
+if /I "%app.git_create_repo.identity.mode%"=="defaults" goto :EnsureGitIdentityValidate
 set "app.git_create_repo.input="
 set /p "app.git_create_repo.input=Git name [%app.git_create_repo.git.name%]: "
 if defined app.git_create_repo.input set "app.git_create_repo.git.name=%app.git_create_repo.input%"
 set "app.git_create_repo.input="
 set /p "app.git_create_repo.input=Git email [%app.git_create_repo.git.email%]: "
 if defined app.git_create_repo.input set "app.git_create_repo.git.email=%app.git_create_repo.input%"
-if not defined app.git_create_repo.git.name (echo ERROR: Git name is required. & set "_gcre_rc=1" & goto :EnsureGitIdentity)
-if not defined app.git_create_repo.git.email (echo ERROR: Git email is required. & set "_gcre_rc=1" & goto :EnsureGitIdentity)
+:EnsureGitIdentityValidate
+if not defined app.git_create_repo.git.name (echo ERROR: Git name is required. & exit /b 1)
+if not defined app.git_create_repo.git.email (echo ERROR: Git email is required. & exit /b 1)
 git config --local user.name "%app.git_create_repo.git.name%"
-if errorlevel 1 (echo ERROR: Could not store Git user.name. & set "_gcre_rc=1" & goto :EnsureGitIdentity)
+if errorlevel 1 (echo ERROR: Could not store local Git user.name. & exit /b 1)
 git config --local user.email "%app.git_create_repo.git.email%"
-if errorlevel 1 (echo ERROR: Could not store Git user.email. & set "_gcre_rc=1" & goto :EnsureGitIdentity)
-set "_gcre_rc=0" & goto :EnsureGitIdentity
+if errorlevel 1 (echo ERROR: Could not store local Git user.email. & exit /b 1)
+echo Git identity:
+echo   Name: %app.git_create_repo.git.name%
+echo   Email: %app.git_create_repo.git.email%
+exit /b 0
+
 :: ============================================================
-:: :UpdateBuildConfig
-:: Backs up build_config.bat and replaces active repository settings,
-:: preserving previous settings as comments.
-::
-:: Usage: call :UpdateBuildConfig
-::
-:: Output:
-::   app.git_create_repo.backup  backup path
-::
-:: Returns: 0 on success
-::          1 on backup or update failure
-:: Requires: PowerShell, TOOLS_DIR
+:: Function CreateMigrationCommit
+:: Purpose
+::   Creates the migration commit when staged changes exist.
+:: Usage
+::   call CreateMigrationCommit
+:: Returns
+::   0 valid HEAD ready
+::   1 commit failure
 :: ============================================================
-:UpdateBuildConfig
-for /f "tokens=1 delims==" %%v in ('set gcru_ 2^>nul') do set "%%v="
-if defined _gcru_rc (set "_gcru_rc=" & exit /b %_gcru_rc%)
-if not exist "%CD%\build_config.bat" (echo ERROR: build_config.bat was not found. & set "_gcru_rc=1" & goto :UpdateBuildConfig)
-for /f "delims=" %%A in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd.HHmmss" 2^>nul') do set "app.git_create_repo.timestamp=%%A"
-if not defined app.git_create_repo.timestamp set "app.git_create_repo.timestamp=unknown"
-set "app.git_create_repo.logs=%TOOLS_DIR%\logs"
-if exist "%app.git_create_repo.logs%\" goto :_UpdateBuildConfig_backup
-mkdir "%app.git_create_repo.logs%" >nul 2>nul
-if errorlevel 1 (echo ERROR: Could not create logs folder: & echo   %app.git_create_repo.logs% & set "_gcru_rc=1" & goto :UpdateBuildConfig)
-:_UpdateBuildConfig_backup
-set "app.git_create_repo.backup=%app.git_create_repo.logs%\build_config.before-create.%app.git_create_repo.timestamp%.bat"
-copy /y "%CD%\build_config.bat" "%app.git_create_repo.backup%" >nul
-if errorlevel 1 (echo ERROR: Could not back up build_config.bat. & set "_gcru_rc=1" & goto :UpdateBuildConfig)
-set "GCR_CONFIG=%CD%\build_config.bat"
-set "GCR_NEW_URL=%app.git_create_repo.url%"
-set "GCR_NEW_SLUG=%app.git_create_repo.slug%"
-set "GCR_SOURCE_URL=%app.git_create_repo.source.url%"
-set "GCR_SOURCE_SLUG=%app.git_create_repo.source.slug%"
-set "GCR_TIMESTAMP=%app.git_create_repo.timestamp%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:GCR_CONFIG; $a=[IO.File]::ReadAllLines($p); $o=New-Object 'System.Collections.Generic.List[string]'; $done=$false; foreach($x in $a){ if($x -match '^\s*set\s+\"app\.(repo_url|repo_slug|upstream_url|fork_source_url)='){ $o.Add('rem previous: '+$x) } elseif((-not $done)-and($x -match '^\s*exit\s+/b\s+0\s*$')){ $o.Add(''); $o.Add('rem ============================================================'); $o.Add('rem Repository settings added by git_create_repository.bat'); $o.Add('rem Timestamp: '+$env:GCR_TIMESTAMP); if($env:GCR_SOURCE_SLUG){$o.Add('rem Copied from: '+$env:GCR_SOURCE_SLUG)}; $o.Add('rem ============================================================'); $o.Add(''); $o.Add('set \"app.repo_url='+$env:GCR_NEW_URL+'\"'); $o.Add('set \"app.repo_slug='+$env:GCR_NEW_SLUG+'\"'); if($env:GCR_SOURCE_URL){$o.Add('set \"app.upstream_url='+$env:GCR_SOURCE_URL+'\"'); $o.Add('set \"app.fork_source_url='+$env:GCR_SOURCE_URL+'\"')}; $o.Add(''); $o.Add($x); $done=$true } else { $o.Add($x) } }; if(-not $done){throw 'exit /b 0 not found'}; [IO.File]::WriteAllLines($p,$o,(New-Object Text.UTF8Encoding($false)))"
-set "gcru_update_rc=%errorlevel%"
-set "GCR_CONFIG="
-set "GCR_NEW_URL="
-set "GCR_NEW_SLUG="
-set "GCR_SOURCE_URL="
-set "GCR_SOURCE_SLUG="
-set "GCR_TIMESTAMP="
-if "%gcru_update_rc%"=="0" (set "_gcru_rc=0" & goto :UpdateBuildConfig)
-echo ERROR: Could not update build_config.bat.
-call :RestoreBuildConfig
-set "_gcru_rc=1" & goto :UpdateBuildConfig
-:: ============================================================
-:: :RestoreBuildConfig
-:: Restores build_config.bat from the backup created by
-:: :UpdateBuildConfig.
-::
-:: Usage: call :RestoreBuildConfig
-::
-:: Returns: 0 on success
-::          1 when no backup exists or restore fails
-:: Requires: copy
-:: ============================================================
-:RestoreBuildConfig
-for /f "tokens=1 delims==" %%v in ('set gcrx_ 2^>nul') do set "%%v="
-if defined _gcrx_rc (set "_gcrx_rc=" & exit /b %_gcrx_rc%)
-if not defined app.git_create_repo.backup (echo ERROR: No build_config.bat backup is available. & set "_gcrx_rc=1" & goto :RestoreBuildConfig)
-if not exist "%app.git_create_repo.backup%" (echo ERROR: build_config.bat backup was not found: & echo   %app.git_create_repo.backup% & set "_gcrx_rc=1" & goto :RestoreBuildConfig)
-echo Restoring build_config.bat from:
-echo   %app.git_create_repo.backup%
-copy /y "%app.git_create_repo.backup%" "%CD%\build_config.bat" >nul
-if errorlevel 1 (echo ERROR: build_config.bat restore failed. & set "_gcrx_rc=1" & goto :RestoreBuildConfig)
-set "_gcrx_rc=0" & goto :RestoreBuildConfig
-:: ============================================================
-:: :CreateLocalCommit
-:: Stages all files and creates a commit when needed, preserving an
-:: existing unchanged HEAD.
-::
-:: Usage: call :CreateLocalCommit
-::
-:: Returns: 0 when a valid HEAD exists
-::          1 on staging, empty initial project, or commit failure
-:: Requires: git
-:: ============================================================
-:CreateLocalCommit
-for /f "tokens=1 delims==" %%v in ('set gcrc_ 2^>nul') do set "%%v="
-if defined _gcrc_rc (set "_gcrc_rc=" & exit /b %_gcrc_rc%)
-git add --all
-if errorlevel 1 (echo ERROR: git add failed. & set "_gcrc_rc=1" & goto :CreateLocalCommit)
-set "app.git_create_repo.has.head="
-set "app.git_create_repo.has.staged="
-git rev-parse --verify HEAD >nul 2>nul
-if not errorlevel 1 set "app.git_create_repo.has.head=1"
+:CreateMigrationCommit
 git diff --cached --quiet
-if errorlevel 1 set "app.git_create_repo.has.staged=1"
-if defined app.git_create_repo.has.head if not defined app.git_create_repo.has.staged (set "_gcrc_rc=0" & goto :CreateLocalCommit)
-if not defined app.git_create_repo.has.head if not defined app.git_create_repo.has.staged (echo ERROR: The project has no files to commit. & set "_gcrc_rc=1" & goto :CreateLocalCommit)
+if not errorlevel 1 (echo No file-content changes were required. Existing HEAD will be pushed. & exit /b 0)
 if not defined app.git_create_repo.message set "app.git_create_repo.message=Create %app.git_create_repo.slug% repository"
 git commit -m "%app.git_create_repo.message%"
-if errorlevel 1 (echo ERROR: Could not create the local commit. & set "_gcrc_rc=1" & goto :CreateLocalCommit)
+if errorlevel 1 (echo ERROR: Could not create the migration commit. & exit /b 1)
+set "app.git_create_repo.commit.created=1"
 git rev-parse --verify HEAD >nul 2>nul
-if errorlevel 1 (echo ERROR: HEAD verification failed after commit. & set "_gcrc_rc=1" & goto :CreateLocalCommit)
-set "_gcrc_rc=0" & goto :CreateLocalCommit
+if errorlevel 1 (echo ERROR: HEAD verification failed after commit. & exit /b 1)
+exit /b 0
+
 :: ============================================================
-:: :CreateGitHubRepository
-:: Creates the target GitHub repository with selected visibility.
-::
-:: Usage: call :CreateGitHubRepository
-::
-:: Returns: 0 on success
-::          1 on GitHub CLI failure
-:: Requires: gh
+:: Function CreateGitHubRepository
+:: Purpose
+::   Creates a normal empty GitHub repository, never a fork.
+:: Usage
+::   call CreateGitHubRepository
+:: Returns
+::   0 repository created and verified as non-fork
+::   1 creation or verification failure
 :: ============================================================
 :CreateGitHubRepository
-for /f "tokens=1 delims==" %%v in ('set gcrg_ 2^>nul') do set "%%v="
-if defined _gcrg_rc (set "_gcrg_rc=" & exit /b %_gcrg_rc%)
 echo.
-echo Creating GitHub repository:
+echo Creating new GitHub repository:
 echo   %app.git_create_repo.slug%
-echo.
-if /I "%app.git_create_repo.visibility%"=="private" goto :_CreateGitHubRepository_private
-if /I "%app.git_create_repo.visibility%"=="public" goto :_CreateGitHubRepository_public
-gh repo create "%app.git_create_repo.slug%" --internal
-goto :_CreateGitHubRepository_result
-:_CreateGitHubRepository_private
-gh repo create "%app.git_create_repo.slug%" --private
-goto :_CreateGitHubRepository_result
-:_CreateGitHubRepository_public
-gh repo create "%app.git_create_repo.slug%" --public
-:_CreateGitHubRepository_result
-if errorlevel 1 goto :_CreateGitHubRepository_failed
-set "_gcrg_rc=0" & goto :CreateGitHubRepository
-:_CreateGitHubRepository_failed
-echo.
-echo ERROR: GitHub repository creation failed.
-echo.
-echo The local commit is safe.
-echo build_config.bat names the intended repository.
-echo Existing remotes were not changed.
-set "_gcrg_rc=1" & goto :CreateGitHubRepository
+if /I "%app.git_create_repo.visibility%"=="private" gh repo create "%app.git_create_repo.slug%" --private --description "%app.git_create_repo.description%"
+if /I "%app.git_create_repo.visibility%"=="public" gh repo create "%app.git_create_repo.slug%" --public --description "%app.git_create_repo.description%"
+if /I "%app.git_create_repo.visibility%"=="internal" gh repo create "%app.git_create_repo.slug%" --internal --description "%app.git_create_repo.description%"
+set "gcrg_rc=%errorlevel%"
+if not "%gcrg_rc%"=="0" (echo ERROR: GitHub repository creation failed. & exit /b 1)
+set "app.git_create_repo.created=1"
+set "gcrg_is_fork="
+for /f "delims=" %%A in ('gh repo view "%app.git_create_repo.slug%" --json isFork --jq ".isFork" 2^>nul') do set "gcrg_is_fork=%%A"
+if /I not "%gcrg_is_fork%"=="false" (echo ERROR: The new repository could not be verified as a non-fork. & exit /b 1)
+exit /b 0
+
 :: ============================================================
-:: :ConfigureRemotes
-:: Configures optional upstream and the new origin repository.
-::
-:: Usage: call :ConfigureRemotes
-::
-:: Returns: 0 on success
-::          1 on remote add or update failure
-:: Requires: git
+:: Function ConfigureRemotes
+:: Purpose
+::   Makes the new repository origin and optionally preserves the
+::   old repository as upstream.
+:: Usage
+::   call ConfigureRemotes
+:: Returns
+::   0 remotes configured
+::   1 remote update failure
 :: ============================================================
 :ConfigureRemotes
-for /f "tokens=1 delims==" %%v in ('set gcrf_ 2^>nul') do set "%%v="
-if defined _gcrf_rc (set "_gcrf_rc=" & exit /b %_gcrf_rc%)
-if not defined app.git_create_repo.source.url goto :_ConfigureRemotes_origin
-git remote get-url upstream >nul 2>nul
-if errorlevel 1 goto :_ConfigureRemotes_add_upstream
-git remote set-url upstream "%app.git_create_repo.source.url%"
-if errorlevel 1 (echo ERROR: Could not update upstream. & set "_gcrf_rc=1" & goto :ConfigureRemotes)
-goto :_ConfigureRemotes_origin
-:_ConfigureRemotes_add_upstream
-git remote add upstream "%app.git_create_repo.source.url%"
-if errorlevel 1 (echo ERROR: Could not add upstream. & set "_gcrf_rc=1" & goto :ConfigureRemotes)
-:_ConfigureRemotes_origin
 git remote get-url origin >nul 2>nul
-if errorlevel 1 goto :_ConfigureRemotes_add_origin
+if errorlevel 1 goto :ConfigureRemotesAddOrigin
 git remote set-url origin "%app.git_create_repo.url%"
-if errorlevel 1 (echo ERROR: Could not update origin. & set "_gcrf_rc=1" & goto :ConfigureRemotes)
-set "_gcrf_rc=0" & goto :ConfigureRemotes
-:_ConfigureRemotes_add_origin
+if errorlevel 1 (echo ERROR: Could not update origin. & exit /b 1)
+goto :ConfigureRemotesUpstream
+:ConfigureRemotesAddOrigin
 git remote add origin "%app.git_create_repo.url%"
-if errorlevel 1 (echo ERROR: Could not add origin. & set "_gcrf_rc=1" & goto :ConfigureRemotes)
-set "_gcrf_rc=0" & goto :ConfigureRemotes
+if errorlevel 1 (echo ERROR: Could not add origin. & exit /b 1)
+:ConfigureRemotesUpstream
+if /I "%app.git_create_repo.source.mode%"=="none" (git remote remove upstream >nul 2>nul & exit /b 0)
+git remote get-url upstream >nul 2>nul
+if errorlevel 1 goto :ConfigureRemotesAddUpstream
+git remote set-url upstream "%app.git_create_repo.source.url%"
+if errorlevel 1 (echo ERROR: Could not update upstream. & exit /b 1)
+exit /b 0
+:ConfigureRemotesAddUpstream
+git remote add upstream "%app.git_create_repo.source.url%"
+if errorlevel 1 (echo ERROR: Could not add upstream. & exit /b 1)
+exit /b 0
+
 :: ============================================================
-:: :PushBranch
-:: Pushes the selected branch to origin and sets upstream tracking.
-::
-:: Usage: call :PushBranch
-::
-:: Returns: 0 on success
-::          1 on push failure
-:: Requires: git
+:: Function RestoreRemotes
+:: Purpose
+::   Restores the original origin and upstream after local remote
+::   configuration fails.
+:: Usage
+::   call RestoreRemotes
+:: Returns
+::   0 best-effort restoration attempted
+:: ============================================================
+:RestoreRemotes
+git remote remove origin >nul 2>nul
+git remote remove upstream >nul 2>nul
+if defined app.git_create_repo.original.origin git remote add origin "%app.git_create_repo.original.origin%" >nul 2>nul
+if defined app.git_create_repo.original.upstream git remote add upstream "%app.git_create_repo.original.upstream%" >nul 2>nul
+exit /b 0
+
+:: ============================================================
+:: Function PushBranch
+:: Purpose
+::   Performs the first push and configures upstream tracking.
+:: Usage
+::   call PushBranch
+:: Returns
+::   0 push completed
+::   1 push failed while remote repository remains available
 :: ============================================================
 :PushBranch
-for /f "tokens=1 delims==" %%v in ('set gcrp_ 2^>nul') do set "%%v="
-if defined _gcrp_rc (set "_gcrp_rc=" & exit /b %_gcrp_rc%)
 echo.
-echo Uploading branch:
+echo First push:
+echo   %app.git_create_repo.branch% to origin
+git push -u origin "%app.git_create_repo.branch%"
+if not errorlevel 1 exit /b 0
+echo.
+echo ERROR: The GitHub repository exists, but the first push failed.
+echo Repository:
+echo   %app.git_create_repo.web%
+echo Retry with:
+echo   git push -u origin "%app.git_create_repo.branch%"
+exit /b 1
+
+:: ============================================================
+:: Function RollbackLocalMigration
+:: Purpose
+::   Restores rewritten files, index, and original branch before
+::   a remote repository has been created.
+:: Usage
+::   call RollbackLocalMigration
+:: Returns
+::   0 best-effort rollback attempted
+:: ============================================================
+:RollbackLocalMigration
+if defined app.git_create_repo.created exit /b 0
+if exist "%app.git_create_repo.backup%\" powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%app.git_create_repo.rewrite%" -Mode Restore -Root "%app.git_create_repo.root%" -BackupRoot "%app.git_create_repo.backup%"
+if defined app.git_create_repo.original.head git reset --mixed "%app.git_create_repo.original.head%" >nul 2>nul
+if defined app.git_create_repo.original.branch git switch "%app.git_create_repo.original.branch%" >nul 2>nul
+if defined app.git_create_repo.branch.created if /I not "%app.git_create_repo.original.branch%"=="%app.git_create_repo.branch%" git branch -D "%app.git_create_repo.branch%" >nul 2>nul
+if defined app.git_create_repo.original.git.name (git config --local user.name "%app.git_create_repo.original.git.name%" >nul 2>nul) else (git config --local --unset-all user.name >nul 2>nul)
+if defined app.git_create_repo.original.git.email (git config --local user.email "%app.git_create_repo.original.git.email%" >nul 2>nul) else (git config --local --unset-all user.email >nul 2>nul)
+echo Local repository migration was rolled back.
+exit /b 0
+
+:: ============================================================
+:: Function ShowSuccess
+:: Purpose
+::   Displays the created repository, remotes, identity, and commit.
+:: Usage
+::   call ShowSuccess
+:: Returns
+::   0
+:: ============================================================
+:ShowSuccess
+echo.
+echo ============================================================
+echo  New repository created successfully
+echo ============================================================
+echo.
+echo GitHub:
+echo   %app.git_create_repo.web%
+echo.
+echo Source:
+echo   %app.git_create_repo.old.slug%
+echo.
+echo Branch:
 echo   %app.git_create_repo.branch%
 echo.
-git push -u origin "%app.git_create_repo.branch%"
-if not errorlevel 1 (set "_gcrp_rc=0" & goto :PushBranch)
+echo Git identity:
+echo   Name: %app.git_create_repo.git.name%
+echo   Email: %app.git_create_repo.git.email%
 echo.
-echo ERROR: The repository was created, but the upload failed.
+echo Remotes:
+git remote -v
 echo.
-echo Repository:
-echo   https://github.com/%app.git_create_repo.slug%
+echo Latest commit:
+git log -1 --oneline
 echo.
-echo Retry later with:
-echo   just_push.bat
-set "_gcrp_rc=1" & goto :PushBranch
+echo Reference report:
+echo   %app.git_create_repo.report%
+exit /b 0
+
 :: ============================================================
-:: :ParseArgs
-:: Parses owner, name, source, visibility, branch, message, and help.
-::
-:: Usage: call :ParseArgs [owner OWNER] [name REPOSITORY] [source REPOSITORY] [visibility VALUE] [branch NAME] [message TEXT]
-::
-:: Returns: 0 on success
-::          2 on invalid arguments
-:: Requires: none
+:: Function ResolveProjectRoot
+:: Purpose
+::   Resolves the project root from the current directory or script.
+:: Usage
+::   call ResolveProjectRoot
+:: Returns
+::   0 project root found
+::   1 prepare.bat unavailable
+:: ============================================================
+:ResolveProjectRoot
+if exist "%CD%\prepare.bat" for %%A in ("%CD%") do set "app.git_create_repo.root=%%~fA"
+if not defined app.git_create_repo.root if exist "%~dp0..\prepare.bat" for %%A in ("%~dp0..") do set "app.git_create_repo.root=%%~fA"
+if not defined app.git_create_repo.root (echo ERROR: Run this helper from a project root containing prepare.bat. & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function CreateTimestamp
+:: Purpose
+::   Creates a filesystem-safe timestamp for reports and backups.
+:: Usage
+::   call CreateTimestamp
+:: Returns
+::   0 timestamp available
+::   1 timestamp unavailable
+:: ============================================================
+:CreateTimestamp
+set "app.git_create_repo.timestamp="
+for /f "delims=" %%A in ('powershell.exe -NoProfile -Command "Get-Date -Format yyyy-MM-dd.HHmmss" 2^>nul') do set "app.git_create_repo.timestamp=%%A"
+if not defined app.git_create_repo.timestamp (echo ERROR: Could not create a timestamp. & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function ParseArgs
+:: Purpose
+::   Parses provider, target, source, rewrite, identity, confirmation,
+::   dry-run, and help arguments.
+:: Usage
+::   call ParseArgs with command-line arguments
+:: Returns
+::   0 parsed
+::   2 invalid arguments
 :: ============================================================
 :ParseArgs
 if "%~1"=="" exit /b 0
-if /I "%~1"=="owner" goto :_ParseArgs_owner
-if /I "%~1"=="name" goto :_ParseArgs_name
-if /I "%~1"=="repo" goto :_ParseArgs_name
-if /I "%~1"=="source" goto :_ParseArgs_source
-if /I "%~1"=="visibility" goto :_ParseArgs_visibility
-if /I "%~1"=="branch" goto :_ParseArgs_branch
-if /I "%~1"=="message" goto :_ParseArgs_message
-if /I "%~1"=="help" goto :_ParseArgs_help
-if /I "%~1"=="/help" goto :_ParseArgs_help
-if /I "%~1"=="--help" goto :_ParseArgs_help
-if /I "%~1"=="/?" goto :_ParseArgs_help
+if /I "%~1"=="provider" goto :ParseArgsProvider
+if /I "%~1"=="owner" goto :ParseArgsOwner
+if /I "%~1"=="name" goto :ParseArgsName
+if /I "%~1"=="repo" goto :ParseArgsName
+if /I "%~1"=="visibility" goto :ParseArgsVisibility
+if /I "%~1"=="branch" goto :ParseArgsBranch
+if /I "%~1"=="source" goto :ParseArgsSource
+if /I "%~1"=="references" goto :ParseArgsReferences
+if /I "%~1"=="rename" goto :ParseArgsRename
+if /I "%~1"=="identity" goto :ParseArgsIdentity
+if /I "%~1"=="gitname" goto :ParseArgsGitName
+if /I "%~1"=="gitemail" goto :ParseArgsGitEmail
+if /I "%~1"=="login" goto :ParseArgsLogin
+if /I "%~1"=="message" goto :ParseArgsMessage
+if /I "%~1"=="description" goto :ParseArgsDescription
+if /I "%~1"=="confirm" goto :ParseArgsConfirm
+if /I "%~1"=="dryrun" goto :ParseArgsDryRun
+if /I "%~1"=="help" goto :ParseArgsHelp
+if /I "%~1"=="/help" goto :ParseArgsHelp
+if /I "%~1"=="-help" goto :ParseArgsHelp
+if /I "%~1"=="--help" goto :ParseArgsHelp
+if /I "%~1"=="/h" goto :ParseArgsHelp
+if /I "%~1"=="-h" goto :ParseArgsHelp
+if /I "%~1"=="--h" goto :ParseArgsHelp
+if /I "%~1"=="/?" goto :ParseArgsHelp
+if /I "%~1"=="-?" goto :ParseArgsHelp
+if /I "%~1"=="--?" goto :ParseArgsHelp
+if /I "%~1"=="?" goto :ParseArgsHelp
 echo ERROR: Unrecognized argument: %~1
 exit /b 2
-:_ParseArgs_owner
+:ParseArgsProvider
+if "%~2"=="" (echo ERROR: provider requires github. & exit /b 2)
+if /I not "%~2"=="github" (echo ERROR: Only provider github is currently implemented. & exit /b 2)
+set "app.git_create_repo.provider=github"
+shift
+shift
+goto :ParseArgs
+:ParseArgsOwner
 if "%~2"=="" (echo ERROR: owner requires a value. & exit /b 2)
 set "app.git_create_repo.owner=%~2"
 shift
 shift
 goto :ParseArgs
-:_ParseArgs_name
+:ParseArgsName
 if "%~2"=="" (echo ERROR: name requires a value. & exit /b 2)
 set "app.git_create_repo.name=%~2"
 shift
 shift
 goto :ParseArgs
-:_ParseArgs_source
-if "%~2"=="" (echo ERROR: source requires a value. & exit /b 2)
-set "app.git_create_repo.source.input=%~2"
-shift
-shift
-goto :ParseArgs
-:_ParseArgs_visibility
+:ParseArgsVisibility
 if "%~2"=="" (echo ERROR: visibility requires private, public, or internal. & exit /b 2)
 set "app.git_create_repo.visibility=%~2"
 shift
 shift
 goto :ParseArgs
-:_ParseArgs_branch
+:ParseArgsBranch
 if "%~2"=="" (echo ERROR: branch requires a value. & exit /b 2)
 set "app.git_create_repo.branch=%~2"
 shift
 shift
 goto :ParseArgs
-:_ParseArgs_message
-if "%~2"=="" (echo ERROR: message requires a value. & exit /b 2)
+:ParseArgsSource
+if "%~2"=="" (echo ERROR: source requires keep, none, or a repository. & exit /b 2)
+if /I "%~2"=="keep" (set "app.git_create_repo.source.mode=keep" & set "app.git_create_repo.source.input=keep")
+if /I "%~2"=="none" (set "app.git_create_repo.source.mode=none" & set "app.git_create_repo.source.input=none")
+if /I not "%~2"=="keep" if /I not "%~2"=="none" (set "app.git_create_repo.source.mode=keep" & set "app.git_create_repo.source.input=%~2")
+shift
+shift
+goto :ParseArgs
+:ParseArgsReferences
+if "%~2"=="" (echo ERROR: references requires all, urls, or none. & exit /b 2)
+set "app.git_create_repo.references=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsRename
+if "%~2"=="" (echo ERROR: rename requires yes or no. & exit /b 2)
+set "app.git_create_repo.rename.name=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsIdentity
+if "%~2"=="" (echo ERROR: identity requires ask or defaults. & exit /b 2)
+set "app.git_create_repo.identity.mode=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsGitName
+if "%~2"=="" (echo ERROR: gitname requires a value. & exit /b 2)
+set "app.git_create_repo.git.name=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsGitEmail
+if "%~2"=="" (echo ERROR: gitemail requires a value. & exit /b 2)
+set "app.git_create_repo.git.email=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsLogin
+if "%~2"=="" (echo ERROR: login requires ask, yes, or no. & exit /b 2)
+set "app.git_create_repo.login.mode=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsMessage
+if "%~2"=="" (echo ERROR: message requires quoted text. & exit /b 2)
 set "app.git_create_repo.message=%~2"
 shift
 shift
 goto :ParseArgs
-:_ParseArgs_help
+:ParseArgsDescription
+if "%~2"=="" (echo ERROR: description requires quoted text. & exit /b 2)
+set "app.git_create_repo.description=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsConfirm
+if "%~2"=="" (echo ERROR: confirm requires CREATE. & exit /b 2)
+set "app.git_create_repo.confirm=%~2"
+shift
+shift
+goto :ParseArgs
+:ParseArgsDryRun
+set "app.git_create_repo.dryrun=1"
+shift
+goto :ParseArgs
+:ParseArgsHelp
 set "app.git_create_repo.help=1"
 shift
 goto :ParseArgs
+
 :: ============================================================
-:: :ShowHelp
-:: Displays command usage.
-::
-:: Usage: call :ShowHelp
-::
-:: Returns: 0
-:: Requires: none
+:: Function ShowHelp
+:: Purpose
+::   Displays current command syntax and automation options.
+:: Usage
+::   call ShowHelp
+:: Returns
+::   0
 :: ============================================================
 :ShowHelp
 echo.
 echo git_create_repository.bat
 echo.
-echo Usage:
-echo   git_create_repository.bat
-echo   git_create_repository.bat owner OWNER name REPOSITORY
-echo   git_create_repository.bat owner OWNER name REPOSITORY visibility public
-echo   git_create_repository.bat owner OWNER name REPOSITORY source OWNER/SOURCE
+echo Creates a normal GitHub repository from the current project,
+echo rewrites old repository references, preserves Git history,
+echo configures remotes, and performs the first push.
 echo.
+echo Usage:
+echo   git_create_repository.bat [options]
+echo.
+echo Target:
+echo   provider github
+echo   owner OWNER
+echo   name REPOSITORY
+echo   visibility private^|public^|internal
+echo   branch NAME
+echo   description "TEXT"
+echo.
+echo Source and references:
+echo   source keep^|none^|OWNER/REPOSITORY^|URL
+echo   references all^|urls^|none
+echo   rename yes^|no
+echo.
+echo Authentication and identity:
+echo   login ask^|yes^|no
+echo   identity ask^|defaults
+echo   gitname "NAME"
+echo   gitemail "EMAIL"
+echo.
+echo Commit and execution:
+echo   message "TEXT"
+echo   confirm CREATE
+echo   dryrun
+echo.
+echo Help:
+echo   help  /help  -help  --help  /h  -h  --h  /?  -?  --?  ?
+echo.
+echo Test plan:
+echo   git_create_repository.bat owner helpersforopenwrt name testrepo_pleaseignore visibility private source keep references all rename yes identity defaults dryrun
+echo.
+echo Test creation:
+echo   git_create_repository.bat owner helpersforopenwrt name testrepo_pleaseignore visibility private source keep references all rename yes identity defaults confirm CREATE
+echo.
+echo Safety requirements:
+echo   tracked files must be clean
+echo   untracked non-ignored files are included
+echo   binary files containing old repository references stop the run
+echo   the remote repository is created only after local validation
+echo   the new GitHub repository is verified as a non-fork
 exit /b 0
+
 :: ============================================================
-:: :PauseIfNeeded
-:: Pauses only when the outermost launcher is the cmd.exe /c target.
-::
-:: Usage: call :PauseIfNeeded
-::
-:: Returns: 0
-:: Requires: :IsConsole
+:: Function PauseIfNeeded
+:: Purpose
+::   Pauses only when this file is the outermost cmd.exe C target.
+:: Usage
+::   call PauseIfNeeded
+:: Returns
+::   0
 :: ============================================================
 :PauseIfNeeded
-for /f "tokens=1 delims==" %%v in ('set pif_ 2^>nul') do set "%%v="
-if defined _pif_rc (set "_pif_rc=" & exit /b %_pif_rc%)
 call :IsConsole
-if not errorlevel 1 (set "_pif_rc=0" & goto :PauseIfNeeded)
+if not errorlevel 1 exit /b 0
 echo.
 pause
-set "_pif_rc=0" & goto :PauseIfNeeded
+exit /b 0
+
 :: ============================================================
-:: :IsConsole
-:: Detects whether the outermost launcher is running in an existing
-:: interactive console.
-::
-:: Usage: call :IsConsole
-::
-:: Returns: 0 when running in an existing console
-::          1 when the outermost launcher is the cmd.exe /c target
-:: Requires: find.exe
+:: Function IsConsole
+:: Purpose
+::   Detects whether execution is inside an existing console.
+:: Usage
+::   call IsConsole
+:: Returns
+::   0 existing console
+::   1 outermost cmd.exe C target
 :: ============================================================
 :IsConsole
 setlocal EnableDelayedExpansion
