@@ -23,11 +23,11 @@ if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
 cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39.9-create-confirm-timeout-rename"
+set "app.version=bootstrap-integrated-39.10-log-isolation"
 set "app.rc=0"
 set "app.timestamp="
-set "app.log.dir=%TEMP%\bootstrap_logs"
-set "app.log="
+set "app.bootstrap.log.dir=%TEMP%\bootstrap_logs"
+set "app.bootstrap.log="
 set "app.bootstrap.url=%bootstrap%"
 set "app.repo.url="
 set "app.repo.original.url="
@@ -69,8 +69,8 @@ set "app.project.build=yes"
 set "app.project.install=no"
 set "app.update.mode=yes"
 set "app.conflict.mode=quarantine"
-set "app.login.mode=ask"
-set "app.login.method=ask"
+set "app.bootstrap.login.mode=ask"
+set "app.bootstrap.login.method=ask"
 set "app.fork.mode=ask"
 set "app.identity.mode=ask"
 set "app.push.mode=yes"
@@ -83,9 +83,9 @@ set "app.create_repository.old.folder="
 set "app.create_repository.old.name="
 set "app.create_repository.parent="
 set "app.create_repository.target="
-set "app.login.timeout.seconds=20"
-set "app.login.input.status="
-set "app.login.input.result="
+set "app.bootstrap.login.timeout.seconds=20"
+set "app.bootstrap.login.input.status="
+set "app.bootstrap.login.input.result="
 set "app.explicit.repo="
 set "app.explicit.branch="
 set "app.explicit.provider="
@@ -492,8 +492,8 @@ if exist "%app.folder%\build.bat" call :PrintSuccess "OK: build.bat found."
 if not exist "%app.folder%\build.bat" call :PrintInfo "INFO: build.bat is not present."
 if exist "%app.folder%\install.bat" call :PrintSuccess "OK: install.bat found."
 if not exist "%app.folder%\install.bat" call :PrintInfo "INFO: install.bat is not present."
-call :PrintInfo "Login mode: %app.login.mode%"
-call :PrintInfo "Login method: %app.login.method%"
+call :PrintInfo "Login mode: %app.bootstrap.login.mode%"
+call :PrintInfo "Login method: %app.bootstrap.login.method%"
 call :PrintInfo "Fork mode: %app.fork.mode%"
 call :PrintInfo "Move mode: %app.move.mode%"
 call :PrintInfo "Project prepare: %app.project.prepare%"
@@ -539,8 +539,8 @@ if exist "%app.folder%\.git" if /I "%app.update.mode%"=="no" call :PrintInfo "Wo
 if not exist "%app.folder%\.git" if not exist "%app.folder%\" call :PrintInfo "Would clone the repository."
 if not exist "%app.folder%\.git" if exist "%app.folder%\" if /I "%app.conflict.mode%"=="quarantine" call :PrintInfo "Would move the non-Git target aside, then clone."
 if not exist "%app.folder%\.git" if exist "%app.folder%\" if /I "%app.conflict.mode%"=="fail" call :PrintInfo "Would stop because the target is not a Git checkout."
-if /I "%app.login.mode%"=="none" call :PrintInfo "Would skip provider login and fork handling."
-if /I not "%app.login.mode%"=="none" call :PrintInfo "Provider login is optional or explicitly requested."
+if /I "%app.bootstrap.login.mode%"=="none" call :PrintInfo "Would skip provider login and fork handling."
+if /I not "%app.bootstrap.login.mode%"=="none" call :PrintInfo "Provider login is optional or explicitly requested."
 if /I "%app.move.mode%"=="no" call :PrintInfo "Would not move the repository."
 if /I "%app.move.mode%"=="ask" call :PrintInfo "Would ask whether to move the repository."
 if /I "%app.move.mode%"=="documents" call :PrintInfo "Would move the repository to Documents."
@@ -595,7 +595,7 @@ if not errorlevel 1 call :SynchronizeRepository
 pause
 goto :RunMenuLoop
 :RunMenuLogin
-set "app.login.mode=ask"
+set "app.bootstrap.login.mode=ask"
 if not defined app.explicit.fork set "app.fork.mode=ask"
 if not defined app.explicit.identity set "app.identity.mode=ask"
 call :EnsureRepositoryReady
@@ -780,7 +780,7 @@ exit /b 0
 :: Purpose
 ::   Create the log file and initialize optional ANSI colours.
 :: Outputs
-::   app.timestamp app.log app.esc
+::   app.timestamp app.bootstrap.log app.esc
 :: Return codes
 ::   0 Runtime initialized
 ::   1 Timestamp or log initialization failed
@@ -790,14 +790,14 @@ exit /b 0
 :InitializeRuntime
 call :MakeTimestamp
 if errorlevel 1 exit /b 1
-if not exist "%app.log.dir%\" mkdir "%app.log.dir%" >nul 2>&1
-if not exist "%app.log.dir%\" exit /b 1
-set "app.log=%app.log.dir%\bootstrap.%app.timestamp%.log"
-type nul >"%app.log%" 2>nul
-if not exist "%app.log%" exit /b 1
+if not exist "%app.bootstrap.log.dir%\" mkdir "%app.bootstrap.log.dir%" >nul 2>&1
+if not exist "%app.bootstrap.log.dir%\" exit /b 1
+set "app.bootstrap.log=%app.bootstrap.log.dir%\bootstrap.%app.timestamp%.log"
+type nul >"%app.bootstrap.log%" 2>nul
+if not exist "%app.bootstrap.log%" exit /b 1
 call :SetEscapeCharacter app.esc
 if errorlevel 1 set "app.esc="
-call :PrintInfo "LOG: %app.log%"
+call :PrintInfo "LOG: %app.bootstrap.log%"
 exit /b 0
 
 :: ============================================================
@@ -844,8 +844,8 @@ if /I "%pa_arg%"=="noupdate" (set "app.update.mode=no" & set "app.explicit.updat
 if /I "%pa_arg%"=="--no-update" (set "app.update.mode=no" & set "app.explicit.update=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="nomove" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="--no-move" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="nologin" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
-if /I "%pa_arg%"=="--no-login" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="nologin" (set "app.bootstrap.login.mode=none" & set "app.bootstrap.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
+if /I "%pa_arg%"=="--no-login" (set "app.bootstrap.login.mode=none" & set "app.bootstrap.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
 if "%pa_arg%"=="CREATE" goto :ParseArgumentsCreateConfirm
 if /I "%pa_arg%"=="create_repository" goto :ParseArgumentsCreateRepository
 if /I "%pa_arg%"=="create-repository" goto :ParseArgumentsCreateRepository
@@ -909,11 +909,11 @@ shift
 shift
 goto :ParseArguments
 :ParseArgumentsLogin
-set "app.login.mode=login"
-set "app.login.method=ask"
+set "app.bootstrap.login.mode=login"
+set "app.bootstrap.login.method=ask"
 set "app.explicit.login=1"
-if /I "%~2"=="no" (set "app.login.mode=none" & shift & shift & goto :ParseArguments)
-if /I "%~2"=="ask" (set "app.login.method=ask" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="no" (set "app.bootstrap.login.mode=none" & shift & shift & goto :ParseArguments)
+if /I "%~2"=="ask" (set "app.bootstrap.login.method=ask" & shift & shift & goto :ParseArguments)
 call :ApplyLoginShortcut "%~2"
 set "pal_rc=%errorlevel%"
 if "%pal_rc%"=="0" (set "pal_rc=" & shift & shift & goto :ParseArguments)
@@ -1070,14 +1070,14 @@ exit /b 2
 ::   none
 :: ============================================================
 :ApplyAutomationDefaults
-if defined app.create_repository.requested if not defined app.explicit.login set "app.login.mode=none"
-if defined app.create_repository.requested if not defined app.explicit.login set "app.login.method=ask"
+if defined app.create_repository.requested if not defined app.explicit.login set "app.bootstrap.login.mode=none"
+if defined app.create_repository.requested if not defined app.explicit.login set "app.bootstrap.login.method=ask"
 if defined app.git_name if defined app.git_email if not defined app.explicit.identity set "app.identity.mode=defaults"
 if not defined app.unattended exit /b 0
-if not defined app.explicit.login set "app.login.mode=none"
-if not defined app.explicit.login set "app.login.method=ask"
-if not defined app.explicit.fork if /I "%app.login.mode%"=="login" set "app.fork.mode=yes"
-if not defined app.explicit.fork if /I not "%app.login.mode%"=="login" set "app.fork.mode=no"
+if not defined app.explicit.login set "app.bootstrap.login.mode=none"
+if not defined app.explicit.login set "app.bootstrap.login.method=ask"
+if not defined app.explicit.fork if /I "%app.bootstrap.login.mode%"=="login" set "app.fork.mode=yes"
+if not defined app.explicit.fork if /I not "%app.bootstrap.login.mode%"=="login" set "app.fork.mode=no"
 if not defined app.explicit.identity set "app.identity.mode=defaults"
 if not defined app.explicit.push set "app.push.mode=yes"
 if not defined app.explicit.move set "app.move.mode=no"
@@ -1237,10 +1237,10 @@ call :PrintWarning "MISS: git.exe not found."
 call :EnsureGetGitHelper
 if errorlevel 1 exit /b 4
 call :PrintWarning "DO: Installing Git using GetGit.bat."
-cmd.exe /D /C call "%app.tools%\GetGit.bat" >>"%app.log%" 2>&1
+cmd.exe /D /C call "%app.tools%\GetGit.bat" >>"%app.bootstrap.log%" 2>&1
 set "eg_rc=%errorlevel%"
 cd /d "%app.script.dir%" >nul 2>&1
-if not "%eg_rc%"=="0" (call :PrintError "FAIL: GetGit.bat failed." & call :PrintWarning "LOG: %app.log%" & set "eg_rc=" & exit /b 4)
+if not "%eg_rc%"=="0" (call :PrintError "FAIL: GetGit.bat failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "eg_rc=" & exit /b 4)
 set "eg_rc="
 call :FindGit
 if not defined app.git (call :PrintError "FAIL: Git is still missing after GetGit.bat." & exit /b 4)
@@ -1305,9 +1305,9 @@ exit /b 0
 :: ============================================================
 :CloneRepository
 call :PrintInfo "DO: Cloning %app.repo.url%."
-"%app.git%" clone --branch "%app.repo.branch%" "%app.repo.url%" "%app.folder%" >>"%app.log%" 2>&1
+"%app.git%" clone --branch "%app.repo.branch%" "%app.repo.url%" "%app.folder%" >>"%app.bootstrap.log%" 2>&1
 set "cr_rc=%errorlevel%"
-if not "%cr_rc%"=="0" (call :PrintError "FAIL: git clone failed." & call :PrintWarning "LOG: %app.log%" & set "cr_rc=" & exit /b 5)
+if not "%cr_rc%"=="0" (call :PrintError "FAIL: git clone failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "cr_rc=" & exit /b 5)
 call :PrintSuccess "OK: Repo cloned."
 set "cr_rc="
 exit /b 0
@@ -1330,22 +1330,22 @@ call :VerifyRepositoryRemote
 set "ur_rc=%errorlevel%"
 if not "%ur_rc%"=="0" (set "ur_rc=" & exit /b 5)
 call :PrintInfo "DO: Updating existing repository from %app.repo.sync.remote%."
-"%app.git%" -C "%app.folder%" fetch "%app.repo.sync.remote%" --prune >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" fetch "%app.repo.sync.remote%" --prune >>"%app.bootstrap.log%" 2>&1
 set "ur_rc=%errorlevel%"
-if not "%ur_rc%"=="0" (call :PrintError "FAIL: git fetch failed." & call :PrintWarning "LOG: %app.log%" & set "ur_rc=" & exit /b 5)
-"%app.git%" -C "%app.folder%" checkout "%app.repo.branch%" >>"%app.log%" 2>&1
-set "ur_rc=%errorlevel%"
-if "%ur_rc%"=="0" goto :UpdateRepositoryPull
-"%app.git%" -C "%app.folder%" switch "%app.repo.branch%" >>"%app.log%" 2>&1
+if not "%ur_rc%"=="0" (call :PrintError "FAIL: git fetch failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "ur_rc=" & exit /b 5)
+"%app.git%" -C "%app.folder%" checkout "%app.repo.branch%" >>"%app.bootstrap.log%" 2>&1
 set "ur_rc=%errorlevel%"
 if "%ur_rc%"=="0" goto :UpdateRepositoryPull
-"%app.git%" -C "%app.folder%" switch --track -c "%app.repo.branch%" "%app.repo.sync.remote%/%app.repo.branch%" >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" switch "%app.repo.branch%" >>"%app.bootstrap.log%" 2>&1
 set "ur_rc=%errorlevel%"
-if not "%ur_rc%"=="0" (call :PrintError "FAIL: Git could not switch to branch %app.repo.branch%." & call :PrintWarning "LOG: %app.log%" & set "ur_rc=" & exit /b 5)
+if "%ur_rc%"=="0" goto :UpdateRepositoryPull
+"%app.git%" -C "%app.folder%" switch --track -c "%app.repo.branch%" "%app.repo.sync.remote%/%app.repo.branch%" >>"%app.bootstrap.log%" 2>&1
+set "ur_rc=%errorlevel%"
+if not "%ur_rc%"=="0" (call :PrintError "FAIL: Git could not switch to branch %app.repo.branch%." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "ur_rc=" & exit /b 5)
 :UpdateRepositoryPull
-"%app.git%" -C "%app.folder%" pull --ff-only "%app.repo.sync.remote%" "%app.repo.branch%" >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" pull --ff-only "%app.repo.sync.remote%" "%app.repo.branch%" >>"%app.bootstrap.log%" 2>&1
 set "ur_rc=%errorlevel%"
-if not "%ur_rc%"=="0" (call :PrintError "FAIL: git pull --ff-only failed; local work was not overwritten." & call :PrintWarning "LOG: %app.log%" & set "ur_rc=" & exit /b 5)
+if not "%ur_rc%"=="0" (call :PrintError "FAIL: git pull --ff-only failed; local work was not overwritten." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "ur_rc=" & exit /b 5)
 call :PrintSuccess "OK: Repo ready."
 set "ur_rc="
 exit /b 0
@@ -1415,34 +1415,34 @@ exit /b 0
 ::   Input 1 through 4 selects the browser method immediately.
 ::   Input 1a through 4a also accepts detected Git identity defaults.
 :: Outputs
-::   app.login.mode app.login.method app.identity.mode app.fork.mode
+::   app.bootstrap.login.mode app.bootstrap.login.method app.identity.mode app.fork.mode
 :: Return codes
 ::   0 Login decision resolved
 :: Dependencies
 ::   ApplyLoginShortcut PrintInfo PrintWarning
 :: ============================================================
 :ResolveLoginDecision
-if /I not "%app.provider.can.login%"=="1" (set "app.login.mode=none" & set "app.fork.mode=no" & call :PrintWarning "SKIP: provider login is not implemented for %app.provider%." & exit /b 0)
-if /I "%app.login.mode%"=="none" (set "app.fork.mode=no" & exit /b 0)
-if /I "%app.login.mode%"=="login" exit /b 0
+if /I not "%app.provider.can.login%"=="1" (set "app.bootstrap.login.mode=none" & set "app.fork.mode=no" & call :PrintWarning "SKIP: provider login is not implemented for %app.provider%." & exit /b 0)
+if /I "%app.bootstrap.login.mode%"=="none" (set "app.fork.mode=no" & exit /b 0)
+if /I "%app.bootstrap.login.mode%"=="login" exit /b 0
 set "rld_choice="
 set "rld_rc=1"
-set "app.login.input.status="
+set "app.bootstrap.login.input.status="
 call :PrintInfo "%app.provider.display% login is optional."
 call :PrintInfo "Enter y to choose a login method, enter 1-4 now, or enter n to skip."
 call :PrintInfo "Append a, for example 4a, to accept the detected Git name and email."
-call :PrintInfo "No response within %app.login.timeout.seconds% seconds defaults to n."
-<nul set /p "=%app.provider.display% login? [y/N/1-4/1a-4a, %app.login.timeout.seconds%s]: "
+call :PrintInfo "No response within %app.bootstrap.login.timeout.seconds% seconds defaults to n."
+<nul set /p "=%app.provider.display% login? [y/N/1-4/1a-4a, %app.bootstrap.login.timeout.seconds%s]: "
 call :ReadBootstrapLoginInput
 if errorlevel 1 (call :PrintWarning "NOTE: Timed login input failed; defaulting to no login." & set "rld_choice=n")
-if /I "%app.login.input.status%"=="timeout" call :PrintWarning "TIMEOUT: No response; defaulting to no login."
-if /I "%rld_choice%"=="y" (set "app.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
-if /I "%rld_choice%"=="yes" (set "app.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
+if /I "%app.bootstrap.login.input.status%"=="timeout" call :PrintWarning "TIMEOUT: No response; defaulting to no login."
+if /I "%rld_choice%"=="y" (set "app.bootstrap.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
+if /I "%rld_choice%"=="yes" (set "app.bootstrap.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
 call :ApplyLoginShortcut "%rld_choice%"
 set "rld_rc=%errorlevel%"
 if "%rld_rc%"=="0" (set "rld_choice=" & set "rld_rc=" & exit /b 0)
 if defined rld_choice if /I not "%rld_choice%"=="n" if /I not "%rld_choice%"=="no" call :PrintWarning "NOTE: unrecognized input; skipping provider login and fork."
-set "app.login.mode=none"
+set "app.bootstrap.login.mode=none"
 set "app.fork.mode=no"
 set "rld_choice="
 set "rld_rc="
@@ -1453,9 +1453,9 @@ exit /b 0
 :: Purpose
 ::   Read the optional provider-login response with a timeout.
 :: Inputs
-::   app.folder app.login.timeout.seconds
+::   app.folder app.bootstrap.login.timeout.seconds
 :: Outputs
-::   rld_choice app.login.input.status
+::   rld_choice app.bootstrap.login.input.status
 :: Return codes
 ::   0 Input or timeout default returned
 ::   1 Shared timed-input helper failed
@@ -1464,21 +1464,21 @@ exit /b 0
 :: ============================================================
 :ReadBootstrapLoginInput
 set "rld_choice="
-set "app.login.input.status="
-set "app.login.input.result=%TEMP%\bootstrap_login_input_%RANDOM%_%RANDOM%.txt"
+set "app.bootstrap.login.input.status="
+set "app.bootstrap.login.input.result=%TEMP%\bootstrap_login_input_%RANDOM%_%RANDOM%.txt"
 set "rbli_helper=%app.folder%\tools\git_login_read_timed_input.ps1"
 if not exist "%rbli_helper%" (echo. & set "rbli_helper=" & exit /b 1)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%rbli_helper%" -TimeoutSeconds %app.login.timeout.seconds% -DefaultValue n -ResultPath "%app.login.input.result%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%rbli_helper%" -TimeoutSeconds %app.bootstrap.login.timeout.seconds% -DefaultValue n -ResultPath "%app.bootstrap.login.input.result%"
 set "rbli_rc=%errorlevel%"
-if not "%rbli_rc%"=="0" (if exist "%app.login.input.result%" del /q "%app.login.input.result%" >nul 2>nul & set "rbli_helper=" & exit /b 1)
-if not exist "%app.login.input.result%" (set "rbli_helper=" & exit /b 1)
-for /f "usebackq tokens=1,* delims=|" %%A in ("%app.login.input.result%") do (set "app.login.input.status=%%A" & set "rld_choice=%%B")
-del /q "%app.login.input.result%" >nul 2>nul
-set "app.login.input.result="
+if not "%rbli_rc%"=="0" (if exist "%app.bootstrap.login.input.result%" del /q "%app.bootstrap.login.input.result%" >nul 2>nul & set "rbli_helper=" & exit /b 1)
+if not exist "%app.bootstrap.login.input.result%" (set "rbli_helper=" & exit /b 1)
+for /f "usebackq tokens=1,* delims=|" %%A in ("%app.bootstrap.login.input.result%") do (set "app.bootstrap.login.input.status=%%A" & set "rld_choice=%%B")
+del /q "%app.bootstrap.login.input.result%" >nul 2>nul
+set "app.bootstrap.login.input.result="
 set "rbli_helper="
 set "rbli_rc="
 if not defined rld_choice set "rld_choice=n"
-if not defined app.login.input.status set "app.login.input.status=input"
+if not defined app.bootstrap.login.input.status set "app.bootstrap.login.input.status=input"
 exit /b 0
 
 :: ============================================================
@@ -1489,7 +1489,7 @@ exit /b 0
 :: Inputs
 ::   Argument 1 is 1 2 3 4 1a 2a 3a or 4a
 :: Outputs
-::   app.login.mode app.login.method
+::   app.bootstrap.login.mode app.bootstrap.login.method
 ::   app.identity.mode and app.explicit.identity for an a-suffixed choice
 :: Return codes
 ::   0 Choice recognized and applied
@@ -1509,8 +1509,8 @@ if /I "%als_choice%"=="2a" (set "als_method=2" & set "app.identity.mode=defaults
 if /I "%als_choice%"=="3a" (set "als_method=3" & set "app.identity.mode=defaults" & set "app.explicit.identity=1")
 if /I "%als_choice%"=="4a" (set "als_method=4" & set "app.identity.mode=defaults" & set "app.explicit.identity=1")
 if not defined als_method (set "als_choice=" & exit /b 1)
-set "app.login.mode=login"
-set "app.login.method=%als_method%"
+set "app.bootstrap.login.mode=login"
+set "app.bootstrap.login.method=%als_method%"
 set "als_choice="
 set "als_method="
 exit /b 0
@@ -1526,7 +1526,7 @@ exit /b 0
 ::   RunGitHubLoginWorkflow PrintWarning
 :: ============================================================
 :RunProviderLogin
-if /I "%app.login.mode%"=="none" (call :PrintWarning "SKIP: provider login and fork steps skipped." & exit /b 0)
+if /I "%app.bootstrap.login.mode%"=="none" (call :PrintWarning "SKIP: provider login and fork steps skipped." & exit /b 0)
 if /I "%app.provider%"=="github" goto :RunProviderLoginGitHub
 call :PrintWarning "SKIP: provider login is not implemented for %app.provider%."
 exit /b 0
@@ -1582,7 +1582,7 @@ exit /b %rglw_rc%
 set "rrl_rc=0"
 pushd "%app.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for login." & exit /b 6)
-call just_login.bat repo "%app.repo.original.url%" branch "%app.repo.branch%" browser %app.login.method% fork %app.fork.mode% identity %app.identity.mode% push %app.push.mode% prepared yes
+call just_login.bat repo "%app.repo.original.url%" branch "%app.repo.branch%" browser %app.bootstrap.login.method% fork %app.fork.mode% identity %app.identity.mode% push %app.push.mode% prepared yes
 set "rrl_rc=%errorlevel%"
 popd >nul
 if not "%rrl_rc%"=="0" (call :PrintError "FAIL: just_login.bat failed." & set "rrl_rc=" & exit /b 6)
@@ -1608,17 +1608,17 @@ call :CheckGitHubAuthentication
 set "rfgl_rc=%errorlevel%"
 if "%rfgl_rc%"=="0" (set "rfgl_rc=" & exit /b 0)
 set "rfgl_rc="
-if /I "%app.login.method%"=="ask" call :PromptLoginMethod
-if /I "%app.login.method%"=="ask" set "rfgl_rc=%errorlevel%"
+if /I "%app.bootstrap.login.method%"=="ask" call :PromptLoginMethod
+if /I "%app.bootstrap.login.method%"=="ask" set "rfgl_rc=%errorlevel%"
 if defined rfgl_rc if not "%rfgl_rc%"=="0" (set "rfgl_rc=" & exit /b 6)
 set "rfgl_rc="
-call :OpenDeviceLoginPage "%app.login.method%"
+call :OpenDeviceLoginPage "%app.bootstrap.login.method%"
 set "rfgl_old_gh_browser=%GH_BROWSER%"
 set "rfgl_old_browser=%BROWSER%"
-if not "%app.login.method%"=="1" set "GH_BROWSER=echo"
-if not "%app.login.method%"=="1" set "BROWSER=echo"
+if not "%app.bootstrap.login.method%"=="1" set "GH_BROWSER=echo"
+if not "%app.bootstrap.login.method%"=="1" set "BROWSER=echo"
 call :PrintInfo "DO: GitHub device login."
-if "%app.login.method%"=="1" goto :RunFallbackGitHubLoginNormal
+if "%app.bootstrap.login.method%"=="1" goto :RunFallbackGitHubLoginNormal
 echo.| "%app.gh%" auth login --web --git-protocol https
 set "rfgl_rc=%errorlevel%"
 goto :RunFallbackGitHubLoginRestore
@@ -1631,7 +1631,7 @@ if defined rfgl_old_browser (set "BROWSER=%rfgl_old_browser%") else (set "BROWSE
 set "rfgl_old_gh_browser="
 set "rfgl_old_browser="
 if not "%rfgl_rc%"=="0" (call :PrintError "FAIL: GitHub login failed." & set "rfgl_rc=" & exit /b 6)
-"%app.gh%" auth setup-git >>"%app.log%" 2>&1
+"%app.gh%" auth setup-git >>"%app.bootstrap.log%" 2>&1
 set "rfgl_rc=%errorlevel%"
 if not "%rfgl_rc%"=="0" (call :PrintError "FAIL: GitHub CLI could not configure Git authentication." & set "rfgl_rc=" & exit /b 6)
 call :CheckGitHubAuthentication
@@ -1725,9 +1725,9 @@ if defined cfgi_input set "cfgi_email=%cfgi_input%"
 :ConfigureFallbackGitIdentityValidate
 if not defined cfgi_name (call :PrintError "FAIL: Git author name is required." & exit /b 6)
 if not defined cfgi_email (call :PrintError "FAIL: Git author email is required." & exit /b 6)
-"%app.git%" -C "%app.folder%" config --local user.name "%cfgi_name%" >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" config --local user.name "%cfgi_name%" >>"%app.bootstrap.log%" 2>&1
 if errorlevel 1 (call :PrintError "FAIL: local Git user.name could not be set." & exit /b 6)
-"%app.git%" -C "%app.folder%" config --local user.email "%cfgi_email%" >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" config --local user.email "%cfgi_email%" >>"%app.bootstrap.log%" 2>&1
 if errorlevel 1 (call :PrintError "FAIL: local Git user.email could not be set." & exit /b 6)
 call :PrintSuccess "OK: Local Git identity configured."
 set "cfgi_name="
@@ -1754,8 +1754,8 @@ set "rfgp_branch="
 for /f "delims=" %%A in ('"%app.git%" -C "%app.folder%" branch --show-current 2^>nul') do if not defined rfgp_branch set "rfgp_branch=%%A"
 if not defined rfgp_branch set "rfgp_branch=%app.repo.branch%"
 call :PrintInfo "DO: Pushing branch %rfgp_branch% to origin."
-"%app.git%" -C "%app.folder%" push -u origin "%rfgp_branch%" >>"%app.log%" 2>&1
-if errorlevel 1 (call :PrintError "FAIL: Git push failed." & call :PrintWarning "LOG: %app.log%" & set "rfgp_branch=" & exit /b 6)
+"%app.git%" -C "%app.folder%" push -u origin "%rfgp_branch%" >>"%app.bootstrap.log%" 2>&1
+if errorlevel 1 (call :PrintError "FAIL: Git push failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "rfgp_branch=" & exit /b 6)
 call :PrintSuccess "OK: Git push complete."
 set "rfgp_branch="
 exit /b 0
@@ -1874,8 +1874,8 @@ if exist "%app.final.folder%\.git" goto :MoveRepositoryToParentExisting
 if exist "%app.final.folder%\" (call :PrintError "FAIL: destination exists and is not a Git checkout: %app.final.folder%" & set "mrtp_parent=" & exit /b 7)
 set "mrtp_previous=%app.folder%"
 call :PrintInfo "DO: Moving repository to %app.final.folder%."
-robocopy "%app.folder%" "%app.final.folder%" /E /MOVE /NFL /NDL /NJH /NJS /NP >>"%app.log%" 2>&1
-if errorlevel 8 (call :PrintError "FAIL: repository move failed." & call :PrintWarning "LOG: %app.log%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
+robocopy "%app.folder%" "%app.final.folder%" /E /MOVE /NFL /NDL /NJH /NJS /NP >>"%app.bootstrap.log%" 2>&1
+if errorlevel 8 (call :PrintError "FAIL: repository move failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
 if not exist "%app.final.folder%\.git" (call :PrintError "FAIL: moved destination is not a Git checkout." & set "app.folder=%app.final.folder%" & set "app.final.cd=%app.final.folder%" & set "mrtp_previous=" & set "mrtp_parent=" & exit /b 7)
 set "app.folder=%app.final.folder%"
 call :FindGit
@@ -2087,10 +2087,10 @@ if errorlevel 1 (call :PrintError "FAIL: GetGithubCLI.bat was not found or is em
 call :PrintInfo "DO: Installing GitHub CLI using GetGithubCLI.bat."
 pushd "%app.folder%" >nul 2>&1
 if errorlevel 1 (call :PrintError "FAIL: repository folder could not be entered for GitHub CLI installation." & exit /b 6)
-cmd.exe /D /C call "tools\GetGithubCLI.bat" >>"%app.log%" 2>&1
+cmd.exe /D /C call "tools\GetGithubCLI.bat" >>"%app.bootstrap.log%" 2>&1
 set "eghc_rc=%errorlevel%"
 popd >nul
-if not "%eghc_rc%"=="0" (call :PrintError "FAIL: GetGithubCLI.bat failed." & call :PrintWarning "LOG: %app.log%" & set "eghc_rc=" & exit /b 6)
+if not "%eghc_rc%"=="0" (call :PrintError "FAIL: GetGithubCLI.bat failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "eghc_rc=" & exit /b 6)
 set "eghc_rc="
 call :FindGitHubCli
 if not defined app.gh (call :PrintError "FAIL: gh.exe is missing after GetGithubCLI.bat." & exit /b 6)
@@ -2123,7 +2123,7 @@ exit /b 0
 :: Purpose
 ::   Ask which browser behavior the standalone GitHub login fallback should use.
 :: Outputs
-::   app.login.method
+::   app.bootstrap.login.method
 :: Return codes
 ::   0 Valid method selected
 ::   6 Invalid method selected
@@ -2139,10 +2139,10 @@ echo(  4. Do not open a browser on this computer
 set "plm_choice="
 set /p "plm_choice=Choice [1]: "
 if not defined plm_choice set "plm_choice=1"
-if "%plm_choice%"=="1" set "app.login.method=1"
-if "%plm_choice%"=="2" set "app.login.method=2"
-if "%plm_choice%"=="3" set "app.login.method=3"
-if "%plm_choice%"=="4" set "app.login.method=4"
+if "%plm_choice%"=="1" set "app.bootstrap.login.method=1"
+if "%plm_choice%"=="2" set "app.bootstrap.login.method=2"
+if "%plm_choice%"=="3" set "app.bootstrap.login.method=3"
+if "%plm_choice%"=="4" set "app.bootstrap.login.method=4"
 if not "%plm_choice%"=="1" if not "%plm_choice%"=="2" if not "%plm_choice%"=="3" if not "%plm_choice%"=="4" (call :PrintError "FAIL: login method must be 1, 2, 3, or 4." & set "plm_choice=" & exit /b 6)
 set "plm_choice="
 exit /b 0
@@ -2179,7 +2179,7 @@ exit /b 0
 :: ============================================================
 :CheckGitHubAuthentication
 if not defined app.gh exit /b 6
-"%app.gh%" auth status -h github.com >>"%app.log%" 2>&1
+"%app.gh%" auth status -h github.com >>"%app.bootstrap.log%" 2>&1
 if errorlevel 1 exit /b 6
 call :GetGitHubUser
 if errorlevel 1 exit /b 6
@@ -2265,7 +2265,7 @@ if "%cgf_rc%"=="0" (set "cgf_rc=" & exit /b 0)
 if "%cgf_rc%"=="6" (set "cgf_rc=" & exit /b 6)
 set "cgf_rc="
 call :PrintInfo "DO: Creating fork %app.github.user%/%app.repo.name%."
-"%app.gh%" api --method POST "repos/%app.repo.owner%/%app.repo.name%/forks" >nul 2>>"%app.log%"
+"%app.gh%" api --method POST "repos/%app.repo.owner%/%app.repo.name%/forks" >nul 2>>"%app.bootstrap.log%"
 if errorlevel 1 (call :PrintError "FAIL: GitHub could not create the fork." & exit /b 6)
 call :WaitForGitHubFork
 if errorlevel 1 (call :PrintError "FAIL: the new fork did not become visible or did not match the original repository." & exit /b 6)
@@ -2358,12 +2358,12 @@ if not "%cfr_rc%"=="0" (call :PrintError "FAIL: upstream remote could not be con
 call :SetGitRemote "origin" "%cfr_fork%"
 set "cfr_rc=%errorlevel%"
 if not "%cfr_rc%"=="0" (call :PrintError "FAIL: origin remote could not be configured." & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
-"%app.git%" -C "%app.folder%" fetch upstream --prune >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" fetch upstream --prune >>"%app.bootstrap.log%" 2>&1
 set "cfr_rc=%errorlevel%"
-if not "%cfr_rc%"=="0" (call :PrintError "FAIL: upstream fetch failed." & call :PrintWarning "LOG: %app.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
-"%app.git%" -C "%app.folder%" fetch origin --prune >>"%app.log%" 2>&1
+if not "%cfr_rc%"=="0" (call :PrintError "FAIL: upstream fetch failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
+"%app.git%" -C "%app.folder%" fetch origin --prune >>"%app.bootstrap.log%" 2>&1
 set "cfr_rc=%errorlevel%"
-if not "%cfr_rc%"=="0" (call :PrintError "FAIL: origin fetch failed." & call :PrintWarning "LOG: %app.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
+if not "%cfr_rc%"=="0" (call :PrintError "FAIL: origin fetch failed." & call :PrintWarning "LOG: %app.bootstrap.log%" & set "cfr_fork=" & set "cfr_rc=" & exit /b 6)
 set "app.repo.sync.remote=upstream"
 set "cfr_fork="
 set "cfr_rc="
@@ -2384,7 +2384,7 @@ exit /b 0
 set "qngf_target=%app.folder%.notgit.%app.timestamp%-%RANDOM%"
 call :PrintWarning "WARN: target exists but is not a Git checkout."
 call :PrintInfo "DO: Moving it to %qngf_target%."
-move "%app.folder%" "%qngf_target%" >>"%app.log%" 2>&1
+move "%app.folder%" "%qngf_target%" >>"%app.bootstrap.log%" 2>&1
 set "qngf_rc=%errorlevel%"
 if not "%qngf_rc%"=="0" if not exist "%app.folder%\" (set "qngf_target=" & set "qngf_rc=" & exit /b 0)
 if not "%qngf_rc%"=="0" (call :PrintError "FAIL: existing target could not be moved." & set "qngf_target=" & set "qngf_rc=" & exit /b 5)
@@ -2461,11 +2461,11 @@ if not defined sgr_url (set "sgr_name=" & exit /b 6)
 "%app.git%" -C "%app.folder%" remote get-url "%sgr_name%" >nul 2>&1
 set "sgr_rc=%errorlevel%"
 if "%sgr_rc%"=="0" goto :SetGitRemoteUpdate
-"%app.git%" -C "%app.folder%" remote add "%sgr_name%" "%sgr_url%" >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" remote add "%sgr_name%" "%sgr_url%" >>"%app.bootstrap.log%" 2>&1
 set "sgr_rc=%errorlevel%"
 goto :SetGitRemoteDone
 :SetGitRemoteUpdate
-"%app.git%" -C "%app.folder%" remote set-url "%sgr_name%" "%sgr_url%" >>"%app.log%" 2>&1
+"%app.git%" -C "%app.folder%" remote set-url "%sgr_name%" "%sgr_url%" >>"%app.bootstrap.log%" 2>&1
 set "sgr_rc=%errorlevel%"
 :SetGitRemoteDone
 set "sgr_name="
@@ -2690,7 +2690,7 @@ if exist "%df_temp%" del /q "%df_temp%" >nul 2>&1
 if exist "%df_file%" del /q "%df_file%" >nul 2>&1
 where curl.exe >nul 2>nul
 if errorlevel 1 goto :DownloadFilePowerShell
-curl.exe -sSfL --retry 3 "%df_url%" -o "%df_temp%" >>"%app.log%" 2>&1
+curl.exe -sSfL --retry 3 "%df_url%" -o "%df_temp%" >>"%app.bootstrap.log%" 2>&1
 set "df_rc=%errorlevel%"
 if not "%df_rc%"=="0" goto :DownloadFileCurlFailed
 call :IsFileNonEmpty "%df_temp%"
@@ -2699,7 +2699,7 @@ if "%df_rc%"=="0" goto :DownloadFileCommit
 :DownloadFileCurlFailed
 if exist "%df_temp%" del /q "%df_temp%" >nul 2>&1
 :DownloadFilePowerShell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:df_url -OutFile $env:df_temp" >>"%app.log%" 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:df_url -OutFile $env:df_temp" >>"%app.bootstrap.log%" 2>&1
 set "df_rc=%errorlevel%"
 if not "%df_rc%"=="0" goto :DownloadFileFailed
 call :IsFileNonEmpty "%df_temp%"
@@ -2829,9 +2829,9 @@ goto :PrintColorLog
 <nul set /p "=%pc_message%"
 echo(
 :PrintColorLog
-if not defined app.log goto :PrintColorDone
->>"%app.log%" <nul set /p "=%pc_message%"
->>"%app.log%" echo(
+if not defined app.bootstrap.log goto :PrintColorDone
+>>"%app.bootstrap.log%" <nul set /p "=%pc_message%"
+>>"%app.bootstrap.log%" echo(
 :PrintColorDone
 set "pc_color="
 set "pc_message="
