@@ -23,7 +23,7 @@ if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
 for %%A in ("%~dp0.") do set "app.script.dir=%%~fA"
 cd /d "%app.script.dir%" >nul 2>&1
-set "app.version=bootstrap-integrated-39.8-create-repository"
+set "app.version=bootstrap-integrated-39.9-create-confirm-timeout-rename"
 set "app.rc=0"
 set "app.timestamp="
 set "app.log.dir=%TEMP%\bootstrap_logs"
@@ -78,6 +78,14 @@ set "app.move.mode=no"
 set "app.move.parent="
 set "app.create_repository.requested="
 set "app.create_repository.name="
+set "app.create_repository.confirm="
+set "app.create_repository.old.folder="
+set "app.create_repository.old.name="
+set "app.create_repository.parent="
+set "app.create_repository.target="
+set "app.login.timeout.seconds=20"
+set "app.login.input.status="
+set "app.login.input.result="
 set "app.explicit.repo="
 set "app.explicit.branch="
 set "app.explicit.provider="
@@ -262,28 +270,43 @@ exit /b 0
 :: ============================================================
 :: Function RunRequestedRepositoryCreation
 :: Purpose
-::   Run the repository creator after checkout and repository tools
-::   are established, then adopt its renamed checkout folder.
+::   Run the creator after checkout and tools are established, then
+::   rename the checkout from the external bootstrap context.
 :: Inputs
-::   app.create_repository.requested app.create_repository.name app.folder
+::   app.create_repository.requested app.create_repository.name
+::   app.create_repository.confirm app.folder
 :: Outputs
 ::   app.folder app.final.folder app.final.cd app.tools app.repo.url
 :: Return codes
-::   0 No creation requested or creation completed
-::   nonzero Repository creation or folder adoption failed
+::   0 No creation requested or creation and rename completed
+::   nonzero Preflight, creation, or rename failed
 :: Dependencies
-::   git_create_repository.bat ParseRepositoryUrl PrintInfo PrintSuccess PrintError
+::   git_create_repository.bat ResolveCreatedRepositoryFolder
+::   RenameCreatedRepositoryFolder ParseRepositoryUrl
+::   PrintInfo PrintSuccess PrintError
 :: ============================================================
 :RunRequestedRepositoryCreation
 if not defined app.create_repository.requested exit /b 0
 if not exist "%app.folder%\tools\git_create_repository.bat" (call :PrintError "FAIL: tools\git_create_repository.bat was not found in the established checkout." & exit /b 1)
-call :PrintInfo "DO: Creating new repository %app.create_repository.name%."
-cd /d "%app.folder%" >nul 2>&1
-if errorlevel 1 (call :PrintError "FAIL: Could not enter the established checkout." & exit /b 1)
-call "%app.folder%\tools\git_create_repository.bat" name "%app.create_repository.name%" prepared yes
+call :ResolveCreatedRepositoryFolder
 set "rrcr_rc=%errorlevel%"
 if not "%rrcr_rc%"=="0" exit /b %rrcr_rc%
-for %%A in ("%CD%") do set "app.folder=%%~fA"
+call :PrintInfo "DO: Creating new repository %app.create_repository.name%."
+call :PrintInfo "RENAME: %app.create_repository.old.folder% to %app.create_repository.target% after the first push."
+cd /d "%app.folder%" >nul 2>&1
+if errorlevel 1 (call :PrintError "FAIL: Could not enter the established checkout." & exit /b 1)
+if defined app.create_repository.confirm goto :RunRequestedRepositoryCreationConfirmed
+call "%app.folder%\tools\git_create_repository.bat" name "%app.create_repository.name%" prepared yes folderrename no
+goto :RunRequestedRepositoryCreationResult
+:RunRequestedRepositoryCreationConfirmed
+call "%app.folder%\tools\git_create_repository.bat" name "%app.create_repository.name%" prepared yes folderrename no confirm CREATE
+:RunRequestedRepositoryCreationResult
+set "rrcr_rc=%errorlevel%"
+if not "%rrcr_rc%"=="0" exit /b %rrcr_rc%
+call :RenameCreatedRepositoryFolder
+set "rrcr_rc=%errorlevel%"
+if not "%rrcr_rc%"=="0" exit /b %rrcr_rc%
+set "app.folder=%app.create_repository.target%"
 for %%A in ("%app.folder%\..") do set "app.repo.parent=%%~fA"
 set "app.final.folder=%app.folder%"
 set "app.final.cd=%app.folder%"
@@ -295,6 +318,64 @@ if defined app.repo.url call :ParseRepositoryUrl
 call :PrintSuccess "OK: New repository created from the established checkout."
 call :PrintSuccess "DIR: %app.folder%"
 set "rrcr_rc="
+exit /b 0
+
+:: ============================================================
+:: Function ResolveCreatedRepositoryFolder
+:: Purpose
+::   Validate the leaf-only checkout rename before remote creation.
+:: Inputs
+::   app.folder app.create_repository.name
+:: Outputs
+::   app.create_repository.old.folder app.create_repository.old.name
+::   app.create_repository.parent app.create_repository.target
+:: Return codes
+::   0 Rename target is safe or already has the requested leaf name
+::   1 Target is invalid or already exists
+:: Dependencies
+::   PrintError
+:: ============================================================
+:ResolveCreatedRepositoryFolder
+for %%A in ("%app.folder%") do set "app.create_repository.old.folder=%%~fA"
+for %%A in ("%app.create_repository.old.folder%") do set "app.create_repository.old.name=%%~nxA"
+for %%A in ("%app.create_repository.old.folder%\..") do set "app.create_repository.parent=%%~fA"
+set "app.create_repository.target=%app.create_repository.parent%\%app.create_repository.name%"
+if /I "%app.create_repository.old.name%"=="%app.create_repository.name%" exit /b 0
+if exist "%app.create_repository.target%\" (call :PrintError "FAIL: Target project folder already exists: %app.create_repository.target%" & exit /b 1)
+if exist "%app.create_repository.target%" (call :PrintError "FAIL: A file already uses the target project path: %app.create_repository.target%" & exit /b 1)
+exit /b 0
+
+:: ============================================================
+:: Function RenameCreatedRepositoryFolder
+:: Purpose
+::   Rename only the checkout leaf folder after the first push.
+:: Inputs
+::   app.create_repository.old.folder app.create_repository.old.name
+::   app.create_repository.parent app.create_repository.name
+::   app.create_repository.target
+:: Return codes
+::   0 Folder renamed and current directory changed to the new path
+::   1 Rename or directory change failed after remote creation
+:: Dependencies
+::   PrintInfo PrintSuccess PrintError
+:: ============================================================
+:RenameCreatedRepositoryFolder
+if /I "%app.create_repository.old.name%"=="%app.create_repository.name%" (cd /d "%app.create_repository.old.folder%" & exit /b %errorlevel%)
+call :PrintInfo "Renaming project folder:"
+echo   %app.create_repository.old.folder%
+echo to:
+echo   %app.create_repository.target%
+cd /d "%app.create_repository.parent%" >nul 2>&1
+if errorlevel 1 (call :PrintError "FAIL: Repository was created, but the project parent folder could not be entered." & exit /b 1)
+ren "%app.create_repository.old.folder%" "%app.create_repository.name%"
+set "rcff_rc=%errorlevel%"
+if not "%rcff_rc%"=="0" (call :PrintError "FAIL: Repository was created, but the project folder could not be renamed." & exit /b %rcff_rc%)
+cd /d "%app.create_repository.target%" >nul 2>&1
+set "rcff_rc=%errorlevel%"
+if not "%rcff_rc%"=="0" (call :PrintError "FAIL: Project folder was renamed, but the new folder could not be entered." & exit /b %rcff_rc%)
+call :PrintSuccess "OK: Project folder renamed."
+call :PrintSuccess "DIR: %app.create_repository.target%"
+set "rcff_rc="
 exit /b 0
 
 :: ============================================================
@@ -591,6 +672,8 @@ echo   create_repository NAME
 echo   create-repository NAME
 echo                        After checkout setup, create a normal repository from
 echo                        the project and rename the checkout folder to NAME
+echo   CREATE               Optional uppercase confirmation token placed after
+echo                        create_repository NAME to skip the later CREATE prompt
 echo(
 echo Login and publication options:
 echo   nologin              Skip provider login and fork handling
@@ -642,8 +725,9 @@ echo   auto unattended login 4
 echo                        Pre-fill fork, identity, push, move, and project
 echo                        decisions; GitHub device authorization remains manual
 echo(
-echo Help aliases:
-echo   help  /help  -help  --help  /h  -h  --h  /?  -?  --?  ?
+echo Help and usage aliases:
+echo   help  usage  /help  -help  --help  /usage  -usage  --usage
+echo   /h  -h  --h  /?  -?  --?  ?
 echo(
 echo Examples:
 echo   %app.launch.name% auto
@@ -655,6 +739,7 @@ echo   %app.launch.name% auto login 4 gitname "Example User" gitemail user@examp
 echo   %app.launch.name% auto repo https://github.com/Owner/Repo.git branch main
 echo   %app.launch.name% auto dir projects\Repo move no prepare yes build yes install no
 echo   %app.launch.name% auto create_repository NewRepo
+echo   %app.launch.name% auto create_repository NewRepo CREATE
 echo   %app.launch.name% doctor repo https://github.com/Owner/Repo.git
 echo(
 echo Notes:
@@ -665,6 +750,8 @@ echo   At the login prompt, 1a-4a also accepts detected Git identity defaults.
 echo   Explicit ask values remain interactive even with unattended.
 echo   GitHub device authorization still requires user action in a browser.
 echo   create_repository runs after checkout setup and before auto prepare or build.
+echo   Its trailing CREATE token is case-sensitive and authorizes remote creation.
+echo   Optional GitHub login questions time out after 20 seconds to no.
 echo   Project prepare, build, and install launchers may have their own prompts.
 echo(
 echo Cache-safe loader:
@@ -759,6 +846,7 @@ if /I "%pa_arg%"=="nomove" (set "app.move.mode=no" & set "app.move.parent=" & se
 if /I "%pa_arg%"=="--no-move" (set "app.move.mode=no" & set "app.move.parent=" & set "app.explicit.move=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="nologin" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
 if /I "%pa_arg%"=="--no-login" (set "app.login.mode=none" & set "app.login.method=ask" & set "app.explicit.login=1" & shift & goto :ParseArguments)
+if "%pa_arg%"=="CREATE" goto :ParseArgumentsCreateConfirm
 if /I "%pa_arg%"=="create_repository" goto :ParseArgumentsCreateRepository
 if /I "%pa_arg%"=="create-repository" goto :ParseArgumentsCreateRepository
 if /I "%pa_arg%"=="login" goto :ParseArgumentsLogin
@@ -780,6 +868,10 @@ if /I "%pa_arg%"=="build" goto :ParseArgumentsBuild
 if /I "%pa_arg%"=="install" goto :ParseArgumentsInstall
 if /I "%pa_arg%"=="update" goto :ParseArgumentsUpdate
 if /I "%pa_arg%"=="conflict" goto :ParseArgumentsConflict
+if /I "%pa_arg%"=="usage" goto :ParseArgumentsHelp
+if /I "%pa_arg%"=="/usage" goto :ParseArgumentsHelp
+if /I "%pa_arg%"=="-usage" goto :ParseArgumentsHelp
+if /I "%pa_arg%"=="--usage" goto :ParseArgumentsHelp
 if /I "%pa_arg%"=="help" goto :ParseArgumentsHelp
 if /I "%pa_arg%"=="/help" goto :ParseArgumentsHelp
 if /I "%pa_arg%"=="-help" goto :ParseArgumentsHelp
@@ -798,6 +890,11 @@ exit /b 2
 :ParseArgumentsHelp
 set "app.mode=help"
 exit /b 0
+:ParseArgumentsCreateConfirm
+if not defined app.create_repository.requested (call :PrintError "FAIL: CREATE must appear after create_repository NAME." & exit /b 2)
+set "app.create_repository.confirm=CREATE"
+shift
+goto :ParseArguments
 :ParseArgumentsCreateRepository
 if "%~2"=="" (call :PrintError "FAIL: create_repository requires a new repository name." & exit /b 2)
 set "pcr_name=%~2"
@@ -1330,10 +1427,15 @@ if /I "%app.login.mode%"=="none" (set "app.fork.mode=no" & exit /b 0)
 if /I "%app.login.mode%"=="login" exit /b 0
 set "rld_choice="
 set "rld_rc=1"
+set "app.login.input.status="
 call :PrintInfo "%app.provider.display% login is optional."
-call :PrintInfo "Press Enter to skip, type y to choose a login method, or enter 1-4 now."
+call :PrintInfo "Enter y to choose a login method, enter 1-4 now, or enter n to skip."
 call :PrintInfo "Append a, for example 4a, to accept the detected Git name and email."
-set /p "rld_choice=%app.provider.display% login? [y/N/1-4/1a-4a]: "
+call :PrintInfo "No response within %app.login.timeout.seconds% seconds defaults to n."
+<nul set /p "=%app.provider.display% login? [y/N/1-4/1a-4a, %app.login.timeout.seconds%s]: "
+call :ReadBootstrapLoginInput
+if errorlevel 1 (call :PrintWarning "NOTE: Timed login input failed; defaulting to no login." & set "rld_choice=n")
+if /I "%app.login.input.status%"=="timeout" call :PrintWarning "TIMEOUT: No response; defaulting to no login."
 if /I "%rld_choice%"=="y" (set "app.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
 if /I "%rld_choice%"=="yes" (set "app.login.mode=login" & set "rld_choice=" & set "rld_rc=" & exit /b 0)
 call :ApplyLoginShortcut "%rld_choice%"
@@ -1344,6 +1446,39 @@ set "app.login.mode=none"
 set "app.fork.mode=no"
 set "rld_choice="
 set "rld_rc="
+exit /b 0
+
+:: ============================================================
+:: Function ReadBootstrapLoginInput
+:: Purpose
+::   Read the optional provider-login response with a timeout.
+:: Inputs
+::   app.folder app.login.timeout.seconds
+:: Outputs
+::   rld_choice app.login.input.status
+:: Return codes
+::   0 Input or timeout default returned
+::   1 Shared timed-input helper failed
+:: Dependencies
+::   git_login_read_timed_input.ps1
+:: ============================================================
+:ReadBootstrapLoginInput
+set "rld_choice="
+set "app.login.input.status="
+set "app.login.input.result=%TEMP%\bootstrap_login_input_%RANDOM%_%RANDOM%.txt"
+set "rbli_helper=%app.folder%\tools\git_login_read_timed_input.ps1"
+if not exist "%rbli_helper%" (echo. & set "rbli_helper=" & exit /b 1)
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%rbli_helper%" -TimeoutSeconds %app.login.timeout.seconds% -DefaultValue n -ResultPath "%app.login.input.result%"
+set "rbli_rc=%errorlevel%"
+if not "%rbli_rc%"=="0" (if exist "%app.login.input.result%" del /q "%app.login.input.result%" >nul 2>nul & set "rbli_helper=" & exit /b 1)
+if not exist "%app.login.input.result%" (set "rbli_helper=" & exit /b 1)
+for /f "usebackq tokens=1,* delims=|" %%A in ("%app.login.input.result%") do (set "app.login.input.status=%%A" & set "rld_choice=%%B")
+del /q "%app.login.input.result%" >nul 2>nul
+set "app.login.input.result="
+set "rbli_helper="
+set "rbli_rc="
+if not defined rld_choice set "rld_choice=n"
+if not defined app.login.input.status set "app.login.input.status=input"
 exit /b 0
 
 :: ============================================================

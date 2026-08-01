@@ -2,7 +2,7 @@
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
-set "app.git_create_repo.version=git-create-repository-v2.6-safe-folder-rename"
+set "app.git_create_repo.version=git-create-repository-v2.7-bootstrap-owned-rename"
 set "app.git_create_repo.root="
 set "app.git_create_repo.provider=github"
 set "app.git_create_repo.owner="
@@ -74,6 +74,7 @@ echo   %app.git_create_repo.root%
 echo to:
 echo   %app.git_create_repo.folder.target%
 echo.
+del /q "%TEMP%\git_create_repository_rename_*.bat" >nul 2>nul
 set "app.git_create_repo.folder.rename.helper=%TEMP%\git_create_repository_rename_%RANDOM%_%RANDOM%.bat"
 >"%app.git_create_repo.folder.rename.helper%" echo @echo off
 >>"%app.git_create_repo.folder.rename.helper%" echo cd /d "%app.git_create_repo.folder.parent%"
@@ -84,12 +85,12 @@ set "app.git_create_repo.folder.rename.helper=%TEMP%\git_create_repository_renam
 >>"%app.git_create_repo.folder.rename.helper%" echo if errorlevel 1 goto :rename_failed
 >>"%app.git_create_repo.folder.rename.helper%" echo echo OK: Project folder renamed.
 >>"%app.git_create_repo.folder.rename.helper%" echo echo DIR: %app.git_create_repo.folder.target%
->>"%app.git_create_repo.folder.rename.helper%" echo del /q "%%~f0" ^>nul 2^>nul ^& exit /b 0
+>>"%app.git_create_repo.folder.rename.helper%" echo exit /b 0
 >>"%app.git_create_repo.folder.rename.helper%" echo :rename_failed
 >>"%app.git_create_repo.folder.rename.helper%" echo echo ERROR: The repository was created and pushed, but the project folder could not be renamed.
 >>"%app.git_create_repo.folder.rename.helper%" echo echo Expected folder:
 >>"%app.git_create_repo.folder.rename.helper%" echo echo   %app.git_create_repo.folder.target%
->>"%app.git_create_repo.folder.rename.helper%" echo del /q "%%~f0" ^>nul 2^>nul ^& exit /b 1
+>>"%app.git_create_repo.folder.rename.helper%" echo exit /b 1
 if not exist "%app.git_create_repo.folder.rename.helper%" (echo ERROR: Could not create the temporary folder-rename helper. & exit /b 1)
 REM Do not CALL this helper. It replaces the creator batch context so cmd.exe
 REM never resumes a batch file whose parent folder has just been renamed.

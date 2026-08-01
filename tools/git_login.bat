@@ -65,6 +65,10 @@ set "app.git_login.existing.origin="
 set "app.git_login.git.name="
 set "app.git_login.git.email="
 set "app.git_login.input="
+set "app.git_login.input.status="
+set "app.git_login.input.result="
+set "app.git_login.input.timeout=20"
+set "app.git_login.input.helper=%~dp0git_login_read_timed_input.ps1"
 set "app.git_login.prepare.log="
 set "app.git_login.prepare.rc=0"
 set "app.git_login.prepared.request=no"
@@ -332,10 +336,15 @@ echo GitHub login is required.
 if /I "%app.git_login.login.request%"=="no" (echo ERROR: Login was disabled by the caller. & set "_gla_rc=1" & goto :Authenticate)
 if /I not "%app.git_login.login.request%"=="ask" goto :_Authenticate_browser
 if /I not "%app.git_login.browser.request%"=="ask" goto :_Authenticate_browser
-echo Press Enter to cancel, type y to choose a login method, or enter 1-4 now.
+echo Enter y to choose a login method, enter 1-4 now, or enter n to cancel.
 echo Append a, for example 4a, to accept identity defaults when repository setup follows.
+echo No response within %app.git_login.input.timeout% seconds defaults to n.
 set "app.git_login.input="
-set /p "app.git_login.input=GitHub login? [y/N/1-4/1a-4a]: "
+set "app.git_login.input.status="
+<nul set /p "=GitHub login? [y/N/1-4/1a-4a, %app.git_login.input.timeout%s]: "
+call :ReadTimedLoginInput
+if errorlevel 1 (echo ERROR: Timed GitHub login input failed. & set "_gla_rc=1" & goto :Authenticate)
+if /I "%app.git_login.input.status%"=="timeout" echo TIMEOUT: No response; defaulting to no login.
 if "%app.git_login.input%"=="1" set "app.git_login.browser.request=1"
 if "%app.git_login.input%"=="2" set "app.git_login.browser.request=2"
 if "%app.git_login.input%"=="3" set "app.git_login.browser.request=3"
@@ -379,6 +388,36 @@ echo Logged in as:
 echo   %app.git_login.login%
 echo.
 set "_gla_rc=0" & goto :Authenticate
+:: ============================================================
+:: Function ReadTimedLoginInput
+:: Reads one console line with a timeout by using the shared
+:: PowerShell helper. Empty input and timeout both return n.
+::
+:: Usage: call ReadTimedLoginInput
+::
+:: Output: app.git_login.input app.git_login.input.status
+:: Returns: 0 when a result was read
+::          1 when the helper was unavailable or failed
+:: Requires: powershell.exe, git_login_read_timed_input.ps1
+:: Dependencies
+::   none
+:: ============================================================
+:ReadTimedLoginInput
+set "app.git_login.input="
+set "app.git_login.input.status="
+set "app.git_login.input.result=%TEMP%\git_login_input_%RANDOM%_%RANDOM%.txt"
+if not exist "%app.git_login.input.helper%" (echo. & echo ERROR: Timed-input helper was not found: & echo   %app.git_login.input.helper% & exit /b 1)
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%app.git_login.input.helper%" -TimeoutSeconds %app.git_login.input.timeout% -DefaultValue n -ResultPath "%app.git_login.input.result%"
+set "glti_rc=%errorlevel%"
+if not "%glti_rc%"=="0" (if exist "%app.git_login.input.result%" del /q "%app.git_login.input.result%" >nul 2>nul & exit /b 1)
+if not exist "%app.git_login.input.result%" exit /b 1
+for /f "usebackq tokens=1,* delims=|" %%A in ("%app.git_login.input.result%") do (set "app.git_login.input.status=%%A" & set "app.git_login.input=%%B")
+del /q "%app.git_login.input.result%" >nul 2>nul
+set "app.git_login.input.result="
+if not defined app.git_login.input set "app.git_login.input=n"
+if not defined app.git_login.input.status set "app.git_login.input.status=input"
+exit /b 0
+
 :: ============================================================
 :: Function ChooseLoginBrowser
 :: Chooses how the GitHub device-login page is opened before gh
@@ -1241,6 +1280,7 @@ echo.
 echo Browser methods:
 echo   Append a to any method to select identity defaults as well.
 echo   Authentication-only callers already return before identity prompts.
+echo   The initial GitHub login question times out after 20 seconds to no.
 echo   1  Let GitHub CLI open the default browser
 echo   2  Open the device page in the default browser first
 echo   3  Open the device page in a private browser first
