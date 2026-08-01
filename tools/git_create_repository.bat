@@ -2,7 +2,7 @@
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
-set "app.git_create_repo.version=git-create-repository-v2"
+set "app.git_create_repo.version=git-create-repository-v2.2-default-identity"
 set "app.git_create_repo.root="
 set "app.git_create_repo.provider=github"
 set "app.git_create_repo.owner="
@@ -16,7 +16,7 @@ set "app.git_create_repo.message="
 set "app.git_create_repo.description="
 set "app.git_create_repo.login.mode=ask"
 set "app.git_create_repo.login="
-set "app.git_create_repo.identity.mode=ask"
+set "app.git_create_repo.identity.mode=defaults"
 set "app.git_create_repo.git.name="
 set "app.git_create_repo.git.email="
 set "app.git_create_repo.source.mode=keep"
@@ -919,7 +919,7 @@ echo   rename yes^|no
 echo.
 echo Authentication and identity:
 echo   login ask^|yes^|no
-echo   identity ask^|defaults
+echo   identity defaults^|ask
 echo   gitname "NAME"
 echo   gitemail "EMAIL"
 echo.
@@ -932,10 +932,10 @@ echo Help:
 echo   help  /help  -help  --help  /h  -h  --h  /?  -?  --?  ?
 echo.
 echo Test plan:
-echo   git_create_repository.bat owner helpersforopenwrt name testrepo_pleaseignore visibility private source keep references all rename yes identity defaults dryrun
+echo   git_create_repository.bat name testrepo_pleaseignore dryrun
 echo.
 echo Test creation:
-echo   git_create_repository.bat owner helpersforopenwrt name testrepo_pleaseignore visibility private source keep references all rename yes identity defaults confirm CREATE
+echo   git_create_repository.bat name testrepo_pleaseignore
 echo.
 echo Safety requirements:
 echo   tracked files must be clean
