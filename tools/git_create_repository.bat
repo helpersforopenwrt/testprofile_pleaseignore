@@ -2,7 +2,7 @@
 :setup
 if not defined app.launch.path set "app.launch.path=%~f0"
 if not defined app.launch.name set "app.launch.name=%~nx0"
-set "app.git_create_repo.version=git-create-repository-v2.5-folder-rename"
+set "app.git_create_repo.version=git-create-repository-v2.6-safe-folder-rename"
 set "app.git_create_repo.root="
 set "app.git_create_repo.provider=github"
 set "app.git_create_repo.owner="
@@ -34,6 +34,7 @@ set "app.git_create_repo.folder.parent="
 set "app.git_create_repo.folder.target="
 set "app.git_create_repo.folder.rename.required="
 set "app.git_create_repo.folder.rename.ready="
+set "app.git_create_repo.folder.rename.helper="
 set "app.git_create_repo.confirm="
 set "app.git_create_repo.prepared=no"
 set "app.git_create_repo.dryrun="
@@ -73,7 +74,26 @@ echo   %app.git_create_repo.root%
 echo to:
 echo   %app.git_create_repo.folder.target%
 echo.
-cd /d "%app.git_create_repo.folder.parent%" && ren "%app.git_create_repo.root%" "%app.git_create_repo.name%" && cd /d "%app.git_create_repo.folder.target%" && (echo OK: Project folder renamed. & echo DIR: %app.git_create_repo.folder.target% & exit /b 0) || (echo ERROR: The repository was created and pushed, but the project folder could not be renamed. & echo Expected folder: & echo   %app.git_create_repo.folder.target% & exit /b 1)
+set "app.git_create_repo.folder.rename.helper=%TEMP%\git_create_repository_rename_%RANDOM%_%RANDOM%.bat"
+>"%app.git_create_repo.folder.rename.helper%" echo @echo off
+>>"%app.git_create_repo.folder.rename.helper%" echo cd /d "%app.git_create_repo.folder.parent%"
+>>"%app.git_create_repo.folder.rename.helper%" echo if errorlevel 1 goto :rename_failed
+>>"%app.git_create_repo.folder.rename.helper%" echo ren "%app.git_create_repo.root%" "%app.git_create_repo.name%"
+>>"%app.git_create_repo.folder.rename.helper%" echo if errorlevel 1 goto :rename_failed
+>>"%app.git_create_repo.folder.rename.helper%" echo cd /d "%app.git_create_repo.folder.target%"
+>>"%app.git_create_repo.folder.rename.helper%" echo if errorlevel 1 goto :rename_failed
+>>"%app.git_create_repo.folder.rename.helper%" echo echo OK: Project folder renamed.
+>>"%app.git_create_repo.folder.rename.helper%" echo echo DIR: %app.git_create_repo.folder.target%
+>>"%app.git_create_repo.folder.rename.helper%" echo del /q "%%~f0" ^>nul 2^>nul ^& exit /b 0
+>>"%app.git_create_repo.folder.rename.helper%" echo :rename_failed
+>>"%app.git_create_repo.folder.rename.helper%" echo echo ERROR: The repository was created and pushed, but the project folder could not be renamed.
+>>"%app.git_create_repo.folder.rename.helper%" echo echo Expected folder:
+>>"%app.git_create_repo.folder.rename.helper%" echo echo   %app.git_create_repo.folder.target%
+>>"%app.git_create_repo.folder.rename.helper%" echo del /q "%%~f0" ^>nul 2^>nul ^& exit /b 1
+if not exist "%app.git_create_repo.folder.rename.helper%" (echo ERROR: Could not create the temporary folder-rename helper. & exit /b 1)
+REM Do not CALL this helper. It replaces the creator batch context so cmd.exe
+REM never resumes a batch file whose parent folder has just been renamed.
+"%app.git_create_repo.folder.rename.helper%"
 
 :: ============================================================
 :: Function RunMain

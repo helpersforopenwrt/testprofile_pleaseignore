@@ -24,6 +24,7 @@ set "APP_GH_DEVICE_URL="
 ::   call tools\git_login.bat repo URL branch main
 ::   call tools\git_login.bat browser 4 fork yes identity defaults push yes
 ::   call tools\git_login.bat authenticate browser 4 prepared yes pause no
+::   call tools\git_login.bat authenticate browser 4a prepared yes pause no
 ::   call tools\git_login.bat help
 ::
 :: Returns: 0 on successful setup, successful no-commit setup, or help
@@ -332,16 +333,25 @@ if /I "%app.git_login.login.request%"=="no" (echo ERROR: Login was disabled by t
 if /I not "%app.git_login.login.request%"=="ask" goto :_Authenticate_browser
 if /I not "%app.git_login.browser.request%"=="ask" goto :_Authenticate_browser
 echo Press Enter to cancel, type y to choose a login method, or enter 1-4 now.
+echo Append a, for example 4a, to accept identity defaults when repository setup follows.
 set "app.git_login.input="
-set /p "app.git_login.input=GitHub login? [y/N/1-4]: "
+set /p "app.git_login.input=GitHub login? [y/N/1-4/1a-4a]: "
 if "%app.git_login.input%"=="1" set "app.git_login.browser.request=1"
 if "%app.git_login.input%"=="2" set "app.git_login.browser.request=2"
 if "%app.git_login.input%"=="3" set "app.git_login.browser.request=3"
 if "%app.git_login.input%"=="4" set "app.git_login.browser.request=4"
+if /I "%app.git_login.input%"=="1a" (set "app.git_login.browser.request=1" & set "app.git_login.identity.request=defaults")
+if /I "%app.git_login.input%"=="2a" (set "app.git_login.browser.request=2" & set "app.git_login.identity.request=defaults")
+if /I "%app.git_login.input%"=="3a" (set "app.git_login.browser.request=3" & set "app.git_login.identity.request=defaults")
+if /I "%app.git_login.input%"=="4a" (set "app.git_login.browser.request=4" & set "app.git_login.identity.request=defaults")
 if "%app.git_login.input%"=="1" goto :_Authenticate_browser
 if "%app.git_login.input%"=="2" goto :_Authenticate_browser
 if "%app.git_login.input%"=="3" goto :_Authenticate_browser
 if "%app.git_login.input%"=="4" goto :_Authenticate_browser
+if /I "%app.git_login.input%"=="1a" goto :_Authenticate_browser
+if /I "%app.git_login.input%"=="2a" goto :_Authenticate_browser
+if /I "%app.git_login.input%"=="3a" goto :_Authenticate_browser
+if /I "%app.git_login.input%"=="4a" goto :_Authenticate_browser
 if /I not "%app.git_login.input%"=="y" (echo Cancelled before authentication. & set "_gla_rc=1" & goto :Authenticate)
 :_Authenticate_browser
 echo.
@@ -399,12 +409,16 @@ if defined app.git_login.browser.choice goto :_ChooseLoginBrowser_dispatch
 set /p "app.git_login.browser.choice=Choice [1]: "
 if not defined app.git_login.browser.choice set "app.git_login.browser.choice=1"
 :_ChooseLoginBrowser_dispatch
+if /I "%app.git_login.browser.choice%"=="1a" (set "app.git_login.browser.choice=1" & set "app.git_login.identity.request=defaults")
+if /I "%app.git_login.browser.choice%"=="2a" (set "app.git_login.browser.choice=2" & set "app.git_login.identity.request=defaults")
+if /I "%app.git_login.browser.choice%"=="3a" (set "app.git_login.browser.choice=3" & set "app.git_login.identity.request=defaults")
+if /I "%app.git_login.browser.choice%"=="4a" (set "app.git_login.browser.choice=4" & set "app.git_login.identity.request=defaults")
 if "%app.git_login.browser.choice%"=="1" goto :_ChooseLoginBrowser_cli
 if "%app.git_login.browser.choice%"=="2" goto :_ChooseLoginBrowser_default
 if "%app.git_login.browser.choice%"=="3" goto :_ChooseLoginBrowser_private
 if "%app.git_login.browser.choice%"=="4" goto :_ChooseLoginBrowser_manual
 echo.
-echo Invalid choice. Enter 1, 2, 3, or 4.
+echo Invalid choice. Enter 1, 2, 3, 4, or append a.
 echo.
 goto :ChooseLoginBrowser
 :_ChooseLoginBrowser_cli
@@ -1082,18 +1096,26 @@ shift
 shift
 goto :ParseArgs
 :_ParseArgs_browser
-if "%~2"=="" (echo ERROR: browser requires ask, 1, 2, 3, or 4. & exit /b 2)
+if "%~2"=="" (echo ERROR: browser requires ask, 1-4, or 1a-4a. & exit /b 2)
 if /I "%~2"=="ask" set "app.git_login.browser.request=ask"
 if "%~2"=="1" set "app.git_login.browser.request=1"
 if "%~2"=="2" set "app.git_login.browser.request=2"
 if "%~2"=="3" set "app.git_login.browser.request=3"
 if "%~2"=="4" set "app.git_login.browser.request=4"
+if /I "%~2"=="1a" (set "app.git_login.browser.request=1" & set "app.git_login.identity.request=defaults")
+if /I "%~2"=="2a" (set "app.git_login.browser.request=2" & set "app.git_login.identity.request=defaults")
+if /I "%~2"=="3a" (set "app.git_login.browser.request=3" & set "app.git_login.identity.request=defaults")
+if /I "%~2"=="4a" (set "app.git_login.browser.request=4" & set "app.git_login.identity.request=defaults")
 if /I "%~2"=="ask" goto :_ParseArgs_browser_ready
 if "%~2"=="1" goto :_ParseArgs_browser_ready
 if "%~2"=="2" goto :_ParseArgs_browser_ready
 if "%~2"=="3" goto :_ParseArgs_browser_ready
 if "%~2"=="4" goto :_ParseArgs_browser_ready
-echo ERROR: browser requires ask, 1, 2, 3, or 4.
+if /I "%~2"=="1a" goto :_ParseArgs_browser_ready
+if /I "%~2"=="2a" goto :_ParseArgs_browser_ready
+if /I "%~2"=="3a" goto :_ParseArgs_browser_ready
+if /I "%~2"=="4a" goto :_ParseArgs_browser_ready
+echo ERROR: browser requires ask, 1-4, or 1a-4a.
 exit /b 2
 :_ParseArgs_browser_ready
 shift
@@ -1203,7 +1225,7 @@ echo   login ask^|yes^|no    Approval behavior when authentication is missing
 echo   repo OWNER/REPO
 echo   repo URL
 echo   branch NAME
-echo   browser ask^|1^|2^|3^|4
+echo   browser ask^|1^|2^|3^|4^|1a^|2a^|3a^|4a
 echo   fork ask^|yes^|no
 echo   identity ask^|defaults
 echo   gitname NAME
@@ -1217,6 +1239,8 @@ echo Help aliases:
 echo   help  /help  -help  --help  /h  -h  --h  /?  -?  --?  ?
 echo.
 echo Browser methods:
+echo   Append a to any method to select identity defaults as well.
+echo   Authentication-only callers already return before identity prompts.
 echo   1  Let GitHub CLI open the default browser
 echo   2  Open the device page in the default browser first
 echo   3  Open the device page in a private browser first
