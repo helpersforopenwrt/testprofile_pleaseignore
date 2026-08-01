@@ -202,7 +202,7 @@ function Get-Replacements {
     }
 
     return @(
-        $items |
+        $items.ToArray() |
         Sort-Object { $_.Old.Length } -Descending
     )
 }
@@ -263,7 +263,7 @@ function Invoke-ReplacementAnalysis {
     }
 
     return [pscustomobject]@{
-        Matches = @($results)
+        Matches = $results.ToArray()
         Text = $working
     }
 }
@@ -449,7 +449,7 @@ if ($binaryFailures.Count -gt 0) {
         $reportLines.Add("  $file")
     }
 
-    Write-Report -Path $Report -Lines $reportLines
+    Write-Report -Path $Report -Lines ($reportLines.ToArray())
     Write-Host "ERROR: Binary files contain old repository references."
     exit 3
 }
@@ -461,7 +461,7 @@ if ($Mode -eq "Apply") {
 
     [System.IO.File]::WriteAllLines(
         (Join-Path $BackupRoot "manifest.txt"),
-        $modifiedFiles,
+        $modifiedFiles.ToArray(),
         (New-Object System.Text.UTF8Encoding($false))
     )
 }
@@ -476,7 +476,7 @@ if ($Mode -eq "Apply") {
     $reportLines.Add("Backup root: $BackupRoot")
 }
 
-Write-Report -Path $Report -Lines $reportLines
+Write-Report -Path $Report -Lines ($reportLines.ToArray())
 
 Write-Host "Files with repository references: $($modifiedFiles.Count)"
 Write-Host "Total repository-reference replacements: $totalMatches"
