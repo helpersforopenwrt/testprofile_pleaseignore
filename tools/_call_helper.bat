@@ -7,6 +7,10 @@ if not defined HELPER_NAME (
     exit /b 2
 )
 
+set "HELPER_ARGUMENTS="
+if not "%~2"=="" set "HELPER_ARGUMENTS=%*"
+if defined HELPER_ARGUMENTS call set "HELPER_ARGUMENTS=%%HELPER_ARGUMENTS:* =%%"
+
 set "HELPER_PATH="
 
 rem Required lookup order: project root first, then tools folder.
@@ -27,6 +31,6 @@ if not defined HELPER_PATH (
     exit /b 1
 )
 
-call "%HELPER_PATH%"
+call "%HELPER_PATH%" %HELPER_ARGUMENTS%
 set "RC=%ERRORLEVEL%"
 endlocal & exit /b %RC%
